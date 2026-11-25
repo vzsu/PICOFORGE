@@ -39,9 +39,175 @@ public static class Stats
         s.BboxMin = [bbox.vecMin.X, bbox.vecMin.Y, bbox.vecMin.Z];
         s.BboxMax = [bbox.vecMax.X, bbox.vecMax.Y, bbox.vecMax.Z];
         s.VoxelSizeMm = c.fVoxelMM;
-        if (bProbeMinWall) s.MinWallProbeMm = Math.Round(MinWallProbe(v, (float)(s.VolumeCm3 * 1000.0), bbox, c.fVoxelMM), 2);
+        if (bProbeMinWall) s.MinWallProbeMm = Math.Round(MinWallProbe(v, c.fVoxelMM), 2);
         return s;
     }
+
+    /// <summary>
+    /// Signed distance per voxel centre in voxel units (PicoGK slices give mm, narrow band clamped at ±3 voxels),
+    /// padded by one outside voxel on every side. Negative = inside.
+    /// </summary>
+    private static float[] SignedField(Voxels v, out int nx, out int ny, out int nz)
+    {
+        v.GetVoxelDimensions(out int sx, out int sy, out int sz);
+        nx = sx + 2; ny = sy + 2; nz = sz + 2;
+        var sd = new float[(long)nx * ny * nz];
+        Array.Fill(sd, 3f);
+        if (sx <= 0 || sy <= 0 || sz <= 0) return sd;
+        float inv = 1f / v.fVoxelSize;
+        ImageGrayScale img = v.imgAllocateSlice(out int nSlices, Voxels.ESliceAxis.Z);
+        int w = Math.Min(img.nWidth, sx), h = Math.Min(img.nHeight, sy);
+        for (int z = 0; z < Math.Min(nSlices, sz); z++)
+        {
+            v.GetVoxelSlice(z, ref img, Voxels.ESliceMode.SignedDistance, Voxels.ESliceAxis.Z);
+            long zo = (long)(z + 1) * nx * ny;
+            for (int y = 0; y < h; y++)
+            {
+                long row = zo + (long)(y + 1) * nx + 1;
+                for (int x = 0; x < w; x++) sd[row + x] = img.fValue(x, y) * inv;
+            }
+        }
+        return sd;
+    }
+
+    /// <summary>Fraction of a voxel cell that is solid, from its centre's signed distance (voxel units).</summary>
+    private static float Fill(float sdVox) => Math.Clamp(0.5f - sdVox, 0f, 1f);
+
+    /// <summary>A voxel centre strictly inside the surface (centres lying on the surface count as outside).</summary>
+    private static bool Inside(float sdVox) => sdVox < -1e-3f;
+
+    /// <summary>Solid volume in mm³ from partial voxel occupancy (cavity-correct, independent of meshing).</summary>
+    public static double InsideVolumeMm3(Voxels v)
+    {
+        ArgumentNullException.ThrowIfNull(v);
+        var sd = SignedField(v, out _, out _, out _);
+        double n = 0;
+        foreach (float s in sd) n += Fill(s);
+        double vox = v.fVoxelSize;
+        return n * vox * vox * vox;
+    }
+
+    /// <summary>
+    /// Min-wall probe by one exact Euclidean distance transform (Felzenszwalb–Huttenlocher, separable) of the
+    /// voxel occupancy. Surface distance of an inside centre = distance to the nearest outside centre − c, where c is
+    /// the mean distance from boundary outside centres to the surface (measured from the signed field, 0…1 voxel).
+    /// Erosion by r keeps voxels with surface distance &gt; r, so the 15 % rule of the definition becomes a quantile
+    /// of the distance histogram. O(voxels), no meshing.
+    /// </summary>
+    public static double MinWallProbe(Voxels v, float voxelMm)
+    {
+        ArgumentNullException.ThrowIfNull(v);
+        var sd = SignedField(v, out int nx, out int ny, out int nz);
+        long total = (long)nx * ny * nz;
+        const float Inf = 1e20f;
+        var f = new float[total];
+        var occ = new bool[total];
+        double solidCells = 0;
+        long nInside = 0;
+        for (long i = 0; i < total; i++)
+        {
+            solidCells += Fill(sd[i]);
+            if (Inside(sd[i])) { occ[i] = true; f[i] = Inf; nInside++; }
+        }
+        if (nInside == 0) return 0;
+        // c: mean signed distance of outside centres that have an inside 6-neighbour (where the surface crosses).
+        double cSum = 0;
+        long cN = 0;
+        long plane0 = (long)nx * ny;
+        for (int z = 1; z < nz - 1; z++)
+            for (int y = 1; y < ny - 1; y++)
+                for (int x = 1; x < nx - 1; x++)
+                {
+                    long i = z * plane0 + (long)y * nx + x;
+                    if (occ[i]) continue;
+                    if (occ[i - 1] || occ[i + 1] || occ[i - nx] || occ[i + nx] || occ[i - plane0] || occ[i + plane0])
+                    {
+                        cSum += Math.Clamp(sd[i], 0f, 1f);
+                        cN++;
+                    }
+                }
+        double c = cN > 0 ? cSum / cN : 0.5;
+        int nMax = Math.Max(nx, Math.Max(ny, nz));
+        var line = new float[nMax];
+        var outLine = new float[nMax];
+        var vIdx = new int[nMax];
+        var zB = new float[nMax + 1];
+        // x pass
+        for (int z = 0; z < nz; z++)
+            for (int y = 0; y < ny; y++)
+            {
+                long o = ((long)z * ny + y) * nx;
+                for (int x = 0; x < nx; x++) line[x] = f[o + x];
+                Edt1D(line, nx, outLine, vIdx, zB);
+                for (int x = 0; x < nx; x++) f[o + x] = outLine[x];
+            }
+        // y pass
+        for (int z = 0; z < nz; z++)
+            for (int x = 0; x < nx; x++)
+            {
+                long o = (long)z * ny * nx + x;
+                for (int y = 0; y < ny; y++) line[y] = f[o + (long)y * nx];
+                Edt1D(line, ny, outLine, vIdx, zB);
+                for (int y = 0; y < ny; y++) f[o + (long)y * nx] = outLine[y];
+            }
+        // z pass
+        long plane = (long)nx * ny;
+        for (int y = 0; y < ny; y++)
+            for (int x = 0; x < nx; x++)
+            {
+                long o = (long)y * nx + x;
+                for (int z = 0; z < nz; z++) line[z] = f[o + z * plane];
+                Edt1D(line, nz, outLine, vIdx, zB);
+                for (int z = 0; z < nz; z++) f[o + z * plane] = outLine[z];
+            }
+        // squared centre distances are integers: histogram them, then walk from the top until 15 % is kept.
+        var hist = new Dictionary<int, long>();
+        for (long i = 0; i < total; i++)
+        {
+            if (!occ[i]) continue;
+            int d2 = (int)MathF.Round(f[i]);
+            hist[d2] = hist.TryGetValue(d2, out long n) ? n + 1 : 1;
+        }
+        double keepMax = 0.15 * solidCells;
+        long kept = 0;
+        double rVox = 0;
+        foreach (int d2 in hist.Keys.OrderByDescending(k => k))
+        {
+            kept += hist[d2];
+            // erosion by r keeps the levels deeper than r; the smallest r that keeps < 15 % sits at the first level
+            // whose inclusion would push the kept volume past 15 %.
+            if (kept > keepMax) { rVox = Math.Sqrt(d2) - c; break; }
+        }
+        return Math.Max(0, 2.0 * rVox * voxelMm);
+    }
+
+    /// <summary>1-D squared distance transform of sampled function f (lower envelope of parabolas).</summary>
+    private static void Edt1D(float[] f, int n, float[] d, int[] v, float[] z)
+    {
+        int k = 0;
+        v[0] = 0; z[0] = float.NegativeInfinity; z[1] = float.PositiveInfinity;
+        for (int q = 1; q < n; q++)
+        {
+            float s = Intersect(f, q, v[k]);
+            while (s <= z[k]) // z[0] = −∞, so k never goes below 0
+            {
+                k--;
+                s = Intersect(f, q, v[k]);
+            }
+            k++;
+            v[k] = q; z[k] = s; z[k + 1] = float.PositiveInfinity;
+        }
+        k = 0;
+        for (int q = 0; q < n; q++)
+        {
+            while (z[k + 1] < q) k++;
+            float dq = q - v[k];
+            d[q] = dq * dq + f[v[k]];
+        }
+    }
+
+    private static float Intersect(float[] f, int q, int p) =>
+        ((f[q] + (float)q * q) - (f[p] + (float)p * p)) / (2f * (q - p));
 
     /// <summary>Enclosed volume of a voxel field in mm³, measured on its mesh (cavity-correct).</summary>
     public static double VolumeMm3(Voxels v)
@@ -101,8 +267,9 @@ public static class Stats
     /// <summary>
     /// Binary search for erosion thickness t where volume(erode(v, t/2)) / volume(v) first drops below 0.15.
     /// Upper bound is the smallest bbox extent (no wall can be thicker than the part).
+    /// Reference implementation for tests; slow (one meshed erosion per step). Builds use MinWallProbe.
     /// </summary>
-    public static double MinWallProbe(Voxels v, float baseVolMm3, BBox3 bbox, float voxelMm)
+    public static double MinWallProbeByErosion(Voxels v, float baseVolMm3, BBox3 bbox, float voxelMm)
     {
         ArgumentNullException.ThrowIfNull(v);
         if (baseVolMm3 <= 0) return 0;
