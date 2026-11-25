@@ -6,6 +6,7 @@
     "jsr:@std/internal@^1.0.14": "1.0.14",
     "jsr:@std/path@1": "1.1.6",
     "npm:@anthropic-ai/sdk@0.54": "0.54.0",
+    "npm:@playwright/test@1.61.1": "1.61.1",
     "npm:hono@4": "4.12.28",
     "npm:ripgrep-bin@*": "13.0.0",
     "npm:ulid@2": "2.4.0",
@@ -34,8 +35,34 @@
       "integrity": "sha512-xyoCtHJnt/qg5GG6IgK+UJEndz8h8ljzt/caKXmq3LfBF81nC/BW6E4x2rOWCZcvsLyVW+e8U5mtIr6UCE/kJw==",
       "bin": true
     },
+    "@playwright/test@1.61.1": {
+      "integrity": "sha512-8nKv6+0RJSL9FE4jYOEGXnPeM/Hg12qZpmqzZjRh3qM0Y7c3z1mrOTfFLids72RDQYVh9WpLEfR5WdpNX4fkig==",
+      "dependencies": [
+        "playwright"
+      ],
+      "bin": true
+    },
+    "fsevents@2.3.2": {
+      "integrity": "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==",
+      "os": ["darwin"],
+      "scripts": true
+    },
     "hono@4.12.28": {
       "integrity": "sha512-YwUvVpSF7m1yOblFPrU3Hbo8XhPheBoiyfGuII6z19LnOr6JpDnyyp7LFNrfV56wS8tpvtBFGRISHN02pDdLOA=="
+    },
+    "playwright-core@1.61.1": {
+      "integrity": "sha512-h7Qlt6m4REp25qvIdvbDtVmD4LqVXfpRxhORv9L0jzETM05p4fuPJ3dKyuSXQxDSbXnmS79HAgi9589lGSpLkg==",
+      "bin": true
+    },
+    "playwright@1.61.1": {
+      "integrity": "sha512-DWnY5o3YbLWK4GovuAVwpqL+1VwGNdUGrRr++8j8PtQQzvAVZUIMjKQ90fY689sEJZJBbZVw1rXaOKSTitkzPQ==",
+      "dependencies": [
+        "playwright-core"
+      ],
+      "optionalDependencies": [
+        "fsevents"
+      ],
+      "bin": true
     },
     "ripgrep-bin@13.0.0": {
       "integrity": "sha512-lwFAmnB4ssW3H0RYApOHcViuIfuPiEp2S4vRvpdyKdidfGLrjfESvz8XuIGaFzS24KY+6c8NMmEXgoNdSm8uzw==",
@@ -137,6 +164,11 @@
       "npm:hono@4",
       "npm:ulid@2",
       "npm:zod@3"
-    ]
+    ],
+    "packageJson": {
+      "dependencies": [
+        "npm:@playwright/test@1.61.1"
+      ]
+    }
   }
 }

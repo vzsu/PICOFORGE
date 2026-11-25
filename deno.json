@@ -1,4 +1,5 @@
 {
+  "nodeModulesDir": "auto",
   "tasks": {
     "dev": "deno task server:dev & deno task app:dev",
     "server:dev": "deno run --watch --env-file=.env --allow-net --allow-read --allow-write --allow-run=dotnet,forge-engine --allow-env server/main.ts",
