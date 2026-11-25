@@ -4,8 +4,16 @@
     "server:dev": "deno run --watch --env-file=.env --allow-net --allow-read --allow-write --allow-run=dotnet,forge-engine --allow-env server/main.ts",
     "app:dev": "cd app && npm run dev",
     "check": "deno fmt --check && deno lint && deno task typecheck && deno task test",
-    "typecheck": "deno check server/main.ts server/harness/orchestrator.ts server/http/router.ts server/http/ws.ts scripts/setup.ts",
-    "test": "deno test --allow-read --allow-write --allow-net=127.0.0.1 --allow-env server/harness/tests/ server/db/tests/",
+    "typecheck": "deno check server/main.ts server/harness/orchestrator.ts server/http/router.ts server/http/ws.ts scripts/setup.ts scripts/doctor.ts scripts/logs.ts scripts/ui_check.ts scripts/smoke_live.ts",
+    "test": "deno test --allow-read --allow-write --allow-net=127.0.0.1 --allow-env server/harness/tests/ server/db/tests/ scripts/tests/",
+    "doctor": "deno run --allow-read --allow-env --allow-run --allow-sys scripts/doctor.ts",
+    "start": "cd app && npm run build && cd .. && deno run --allow-net --allow-read --allow-write --allow-run --allow-env server/main.ts",
+    "check:engine": "dotnet build engine/PicoForge.sln -warnaserror -m:1 && dotnet test engine/PicoForge.sln --no-build",
+    "e2e:visual": "npx playwright test --config=playwright.config.ts --trace off e2e/visual",
+    "ui:check": "deno run --allow-run --allow-read --allow-env scripts/ui_check.ts",
+    "logs:tail": "deno run --allow-read --allow-env scripts/logs.ts tail",
+    "logs:query": "deno run --allow-read --allow-env scripts/logs.ts query",
+    "smoke:live": "deno run --allow-env --allow-run --allow-read scripts/smoke_live.ts",
     "kb:ingest": "deno run --allow-read --allow-write --allow-net scripts/kb_ingest.ts",
     "bench": "deno bench --allow-read --allow-net=127.0.0.1",
     "setup": "deno run --allow-read --allow-write --allow-run --allow-net scripts/setup.ts",
@@ -13,7 +21,7 @@
     "harness:once": "deno run --env-file=.env --allow-net --allow-read --allow-write --allow-run server/harness/cli.ts",
     "build": "deno run --allow-all scripts/build.ts",
     "bench:perf": "deno run --allow-all server/bench/startup.bench.ts",
-    "e2e": "npx playwright test --config=playwright.config.ts"
+    "e2e": "npx playwright test --config=playwright.config.ts --trace off"
   },
   "fmt": {
     "useTabs": false,
@@ -41,8 +49,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "lib": ["deno.ns", "dom"],
-    "target": "ES2022"
+    "lib": ["deno.ns", "dom"]
   },
   "imports": {
     "hono": "npm:hono@^4",
