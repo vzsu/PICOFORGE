@@ -3,7 +3,7 @@
 // Uses <dialog> natively, mono checklist aesthetic.
 
 import { useEffect, useRef, useState } from "react";
-import { apiFetch } from "../api.ts";
+import { apiFetch, isRecord, readJson } from "../api.ts";
 import "./FirstRunWizard.css";
 
 type Step = "api-key" | "engine" | "gpu";
@@ -254,13 +254,14 @@ function EngineStep({ onNext }: { onNext: () => void }) {
     setDetail("building test cube…");
     try {
       const res = await apiFetch("/api/selftest", { method: "POST" });
-      const json = (await res.json()) as { ok: boolean; error?: string };
-      if (json.ok) {
+      const json = await readJson(res);
+      if (isRecord(json) && json.ok === true) {
         setStatus("ok");
         setDetail("watertight cube generated in <6 s");
       } else {
         setStatus("fail");
-        setDetail(json.error ?? "Engine test failed");
+        const error = isRecord(json) ? json.error : undefined;
+        setDetail(typeof error === "string" ? error : "Engine test failed");
       }
     } catch (e) {
       setStatus("fail");
@@ -327,8 +328,8 @@ function GpuStep({ onComplete }: { onComplete: () => void }) {
     const gl = canvas.getContext("webgl2");
     if (!gl) { setTier("C"); return; }
     const dbgInfo = gl.getExtension("WEBGL_debug_renderer_info");
-    const renderer = dbgInfo ? gl.getParameter(dbgInfo.UNMASKED_RENDERER_WEBGL) : "";
-    const isDiscrete = /nvidia|amd|radeon|geforce|rtx|gtx/i.test(renderer as string);
+    const renderer: unknown = dbgInfo ? gl.getParameter(dbgInfo.UNMASKED_RENDERER_WEBGL) : "";
+    const isDiscrete = /nvidia|amd|radeon|geforce|rtx|gtx/i.test(String(renderer));
     setTier(isDiscrete ? "A" : "B");
   }, []);
 
