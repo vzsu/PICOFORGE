@@ -1,178 +1,192 @@
-// ForgeEngine/SandboxPool.cs — Sandbox child lifecycle management
-// SYS_DESIGN §4.1, §4.3: prewarm 1 spare child, spawn/kill/monitor (RSS 250ms poll)
+// ForgeEngine/SandboxPool.cs — Sandbox child lifecycle: prewarm 1 spare, spawn/kill/monitor (RSS poll 250 ms)
+// docs/04 §2 (spawn per job, killed on any fault), §7 (F3: crash / OOM / timeout → child killed, typed error),
+// §8 (no inherited secrets, cwd = run folder).
 
+using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Text;
+using System.Text.Json;
 
 namespace ForgeEngine;
 
-public sealed class RunLimits
+internal sealed class RunLimits
 {
     public int TimeoutS { get; init; } = 120;
-    public long MaxRssMiB { get; init; } = 8192;
-    public long MaxCells { get; init; } = 1_500_000_000;
+    /// <summary>T0 sandbox cap 2.5 GB (docs/11 PERF-T0-03).</summary>
+    public long MaxRssMiB { get; init; } = 2560;
 }
 
-public sealed class SandboxResult
+internal sealed class SandboxResult
 {
     public bool Ok { get; init; }
     public string? ErrorCode { get; init; }
     public string? ErrorDetail { get; init; }
-    public string? Log { get; init; }
+    public IReadOnlyList<string> Log { get; init; } = [];
     public int ExitCode { get; init; }
+    public double PeakRssMiB { get; init; }
+    public long WallMs { get; init; }
 }
 
-public sealed class SandboxPool : IDisposable
+internal sealed class SandboxPool : IDisposable
 {
+    private const int MaxLogLines = 5000;
     private readonly string _sandboxBin;
-    private Process? _spare;         // prewarmed spare (no job loaded)
+    private readonly bool _prewarm;
     private readonly Lock _lock = new();
+    private readonly ConcurrentDictionary<string, Process> _active = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, bool> _cancelled = new(StringComparer.Ordinal);
+    private Process? _spare;
     private bool _disposed;
 
-    public SandboxPool(string sandboxBin)
+    public SandboxPool(string sandboxBin, bool prewarm = true)
     {
         _sandboxBin = sandboxBin;
-        // Prewarm one spare on construction
-        _ = Task.Run(PrewarmSpare);
+        _prewarm = prewarm;
+        if (_prewarm) _ = Task.Run(PrewarmSpare);
     }
 
-    /// <summary>
-    /// Execute a job file in a sandbox child.
-    /// Returns when the child exits or is killed by a guard.
-    /// </summary>
-    public async Task<SandboxResult> RunAsync(
-        string jobPath,
-        RunLimits limits,
-        Action<string> onLog,
-        CancellationToken cancel)
+    public string SandboxBin => _sandboxBin;
+
+    /// <summary>Running children (active jobs + spare).</summary>
+    public int ChildCount
     {
+        get
+        {
+            lock (_lock) return _active.Count + (_spare is { HasExited: false } ? 1 : 0);
+        }
+    }
+
+    public IReadOnlyList<int> ActivePids => _active.Values.Select(SafePid).Where(p => p > 0).ToArray();
+
+    public async Task<SandboxResult> RunAsync(string runId, string jobPath, RunLimits limits,
+        Action<string> onLog, CancellationToken cancel)
+    {
+        ArgumentNullException.ThrowIfNull(onLog);
+        var wall = Stopwatch.StartNew();
         Process child;
         lock (_lock)
         {
-            // Hand the prewarmed spare this job (write job path to its stdin)
-            if (_spare != null && !_spare.HasExited)
-            {
-                child = _spare;
-                _spare = null;
-            }
-            else
-            {
-                child = SpawnChild();
-            }
+            if (_spare is { HasExited: false }) { child = _spare; _spare = null; }
+            else { _spare?.Dispose(); _spare = null; child = SpawnChild(); }
         }
+        if (_prewarm) _ = Task.Run(PrewarmSpare, CancellationToken.None);
+        _active[runId] = child;
 
-        // Fork a replacement spare immediately
-        _ = Task.Run(PrewarmSpare);
-
-        var logLines = new System.Text.StringBuilder();
-        var lineCount = 0;
-        const int MaxLogLines = 5000;
-
+        var log = new List<string>();
+        var stderr = new StringBuilder();
         child.OutputDataReceived += (_, e) =>
         {
             if (e.Data is null) return;
-            lineCount++;
-            if (lineCount <= MaxLogLines)
+            lock (log)
             {
-                logLines.AppendLine(e.Data);
-                onLog(e.Data);
-            }
-            else if (lineCount == MaxLogLines + 1)
-            {
-                var truncMsg = "[log truncated at 5000 lines]";
-                logLines.AppendLine(truncMsg);
-                onLog(truncMsg);
+                if (log.Count < MaxLogLines) { log.Add(e.Data); onLog(e.Data); }
+                else if (log.Count == MaxLogLines) { log.Add("[log truncated at 5000 lines]"); onLog(log[^1]); }
             }
         };
+        child.ErrorDataReceived += (_, e) => { if (e.Data is not null) lock (stderr) stderr.AppendLine(e.Data); };
 
+        double peakMiB = 0;
+        string? guard = null;
         try
         {
-            // Send job path to child via stdin
-            await child.StandardInput.WriteLineAsync(jobPath);
-            await child.StandardInput.FlushAsync(cancel);
-            child.StandardInput.Close();
             child.BeginOutputReadLine();
+            child.BeginErrorReadLine();
+            await child.StandardInput.WriteLineAsync(jobPath.AsMemory(), cancel).ConfigureAwait(false);
+            await child.StandardInput.FlushAsync(cancel).ConfigureAwait(false);
+            child.StandardInput.Close();
 
-            // RSS poll + timeout guard
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancel);
-            cts.CancelAfter(TimeSpan.FromSeconds(limits.TimeoutS));
-
-            var rssTask = Task.Run(async () =>
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancel);
+            timeout.CancelAfter(TimeSpan.FromSeconds(limits.TimeoutS));
+            var exited = child.WaitForExitAsync(CancellationToken.None);
+            while (!exited.IsCompleted)
             {
-                while (!child.HasExited)
+                try
                 {
-                    try
+                    child.Refresh();
+                    var rss = child.WorkingSet64 / 1048576.0;
+                    peakMiB = Math.Max(peakMiB, rss);
+                    if (rss > limits.MaxRssMiB)
                     {
-                        child.Refresh();
-                        var rssMiB = child.WorkingSet64 / 1_048_576L;
-                        if (rssMiB > limits.MaxRssMiB)
-                        {
-                            onLog($"[OOM guard] RSS {rssMiB} MiB exceeds limit {limits.MaxRssMiB} MiB — killing");
-                            child.Kill(entireProcessTree: true);
-                            return "OOM";
-                        }
+                        guard = "OOM";
+                        onLog($"[OOM guard] RSS {rss:F0} MiB exceeds limit {limits.MaxRssMiB} MiB, killing");
+                        Kill(child);
+                        break;
                     }
-                    catch { /* child may already be gone */ }
-                    await Task.Delay(250, cts.Token).ConfigureAwait(false);
                 }
-                return (string?)null;
-            }, cts.Token);
-
-            try
-            {
-                await child.WaitForExitAsync(cts.Token);
-            }
-            catch (OperationCanceledException)
-            {
-                // Timeout
-                try { child.Kill(entireProcessTree: true); } catch { }
-                return new SandboxResult
+                catch (InvalidOperationException) { break; /* exited between checks */ }
+                if (timeout.IsCancellationRequested)
                 {
-                    Ok = false,
-                    ErrorCode = "TIMEOUT",
-                    ErrorDetail = $"Exceeded {limits.TimeoutS}s wall-clock limit",
-                    Log = logLines.ToString(),
-                    ExitCode = -1,
-                };
+                    guard = cancel.IsCancellationRequested ? "CANCELLED" : "TIMEOUT";
+                    Kill(child);
+                    break;
+                }
+                await Task.WhenAny(exited, Task.Delay(250, CancellationToken.None)).ConfigureAwait(false);
             }
+            await exited.ConfigureAwait(false);   // WaitForExitAsync also drains redirected stdout/stderr
+            wall.Stop();
 
-            var oomReason = await rssTask;
-            if (oomReason is not null)
+            if (_cancelled.TryRemove(runId, out _)) guard = "CANCELLED";
+            IReadOnlyList<string> logCopy;
+            lock (log) logCopy = log.ToArray();
+            string err;
+            lock (stderr) err = stderr.ToString();
+
+            if (guard is not null)
             {
-                return new SandboxResult
+                return Fail(guard, guard switch
                 {
-                    Ok = false,
-                    ErrorCode = "OOM",
-                    ErrorDetail = $"RSS exceeded {limits.MaxRssMiB} MiB",
-                    Log = logLines.ToString(),
-                    ExitCode = child.ExitCode,
-                };
+                    "OOM" => $"Sandbox RSS exceeded {limits.MaxRssMiB} MiB. Retry at a coarser voxel size.",
+                    "TIMEOUT" => $"Exceeded {limits.TimeoutS}s wall-clock limit. Retry at a coarser voxel size.",
+                    _ => "Run cancelled",
+                }, logCopy, child, peakMiB, wall.ElapsedMilliseconds);
             }
-
             if (child.ExitCode != 0)
             {
-                return new SandboxResult
-                {
-                    Ok = false,
-                    ErrorCode = "SANDBOX_CRASH",
-                    ErrorDetail = $"Child exited with code {child.ExitCode}",
-                    Log = logLines.ToString(),
-                    ExitCode = child.ExitCode,
-                };
+                // The child reports typed failures as a JSON line on stderr; anything else is a crash (F3).
+                var (code, msg) = ParseChildError(err);
+                return Fail(code ?? "SANDBOX_CRASH",
+                    msg ?? $"Sandbox exited with code {child.ExitCode} without a typed error (native crash or killed)",
+                    logCopy, child, peakMiB, wall.ElapsedMilliseconds);
             }
-
-            return new SandboxResult { Ok = true, Log = logLines.ToString(), ExitCode = 0 };
+            return new SandboxResult { Ok = true, Log = logCopy, ExitCode = 0, PeakRssMiB = peakMiB, WallMs = wall.ElapsedMilliseconds };
         }
         finally
         {
-            if (!child.HasExited) { try { child.Kill(entireProcessTree: true); } catch { } }
+            _active.TryRemove(runId, out _);
+            Kill(child);
             child.Dispose();
         }
     }
 
-    public void CancelCurrentChild()
+    public bool Cancel(string runId)
     {
-        // Used by engine.cancel — kills current spare if it's executing
-        // In production, we track the active child separately; stub for M1
+        if (!_active.TryGetValue(runId, out var p)) return false;
+        _cancelled[runId] = true;
+        Kill(p);
+        return true;
+    }
+
+    private static SandboxResult Fail(string code, string detail, IReadOnlyList<string> log, Process child, double peak, long ms)
+        => new()
+        {
+            Ok = false, ErrorCode = code, ErrorDetail = detail, Log = log,
+            ExitCode = child.HasExited ? child.ExitCode : -1, PeakRssMiB = peak, WallMs = ms,
+        };
+
+    internal static (string? Code, string? Message) ParseChildError(string stderr)
+    {
+        foreach (var line in stderr.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Reverse())
+        {
+            if (!line.StartsWith('{')) continue;
+            try
+            {
+                using var doc = JsonDocument.Parse(line);
+                if (doc.RootElement.TryGetProperty("error", out var e) && e.ValueKind == JsonValueKind.String)
+                    return (e.GetString(), doc.RootElement.TryGetProperty("message", out var m) ? m.GetString() : null);
+            }
+            catch (JsonException) { /* not a typed error line */ }
+        }
+        return (null, null);
     }
 
     private Process SpawnChild()
@@ -182,40 +196,60 @@ public sealed class SandboxPool : IDisposable
             UseShellExecute = false,
             RedirectStandardInput = true,
             RedirectStandardOutput = true,
-            RedirectStandardError = false,
+            RedirectStandardError = true,
             CreateNoWindow = true,
+            WorkingDirectory = Path.GetTempPath(),   // child switches to its run folder once it reads the job
         };
-        var p = Process.Start(psi) ?? throw new InvalidOperationException($"Failed to start sandbox: {_sandboxBin}");
-        return p;
+        // docs/04 §8: no inherited secrets. Start from an empty environment and pass only what the runtime needs.
+        var keep = new[] { "SystemRoot", "windir", "SystemDrive", "TEMP", "TMP", "PATH", "PATHEXT", "ComSpec",
+                           "NUMBER_OF_PROCESSORS", "PROCESSOR_ARCHITECTURE", "DOTNET_ROOT", "LOCALAPPDATA", "USERPROFILE",
+                           "HOME", "LANG" };
+        var src = psi.Environment.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
+        psi.Environment.Clear();
+        foreach (var k in keep)
+            if (src.TryGetValue(k, out var v) && v is not null) psi.Environment[k] = v;
+        psi.Environment["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1";
+        return Process.Start(psi) ?? throw new InvalidOperationException($"Failed to start sandbox: {_sandboxBin}");
     }
 
     private void PrewarmSpare()
     {
         if (_disposed) return;
-        try
+        Process spare;
+        try { spare = SpawnChild(); }
+        catch (System.ComponentModel.Win32Exception ex)
         {
-            var spare = SpawnChild();
-            lock (_lock)
-            {
-                if (_disposed) { try { spare.Kill(); } catch { } spare.Dispose(); return; }
-                if (_spare != null) { try { _spare.Kill(); } catch { } _spare.Dispose(); }
-                _spare = spare;
-            }
+            Console.Error.WriteLine($"[engine] sandbox prewarm failed: {ex.Message}");
+            return;
         }
-        catch { /* prewarm is best-effort */ }
+        lock (_lock)
+        {
+            if (_disposed || _spare is { HasExited: false }) { Kill(spare); spare.Dispose(); return; }
+            _spare?.Dispose();
+            _spare = spare;
+        }
+    }
+
+    private static int SafePid(Process p)
+    {
+        try { return p.HasExited ? -1 : p.Id; }
+        catch (InvalidOperationException) { return -1; }
+    }
+
+    private static void Kill(Process p)
+    {
+        try { if (!p.HasExited) p.Kill(entireProcessTree: true); }
+        catch (InvalidOperationException) { /* already gone */ }
+        catch (System.ComponentModel.Win32Exception) { /* exiting */ }
     }
 
     public void Dispose()
     {
-        _disposed = true;
         lock (_lock)
         {
-            if (_spare != null)
-            {
-                try { _spare.Kill(); } catch { }
-                _spare.Dispose();
-                _spare = null;
-            }
+            _disposed = true;
+            if (_spare is not null) { Kill(_spare); _spare.Dispose(); _spare = null; }
         }
+        foreach (var p in _active.Values) Kill(p);
     }
 }
