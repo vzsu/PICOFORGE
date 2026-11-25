@@ -58,6 +58,14 @@ internal sealed class SandboxPool : IDisposable
 
     public IReadOnlyList<int> ActivePids => _active.Values.Select(SafePid).Where(p => p > 0).ToArray();
 
+    /// <summary>Job-object limits of running children, for engine.ping (ENG-MEM-02).</summary>
+    public IReadOnlyList<object> ActiveJobs =>
+        _jobs.Values.Select(j => (object)new { pid = j.Pid, memLimitMiB = j.MemLimitMiB, activeProcessLimit = j.ProcessLimit })
+            .ToArray();
+
+    private readonly ConcurrentDictionary<string, (int Pid, long MemLimitMiB, int ProcessLimit)> _jobs =
+        new(StringComparer.Ordinal);
+
     public async Task<SandboxResult> RunAsync(string runId, string jobPath, RunLimits limits,
         Action<string> onLog, CancellationToken cancel)
     {
@@ -71,6 +79,11 @@ internal sealed class SandboxPool : IDisposable
         }
         if (_prewarm) _ = Task.Run(PrewarmSpare, CancellationToken.None);
         _active[runId] = child;
+        // Hard OS limit for this job (docs/04 §8). The spare was spawned before the limits were known,
+        // so the job is attached here, before the child reads its job file.
+        using var job = SandboxJob.Create(limits.MaxRssMiB);
+        job?.Assign(child);
+        if (job is not null) _jobs[runId] = (SafePid(child), job.MemLimitMiB, SandboxJob.ActiveProcessLimit);
 
         var log = new List<string>();
         var stderr = new StringBuilder();
@@ -126,6 +139,12 @@ internal sealed class SandboxPool : IDisposable
             wall.Stop();
 
             if (_cancelled.TryRemove(runId, out _)) guard = "CANCELLED";
+            // The job cap fired between polls: allocation failed or the child died at the limit.
+            if (guard is null && child.ExitCode != 0 && job is not null && job.PeakProcessMemoryMiB >= job.MemLimitMiB * 0.97)
+            {
+                guard = "OOM";
+                peakMiB = Math.Max(peakMiB, job.PeakProcessMemoryMiB);
+            }
             IReadOnlyList<string> logCopy;
             lock (log) logCopy = log.ToArray();
             string err;
@@ -153,6 +172,7 @@ internal sealed class SandboxPool : IDisposable
         finally
         {
             _active.TryRemove(runId, out _);
+            _jobs.TryRemove(runId, out _);
             Kill(child);
             child.Dispose();
         }

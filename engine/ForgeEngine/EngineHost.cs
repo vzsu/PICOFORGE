@@ -118,6 +118,7 @@ internal sealed class EngineHost : IDisposable
             rssMiB = Math.Round(self.WorkingSet64 / 1048576.0, 1),
             children = _pool.ChildCount,
             activePids = _pool.ActivePids,
+            activeJobs = _pool.ActiveJobs,
         };
     }
 

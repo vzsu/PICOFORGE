@@ -171,4 +171,67 @@ public class HostIntegrationTests(ITestOutputHelper output)
         var unsupported = await eng.CallAsync("engine.convert", new JsonObject { ["target"] = dir, ["format"] = "3mf", ["outPath"] = outPath + ".3mf" });
         Assert.Equal("UNSUPPORTED_FORMAT", unsupported["error"]!["code"]!.GetValue<string>());
     }
+
+    [Fact(DisplayName = "ENG-MEM-01 build over the memory cap is killed and reported OOM with a voxel-size hint")]
+    public async Task ENG_MEM_01()
+    {
+        using var eng = new EngineProcess();
+        await eng.ResultAsync("engine.hello");
+        // 200 mm cube at 0.2 mm voxels: far more than a 200 MiB cap (an idle sandbox is ~85 MiB).
+        var p = new JsonObject
+        {
+            ["code"] = Designs.Cube,
+            ["runId"] = "mem-" + Guid.NewGuid().ToString("N"),
+            ["outDir"] = Paths.NewRunDir("mem"),
+            ["params"] = new JsonObject { ["size"] = 200 },
+            ["voxelMm"] = 0.2,
+            ["exports"] = new JsonArray("stl"),
+            ["limits"] = new JsonObject { ["timeoutS"] = 120, ["maxRssMiB"] = 200 },
+        };
+        var r = await eng.ResultAsync("engine.run", p, timeoutS: 150);
+        output.WriteLine(r.ToJsonString());
+        Assert.False(r["ok"]!.GetValue<bool>(), "an over-cap build must not succeed");
+        var error = r["error"]!;
+        Assert.Equal("OOM", error["code"]!.GetValue<string>());
+        Assert.Contains("voxel", error.ToJsonString(), StringComparison.OrdinalIgnoreCase);
+
+        // Containment: the host answers and has no child left (docs/04 §7 F3).
+        var ping = await eng.ResultAsync("engine.ping", timeoutS: 5);
+        Assert.True(ping["ok"]!.GetValue<bool>());
+        Assert.Empty(ping["activePids"]!.AsArray());
+    }
+
+    [Fact(DisplayName = "ENG-MEM-02 the running sandbox sits in a Windows job object with a hard memory cap")]
+    public async Task ENG_MEM_02()
+    {
+        // Windows is the primary platform (docs/11 §7); Linux limits (cgroups/seccomp) are a P9 item.
+        Assert.True(OperatingSystem.IsWindows(), "ENG-MEM-02 targets the Windows job object");
+        using var eng = new EngineProcess();
+        await eng.ResultAsync("engine.hello");
+        var p = new JsonObject
+        {
+            ["code"] = Designs.Slow,
+            ["runId"] = "job-" + Guid.NewGuid().ToString("N"),
+            ["outDir"] = Paths.NewRunDir("job"),
+            ["params"] = new JsonObject(),
+            ["voxelMm"] = 0.5,
+            ["exports"] = new JsonArray("stl"),
+            ["limits"] = new JsonObject { ["timeoutS"] = 120, ["maxRssMiB"] = 1000 },
+        };
+        var run = eng.CallAsync("engine.run", p, timeoutS: 120);
+        var deadline = DateTime.UtcNow.AddSeconds(60);
+        while (!eng.Notifications.Any(n => n["payload"]?["line"]?.ToString() == "iso-started"))
+        {
+            Assert.True(DateTime.UtcNow < deadline, "build never started");
+            await Task.Delay(100);
+        }
+        var ping = await eng.ResultAsync("engine.ping", timeoutS: 5);
+        var jobs = ping["activeJobs"]!.AsArray();
+        Assert.Single(jobs);
+        // hard cap = RSS cap + 25 % headroom (the RSS poll stays the primary, friendlier guard)
+        Assert.Equal(1250, jobs[0]!["memLimitMiB"]!.GetValue<long>());
+        Assert.Equal(1, jobs[0]!["activeProcessLimit"]!.GetValue<int>());
+        await eng.CallAsync("engine.cancel", new JsonObject { ["runId"] = p["runId"]!.GetValue<string>() });
+        await run;
+    }
 }

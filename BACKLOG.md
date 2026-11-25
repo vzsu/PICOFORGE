@@ -21,7 +21,8 @@ Format: `- [ ] P<phase> · <item> · tests: <IDs> · spec: docs/NN §x`. Top unb
 - [x] P0 · (✓ 2026-11-25, lead) App end to end with mock model + real engine (deno task start → fan prompt → mesh in viewport) · tests: UI-FLOW-fan-mock, CHAT-RUN-01/02, HARNESS-MOCK-01..05, STATIC-ROOT-01, DB-RUNSTATE-01, MIGRATE-0002-01
 - [x] P0 · (✓ 2026-11-25) B-002 real app typecheck in `check` (DEV-TASKS-02)
 - [x] P0 · (✓ 2026-11-25) min-wall probe by EDT: fan 19.4 → 6.1 s (ENG-MINWALL-01..03, -perf)
-- [ ] P0 · Windows job-object memory/process limits for the sandbox (host polls RSS every 250 ms today) · tests: ENG-MEM-01 · spec: docs/04 §8
+- [x] P0 · (✓ ENG-MEM-01, ENG-MEM-02) Windows job-object memory/process limits for the sandbox · spec: docs/04 §8
+- [ ] P9 · Linux sandbox limits (cgroups + seccomp) · spec: docs/04 §8
 - [ ] P2 · Fan param rebuild 6.1 s vs < 3 s (est.) budget: `Stats.OfMesh` edge dictionary + double `mshAsMesh` now dominate stats (gyroid 7.9 s) · spec: docs/04 §9
 - [ ] P3 · First shape preview ≤ 10 s: today mesh visible at 17.9 s (mock, SwiftShader) · tests: PERF-TTFP-02
 - [ ] P2 · Smoother thin-blade edges (serrated tips at 0.5 mm voxels) — investigate engine smoothing/voxel size for blades
