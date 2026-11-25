@@ -230,8 +230,7 @@ export async function driveRun(
         continue;
       }
 
-      // deno-lint-ignore no-explicit-any
-      const result = await tool.execute(call.input as any, runCtx);
+      const result = await tool.execute(call.input, runCtx);
       let resultText: string;
 
       if (!result.ok) {
