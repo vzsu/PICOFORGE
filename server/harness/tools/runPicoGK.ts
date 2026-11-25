@@ -1,7 +1,32 @@
 // server/harness/tools/runPicoGK.ts — tool 5.3
 // LLM_HARNESS §5.3: compile + execute C# design, return typed ladder result
 
-import { err, makeDef, ok, type RunCtx, type ToolModule, z } from "./_base.ts";
+import {
+  type AcceptedBrief,
+  err,
+  makeDef,
+  ok,
+  type RunCtx,
+  runFolder,
+  type ToolModule,
+  z,
+} from "./_base.ts";
+import {
+  engineCompileResultSchema,
+  engineRunResultSchema,
+  unwrapEngineReply,
+} from "../../engine/client.ts";
+import { validateGeometry } from "../validate.ts";
+
+/**
+ * Evaluated brief parameters as `{name: number}` for `engine.run` (08 §3: C# reads `ctx.P(name)`;
+ * the engine never parses expressions). No accepted brief → no parameters.
+ */
+export function briefParams(brief: AcceptedBrief | undefined): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const p of brief?.parameters ?? []) out[p.name] = p.value;
+  return out;
+}
 
 const zodInput = z.object({
   code: z.string().min(10).max(200_000),
@@ -110,39 +135,66 @@ export const runPicoGKTool: ToolModule<Input> = {
         });
       }
 
-      const engine = ctx.engineClient as {
-        compile(
-          code: string,
-          codeId?: string,
-        ): Promise<{ ok: boolean; value?: unknown; error?: Error }>;
-        run(params: unknown): Promise<{ ok: boolean; value?: unknown; error?: Error }>;
-      };
+      const engine = ctx.engineClient;
 
       // L1: Roslyn compile
       const codeId = `run-${ctx.runId}`;
-      const compileResult = await engine.compile(code, codeId);
-      if (!compileResult.ok) {
-        const compileError = (compileResult as { error?: Record<string, unknown> }).error ?? {};
-        return ok({ ok: false, error: { code: "COMPILE_ERROR", ...compileError } });
+      const compileReply = unwrapEngineReply(await engine.compile(code, codeId), "COMPILE_ERROR");
+      if (!compileReply.ok) return ok({ ok: false, error: compileReply.error });
+      if (compileReply.value !== undefined) {
+        const compiled = engineCompileResultSchema.safeParse(compileReply.value);
+        if (!compiled.success) {
+          return ok({
+            ok: false,
+            error: { code: "ENGINE_PROTOCOL", detail: compiled.error.message },
+          });
+        }
+        if (!compiled.data.ok) {
+          return ok({
+            ok: false,
+            error: { code: "COMPILE_ERROR", diagnostics: compiled.data.diagnostics.slice(0, 12) },
+          });
+        }
       }
 
-      // L2: Execute
-      const runResult = await engine.run({
-        codeId,
-        runId: ctx.runId,
-        params: {}, // from brief — wired in M3
-        exports: ["stl"],
-        outDir: `./runs/${ctx.runId}`,
-      });
+      // L2: Execute — brief parameters reach the part code via ctx.P(name)
+      const runReply = unwrapEngineReply(
+        await engine.run({
+          codeId,
+          runId: ctx.runId,
+          params: briefParams(ctx.brief),
+          exports: ["stl"],
+          outDir: runFolder(ctx),
+        }),
+        "RUNTIME_ERROR",
+      );
+      if (!runReply.ok) return ok({ ok: false, error: runReply.error });
 
-      if (!runResult.ok) {
-        return ok({ ok: false, error: (runResult as { error?: unknown }).error });
+      const built = engineRunResultSchema.safeParse(runReply.value);
+      if (!built.success) {
+        return ok({ ok: false, error: { code: "ENGINE_PROTOCOL", detail: built.error.message } });
+      }
+      if (!built.data.ok) {
+        return ok({ ok: false, error: built.data.error ?? { code: "RUNTIME_ERROR" } });
+      }
+      const stats = built.data.stats;
+      if (!stats) {
+        return ok({
+          ok: false,
+          error: { code: "ENGINE_PROTOCOL", detail: "build ok without stats" },
+        });
       }
 
-      const stats = (runResult as { value?: { stats?: unknown } }).value?.stats;
+      // L3: geometry checks against the accepted brief (F4: repair with measured numbers)
+      const geometry = validateGeometry(stats, ctx.brief);
+      if (!geometry.ok) {
+        return ok({
+          ok: false,
+          error: { code: geometry.error.code, failures: geometry.error.failures, stats },
+        });
+      }
 
-      // L3: Geometry checks — done inside Runner.cs; stats carry the result
-      // Store artifact id for later tools
+      // Only geometry that clears L0–L3 becomes the artifact later tools work on
       ctx.lastArtifactId = ctx.runId;
 
       return ok({
@@ -150,8 +202,8 @@ export const runPicoGKTool: ToolModule<Input> = {
         artifactId: ctx.runId,
         notes,
         stats,
-        logTail: [],
-        warnings: [],
+        logTail: built.data.log ?? [],
+        warnings: geometry.value.warnings,
       });
     } catch (e) {
       return err(e instanceof Error ? e : new Error(String(e)));

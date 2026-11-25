@@ -2,6 +2,7 @@
 // LLM_HARNESS §5.4: bbox, volume, section, wall_min, ray
 
 import { err, makeDef, ok, type RunCtx, type ToolModule, z } from "./_base.ts";
+import { engineInspectResultSchema, unwrapEngineReply } from "../../engine/client.ts";
 
 const opSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("bbox") }),
@@ -63,30 +64,26 @@ export const inspectGeometryTool: ToolModule<Input> = {
       }
 
       if (!ctx.lastArtifactId) {
-        return ok({ error: "No geometry available — run run_picogk first" });
-      }
-
-      if (!ctx.engineClient) {
         return ok({
-          stub: true,
-          ops: parsed.data.ops.map((op) => ({ type: op.type, result: "ENGINE_NOT_READY" })),
+          error: { code: "NO_GEOMETRY", detail: "No geometry available — run run_picogk first" },
         });
       }
 
-      const engine = ctx.engineClient as {
-        inspect(
-          artifactId: string,
-          ops: unknown[],
-        ): Promise<{ ok: boolean; value?: unknown; error?: Error }>;
-      };
-
-      const result = await engine.inspect(ctx.lastArtifactId, parsed.data.ops);
-      if (!result.ok) {
-        return ok({
-          error: (result as { error?: { message?: string } }).error?.message ?? "inspect failed",
-        });
+      if (!ctx.engineClient?.inspect) {
+        return ok({ error: { code: "ENGINE_NOT_READY", detail: "Engine not connected" } });
       }
-      return ok(result.value);
+
+      const reply = unwrapEngineReply(
+        await ctx.engineClient.inspect({ target: ctx.lastArtifactId, ops: parsed.data.ops }),
+        "INSPECT_FAILED",
+      );
+      if (!reply.ok) return ok({ error: reply.error });
+
+      const measured = engineInspectResultSchema.safeParse(reply.value);
+      if (!measured.success) {
+        return ok({ error: { code: "ENGINE_PROTOCOL", detail: measured.error.message } });
+      }
+      return ok(measured.data);
     } catch (e) {
       return err(e instanceof Error ? e : new Error(String(e)));
     }

@@ -17,6 +17,7 @@ export const REPAIR_BUDGETS: Record<string, number> = {
   ENVELOPE_EXCEEDED: 2,
   BELOW_MIN_WALL: 2,
   BRIEF_MISMATCH: 2,
+  TRIANGLE_COUNT: 2,
 };
 
 // ─── Per-attempt strategy text per LLM_HARNESS §8 ────────────────────────────
@@ -76,6 +77,10 @@ const STRATEGIES: Record<string, string[]> = {
   BRIEF_MISMATCH: [
     "Align the geometry dimensions with the brief parameters. Read the governing dimensions from ctx.Params — do not hardcode values the brief already defines.",
     "Re-derive all key dimensions from ctx.Params and verify the bbox matches the brief envelope.",
+  ],
+  TRIANGLE_COUNT: [
+    "The mesh triangle count is outside the sane range shown in the error. Zero means nothing was meshed — check the part is non-empty; too many means needless detail — coarsen the voxel size or drop tiny features.",
+    "Simplify: remove the finest repeated feature (lattice, small holes) and note it in `notes`.",
   ],
 };
 

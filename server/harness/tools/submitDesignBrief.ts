@@ -262,6 +262,9 @@ export const submitDesignBriefTool: ToolModule<Input> = {
         });
       }
 
+      // Later tools read the accepted brief: run_picogk params (08 §3), L3 geometry checks
+      ctx.brief = data;
+
       // Persist brief to run row (M3 DB wiring)
       if (ctx.db) {
         await (ctx.db as { upsertBrief(runId: string, brief: unknown): Promise<void> })

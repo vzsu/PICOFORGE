@@ -4,10 +4,19 @@
 import { z } from "npm:zod@^3.23.0";
 import { ToolDefinition } from "../anthropic.ts";
 import { err, ok, Result } from "../../domain/result.ts";
+import type { EngineApi } from "../../engine/client.ts";
 
 export type { ToolDefinition };
 export { err, ok, z };
 export type { Result };
+
+/** The parts of an accepted design brief that later tools need (set by submit_design_brief). */
+export interface AcceptedBrief {
+  parameters: Array<{ name: string; value: number; unit: string }>;
+  envelope_mm: { x: number; y: number; z: number };
+  voxel_size_mm: number;
+  material: string;
+}
 
 /** Every run context the tools need (engine, db, ws hub refs). */
 export interface RunCtx {
@@ -16,10 +25,18 @@ export interface RunCtx {
   conversationId: string;
   signal: AbortSignal;
   // Injected by orchestrator before calling tools
-  engineClient?: unknown; // EngineClient from engine/client.ts — typed in M3
+  engineClient?: EngineApi; // only engine/client.ts speaks engine RPC
   db?: unknown; // DB from db/db.ts — typed in M3
   wsHub?: unknown; // WsHub from ws/hub.ts — typed in M4
+  /** Root under which run folders live (`<dataDir>/runs/<runId>`). Defaults to ".". */
+  dataDir?: string;
+  brief?: AcceptedBrief; // set by submit_design_brief on acceptance
   lastArtifactId?: string; // set by run_picogk on success
+}
+
+/** Run folder for a run: `<dataDir>/runs/<runId>` (forward slashes; served under `/files/`). */
+export function runFolder(ctx: Pick<RunCtx, "dataDir" | "runId">): string {
+  return `${ctx.dataDir ?? "."}/runs/${ctx.runId}`;
 }
 
 /** Shape every tool module must export. */
@@ -28,7 +45,8 @@ export interface ToolModule<TInput> {
   description: string;
   zodInput: z.ZodType<TInput, z.ZodTypeDef, unknown>;
   jsonSchema: ToolDefinition["input_schema"];
-  execute(input: TInput, ctx: RunCtx): Promise<Result<unknown, Error>>;
+  /** Input is untrusted model output: every tool zod-parses it first. */
+  execute(input: unknown, ctx: RunCtx): Promise<Result<unknown, Error>>;
   /** Assembled Anthropic-format tool definition. */
   readonly def: ToolDefinition;
 }

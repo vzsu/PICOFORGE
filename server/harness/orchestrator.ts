@@ -1,7 +1,9 @@
 // server/harness/orchestrator.ts — LLM_HARNESS §6 orchestrator state machine
 // driveRun: tool budget, repair loop, cancel, queue, state emission
 
+import { z } from "zod";
 import { makeLogger } from "../log.ts";
+import { engineErrorSchema } from "../engine/client.ts";
 import {
   type AnthropicMessage,
   createMessageStream,
@@ -21,6 +23,15 @@ import { buildContextMessages, type HistoryEntry } from "./prompts/context.ts";
 import { buildSystemPrompt } from "./prompts/system.ts";
 
 const log = makeLogger("harness.orchestrator");
+
+// ─── Tool result shapes the loop reacts to (validated, never cast) ───────────
+
+const askUserResultSchema = z.object({ __askUser: z.literal(true) }).passthrough();
+
+const buildResultSchema = z.discriminatedUnion("ok", [
+  z.object({ ok: z.literal(true), artifactId: z.string(), stats: z.unknown() }).passthrough(),
+  z.object({ ok: z.literal(false), error: engineErrorSchema }).passthrough(),
+]);
 
 // ─── Settings (overridden by DB settings in M3) ──────────────────────────────
 
@@ -230,17 +241,18 @@ export async function driveRun(
         continue;
       }
 
-      // deno-lint-ignore no-explicit-any
-      const result = await tool.execute(call.input as any, runCtx);
+      const result = await tool.execute(call.input, runCtx);
       let resultText: string;
 
       if (!result.ok) {
         resultText = JSON.stringify({ error: result.error.message });
       } else {
-        const value = result.value as Record<string, unknown>;
+        const value = result.value;
+        const askUser = askUserResultSchema.safeParse(value);
+        const build = call.name === "run_picogk" ? buildResultSchema.safeParse(value) : null;
 
         // Handle ask_user terminal
-        if (value.__askUser) {
+        if (askUser.success) {
           toolResultContent.push({
             type: "tool_result",
             tool_use_id: call.id,
@@ -252,9 +264,9 @@ export async function driveRun(
         }
 
         // run_picogk repair loop
-        if (call.name === "run_picogk" && value.ok === false) {
-          const runError = value.error as { code?: string } | undefined;
-          const errorCode = runError?.code ?? "UNKNOWN";
+        if (build?.success && !build.data.ok) {
+          const runError = build.data.error;
+          const errorCode = runError.code;
           repairAttempts[errorCode] = (repairAttempts[errorCode] ?? 0) + 1;
 
           if (isBudgetExhausted(errorCode, repairAttempts[errorCode])) {
@@ -268,10 +280,10 @@ export async function driveRun(
             });
             resultText = repairHint;
           }
-        } else if (call.name === "run_picogk" && value.ok === true) {
-          // Success — reset repair counters, emit geometry ready
+        } else if (build?.success && build.data.ok) {
+          // Success (cleared L0–L3) — reset repair counters, emit geometry ready
           for (const key of Object.keys(repairAttempts)) delete repairAttempts[key];
-          callbacks?.onGeometryReady?.(runId, value.artifactId as string, value.stats);
+          callbacks?.onGeometryReady?.(runId, build.data.artifactId, build.data.stats);
           resultText = JSON.stringify(value);
         } else {
           resultText = JSON.stringify(value);
