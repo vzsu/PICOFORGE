@@ -107,9 +107,9 @@ export function ViewportPanel({ stlUrl = null, readout, live = false }: Viewport
       engineRef.current = null;
       if (window.__pf) delete window.__pf;
     };
-    // `live` is fixed for the page's lifetime (isLiveMode reads the URL once).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // `live` is fixed for the page's lifetime (isLiveMode reads the URL once), so the engine is
+    // created once; listing it keeps the dependency honest without re-creating anything.
+  }, [live]);
 
   // Live mode: fetch and bake each new validated STL (the engine keeps T0 render-on-demand rules).
   useEffect(() => {

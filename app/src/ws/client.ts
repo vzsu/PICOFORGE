@@ -26,6 +26,19 @@ export interface WsEvent {
 }
 
 export type WsEventHandler = (event: WsEvent) => void;
+
+const EVENT_TYPES: readonly ServerEventType[] = [
+  "hello", "chat.delta", "chat.block", "chat.done", "run.status", "step.start", "step.log",
+  "step.done", "geometry.ready", "viewport.capture.request", "ask_user", "message.created",
+  "error", "pong",
+];
+
+/** A server frame: an object with a known `type` and a numeric `seq` (fields narrowed by readers). */
+export function isWsEvent(v: unknown): v is WsEvent {
+  return typeof v === "object" && v !== null && !Array.isArray(v) &&
+    "type" in v && typeof v.type === "string" && (EVENT_TYPES as readonly string[]).includes(v.type) &&
+    "seq" in v && typeof v.seq === "number";
+}
 export type WsStatusHandler = (connected: boolean) => void;
 
 const RECONNECT_DELAYS_MS = [500, 1000, 2000, 4000, 8000];
@@ -99,8 +112,11 @@ export class WsClient {
 
     ws.onmessage = (ev: MessageEvent) => {
       try {
-        const event = JSON.parse(ev.data as string) as WsEvent;
-        if (typeof event.seq === "number") this._lastSeq = event.seq;
+        if (typeof ev.data !== "string") return;
+        const raw: unknown = JSON.parse(ev.data);
+        if (!isWsEvent(raw)) return; // unknown frame types are ignored, never trusted
+        const event = raw;
+        this._lastSeq = event.seq;
         for (const h of this._handlers) h(event);
       } catch {
         /* skip malformed */

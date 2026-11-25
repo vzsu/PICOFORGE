@@ -31,6 +31,9 @@ Format: `- [ ] P<phase> · <item> · tests: <IDs> · spec: docs/NN §x`. Top unb
 - [x] P0 · (✓ server; app still has a few) Remove `as` casts in server code (SETTINGS-PATCH-01, ENG-CLIENT-TIMEOUT-01, B-006..B-009) · spec: CLAUDE.md #2
 - [ ] P0 · SPEC-GAP: settle `engine.build` vs `engine.run`; add `engine.convert` to docs/04 §5
 
+- [ ] P4 · Port or delete the pre-P0 amber UI (chat/, panels/, state/chatStore.ts, viewport/ViewportEngine.ts, ViewportPane.tsx, GpuProbe.ts); it still has `as` casts · spec: docs/02, CLAUDE.md #2
+- [ ] P0 · Wire `deno task bench` to real benches (engine baselines today come from ForgeEngine.Tests with FORGE_BENCH_OUT) · spec: docs/11 §6
+
 ## P1 · Contracts
 - [ ] P1 · Command and event schemas in `server/domain/`; generated client types · tests: protocol round-trips
 - [ ] P1 · `PTS1` codec (server + client) · tests: PREVIEW-CODEC-01, -02
