@@ -25,7 +25,8 @@ Format: `- [ ] P<phase> · <item> · tests: <IDs> · spec: docs/NN §x`. Top unb
 - [ ] P2 · Fan param rebuild 6.1 s vs < 3 s (est.) budget: `Stats.OfMesh` edge dictionary + double `mshAsMesh` now dominate stats (gyroid 7.9 s) · spec: docs/04 §9
 - [ ] P3 · First shape preview ≤ 10 s: today mesh visible at 17.9 s (mock, SwiftShader) · tests: PERF-TTFP-02
 - [ ] P2 · Smoother thin-blade edges (serrated tips at 0.5 mm voxels) — investigate engine smoothing/voxel size for blades
-- [ ] P0 · FAIL-F15/F16 drills for new failure rows · spec: docs/04 §7
+- [x] P0 · (✓ FAIL-F15-01, FAIL-F16-01) FAIL-F15/F16 drills for new failure rows · spec: docs/04 §7
+- [ ] P1 · Repeated F15 (engine protocol errors) escalates to F5 restart · spec: docs/04 §7
 - [x] P0 · (✓ server; app still has a few) Remove `as` casts in server code (SETTINGS-PATCH-01, ENG-CLIENT-TIMEOUT-01, B-006..B-009) · spec: CLAUDE.md #2
 - [ ] P0 · SPEC-GAP: settle `engine.build` vs `engine.run`; add `engine.convert` to docs/04 §5
 
