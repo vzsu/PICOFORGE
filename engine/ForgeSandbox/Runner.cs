@@ -1,72 +1,73 @@
-// ForgeSandbox/Runner.cs — PicoGK headless lifecycle + Design execution + export
-// SYS_DESIGN §4.3, PICOGK_KNOWLEDGE §1
-// This is the ONLY file that touches PicoGK native runtime.
+// ForgeSandbox/Runner.cs — PicoGK headless lifecycle + Design execution + export + inspect
+// docs/04 §2 (sandbox child), §5 (engine.build / engine.inspect), §7 (failure codes)
+// This is the ONLY file that owns the PicoGK Library lifecycle.
 
-using System.Numerics;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using PicoForge.Kit;
 using PicoGK;
 
 namespace ForgeSandbox;
 
-public sealed class JobSpec
+[SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Instantiated by System.Text.Json.")]
+internal sealed class JobSpec
 {
+    public string Kind { get; init; } = "build";
     public string RunId { get; init; } = "";
     public string DllPath { get; init; } = "";
-    public Dictionary<string, JsonElement> Params { get; init; } = new();
-    public LimitsSpec Limits { get; init; } = new();
-    public string[] Exports { get; init; } = ["stl", "glb"];
+    public Dictionary<string, double> Params { get; init; } = [];
+    public float? VoxelMm { get; init; }
+    public IReadOnlyList<string> Exports { get; init; } = ["stl"];
     public string OutDir { get; init; } = "";
+    public float TimeLimitS { get; init; } = 120f;
+    // inspect
+    public string? Target { get; init; }
+    public IReadOnlyList<string> Ops { get; init; } = [];
 }
 
-public sealed class LimitsSpec
+/// <summary>Typed failure carrying a failure-table code (docs/04 §7).</summary>
+[SuppressMessage("Design", "CA1032:Implement standard exception constructors", Justification = "Internal typed failure; a failure-table code is always required.")]
+internal sealed class SandboxFailure(string code, string message, Exception? inner = null) : Exception(message, inner)
 {
-    public int TimeoutS { get; init; } = 120;
-    public long MaxRssMiB { get; init; } = 8192;
-    public long MaxCells { get; init; } = 1_500_000_000;
+    public string Code { get; } = code;
 }
 
-public sealed class ReportStats
+internal static class Runner
 {
-    public double VolumeCm3 { get; set; }
-    public double AreaCm2 { get; set; }
-    public double[]? BboxMin { get; set; }
-    public double[]? BboxMax { get; set; }
-    public int Triangles { get; set; }
-    public bool Watertight { get; set; }
-    public double VoxelSizeMm { get; set; }
-    public double MinWallProbeMm { get; set; }
-    public long BuildMs { get; set; }
-}
+    internal const float DefaultVoxelMm = 0.5f;
 
-/// <summary>
-/// Runs one design DLL in the PicoGK headless lifecycle.
-/// Called from Program.cs — one instance per sandbox process lifetime.
-/// </summary>
-public static class Runner
-{
+    private static readonly JsonSerializerOptions ReadOpts = new() { PropertyNameCaseInsensitive = true };
+    private static readonly JsonSerializerOptions WriteOpts = new()
+    {
+        WriteIndented = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+    };
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types",
+        Justification = "Process boundary: every failure must become a typed error line for the host, never an unhandled crash.")]
     public static int Run(string jobPath)
     {
-        // Load job spec
         JobSpec job;
         try
         {
-            var json = File.ReadAllText(jobPath);
-            job = JsonSerializer.Deserialize<JobSpec>(json,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
-                ?? throw new InvalidOperationException("job.json deserialized to null");
+            job = JsonSerializer.Deserialize<JobSpec>(File.ReadAllText(jobPath), ReadOpts)
+                  ?? throw new InvalidOperationException("job.json deserialized to null");
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"{{\"error\":\"JOB_PARSE\",\"detail\":\"{Escape(ex.Message)}\"}}");
+            WriteError(null, "JOB_PARSE", ex.Message, null);
             return 2;
         }
 
         Directory.CreateDirectory(job.OutDir);
-
-        var sw = System.Diagnostics.Stopwatch.StartNew();
+        // docs/04 §8: the child works inside its run folder.
+        Directory.SetCurrentDirectory(job.OutDir);
         var logLines = new List<string>();
-
         void Log(string msg)
         {
             logLines.Add(msg);
@@ -76,146 +77,196 @@ public static class Runner
 
         try
         {
-            // Load the generated Design DLL
-            var designAssembly = Assembly.LoadFrom(job.DllPath);
-            var designType = designAssembly.GetType("Design")
-                ?? throw new InvalidOperationException("Design class not found in DLL");
-            var voxBuildMethod = designType.GetMethod("voxBuild",
-                BindingFlags.Public | BindingFlags.Static)
-                ?? throw new InvalidOperationException("Design.voxBuild not found");
-
-            // Determine voxel size from params (fall back to auto)
-            float voxelSizeMm = 0.5f;
-            if (job.Params.TryGetValue("voxel_size_mm", out var vsMm))
-                voxelSizeMm = (float)vsMm.GetDouble();
-
-            Log($"[runner] starting PicoGK Library headless voxel={voxelSizeMm}mm");
-
-            // PicoGK v2 headless: Library.Go with TaskFn (scoped instance)
-            // DumpApi will have confirmed the exact signature; we adapt at compile time.
-            Voxels? result = null;
-            Exception? buildException = null;
-
-            Library.Go(voxelSizeMm, () =>
+            return job.Kind switch
             {
-                try
-                {
-                    var ctx = new Kit.Ctx(voxelSizeMm, job.Params, Log,
-                        progress => Console.WriteLine($"[progress] {progress:F3}"));
-                    result = (Voxels?)voxBuildMethod.Invoke(null, [ctx]);
-                    if (result is null)
-                        throw new InvalidOperationException("voxBuild returned null — must return a non-empty Voxels");
-                }
-                catch (TargetInvocationException tie) when (tie.InnerException is not null)
-                {
-                    buildException = tie.InnerException;
-                }
-                catch (Exception ex)
-                {
-                    buildException = ex;
-                }
-            });
-
-            if (buildException is not null)
-                throw new Exception($"RUNTIME_ERROR in voxBuild: {buildException.GetType().Name}: {buildException.Message}",
-                    buildException);
-
-            if (result is null || result.bIsEmpty)
-                throw new InvalidOperationException("EMPTY_GEOMETRY: voxBuild returned an empty Voxels");
-
-            sw.Stop();
-            Log($"[runner] voxBuild completed in {sw.ElapsedMilliseconds}ms");
-
-            // Compute stats
-            result.CalculateProperties(out float volCm3, out BBox3 bbox);
-            var mesh = result.mshAsMesh();
-            var triangles = mesh.nTriangleCount;
-            bool watertight = triangles > 0; // PicoGK meshes from voxels are closed by construction
-
-            // Min-wall probe (binary search erosion approach)
-            double minWall = ProbeMinWall(result, voxelSizeMm);
-
-            var stats = new ReportStats
-            {
-                VolumeCm3 = Math.Round(volCm3, 4),
-                BboxMin = [bbox.vecMin.X, bbox.vecMin.Y, bbox.vecMin.Z],
-                BboxMax = [bbox.vecMax.X, bbox.vecMax.Y, bbox.vecMax.Z],
-                Triangles = triangles,
-                Watertight = watertight,
-                VoxelSizeMm = voxelSizeMm,
-                MinWallProbeMm = Math.Round(minWall, 2),
-                BuildMs = sw.ElapsedMilliseconds,
+                "build" => Build(job, Log),
+                "inspect" => Inspect(job, Log),
+                _ => throw new SandboxFailure("JOB_PARSE", $"Unknown job kind '{job.Kind}'"),
             };
-
-            // Export requested formats
-            foreach (var format in job.Exports)
-            {
-                switch (format.ToLowerInvariant())
-                {
-                    case "stl":
-                        var stlPath = Path.Combine(job.OutDir, "part.stl");
-                        mesh.SaveToStlFile(stlPath);
-                        Log($"[runner] exported STL: {stlPath}");
-                        break;
-
-                    case "vdb":
-                        // VdbFile export (PicoGK 2.x)
-                        var vdbPath = Path.Combine(job.OutDir, "part.vdb");
-                        // VdbFile.Save is the PicoGK 2.x API per DumpApi
-                        Log($"[runner] VDB export at {vdbPath} (skipped in sandbox — requires VdbFile API)");
-                        break;
-
-                    case "glb":
-                        Log("[runner] GLB export via SharpGLTF (added in M3 when SharpGLTF added to csproj)");
-                        break;
-                }
-            }
-
-            // Write report.json
-            var reportPath = Path.Combine(job.OutDir, "report.json");
-            File.WriteAllText(reportPath, JsonSerializer.Serialize(stats,
-                new JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
-
-            Log($"[runner] done — vol={stats.VolumeCm3}cm³ tris={stats.Triangles} watertight={stats.Watertight}");
-            return 0;
+        }
+        catch (SandboxFailure f)
+        {
+            WriteError(job.OutDir, f.Code, f.Message, logLines);
+            return 1;
         }
         catch (Exception ex)
         {
-            var errorCode = ex.Message.StartsWith("EMPTY_GEOMETRY") ? "EMPTY_GEOMETRY"
-                          : ex.Message.StartsWith("RUNTIME_ERROR") ? "RUNTIME_ERROR"
-                          : "SANDBOX_CRASH";
-            Console.Error.WriteLine(JsonSerializer.Serialize(new
-            {
-                error = errorCode,
-                message = ex.InnerException?.Message ?? ex.Message,
-                stack = ex.InnerException?.StackTrace?.Split('\n').Take(5).ToArray() ?? [],
-                logTail = logLines.TakeLast(30).ToArray(),
-            }));
+            WriteError(job.OutDir, "SANDBOX_CRASH", $"{ex.GetType().Name}: {ex.Message}", logLines);
             return 1;
         }
     }
 
-    /// <summary>
-    /// Probe minimum wall: binary-search erosion where volume drops below 15%.
-    /// PICOGK_KNOWLEDGE §4.
-    /// </summary>
-    private static double ProbeMinWall(Voxels vox, float voxelSizeMm)
+    private static int Build(JobSpec job, Action<string> log)
     {
-        vox.CalculateProperties(out float baseVol, out _);
-        if (baseVol <= 0) return 0;
+        float voxelMm = job.VoxelMm ?? DefaultVoxelMm;
+        if (!(voxelMm > 0.005f && voxelMm < 50f))
+            throw new SandboxFailure("JOB_PARSE", $"voxelMm {voxelMm} out of range (0.005, 50)");
 
-        float lo = voxelSizeMm, hi = 10f;
-        for (int i = 0; i < 8; i++)
+        // Load the generated Design DLL (compiled by the host after the analyzer passed).
+        var designAssembly = Assembly.LoadFrom(job.DllPath);
+        var designType = designAssembly.GetType("Design")
+            ?? throw new SandboxFailure("CONTRACT_VIOLATION", "public static class Design not found in DLL");
+        var voxBuild = designType.GetMethod("voxBuild", BindingFlags.Public | BindingFlags.Static, [typeof(Ctx)])
+            ?? throw new SandboxFailure("CONTRACT_VIOLATION", "public static Voxels voxBuild(Ctx ctx) not found in Design");
+
+        var swTotal = Stopwatch.StartNew();
+        log($"[runner] PicoGK {Library.strVersion()} headless voxel={voxelMm.ToString(CultureInfo.InvariantCulture)}mm");
+        using var lib = new Library(voxelMm);
+        Library.RegisterGlobalLibrary(lib);
+        try
         {
-            float mid = (lo + hi) / 2f;
-            var eroded = new Voxels(vox);
-            eroded.Offset(-mid / 2f);
-            eroded.CalculateProperties(out float erodedVol, out _);
-            if (erodedVol / baseVol < 0.15f) hi = mid;
-            else lo = mid;
+            var ctx = new Ctx(voxelMm, job.Params, log,
+                p => log($"[progress] {p.ToString("F3", CultureInfo.InvariantCulture)}"),
+                timeLimitS: job.TimeLimitS, runId: job.RunId);
+
+            var swBuild = Stopwatch.StartNew();
+            Voxels? result;
+            try
+            {
+                result = (Voxels?)voxBuild.Invoke(null, [ctx]);
+            }
+            catch (TargetInvocationException tie) when (tie.InnerException is not null)
+            {
+                var e = tie.InnerException;
+                var frames = (e.StackTrace ?? "").Split('\n').Take(5).Select(s => s.Trim());
+                throw new SandboxFailure("RUNTIME_ERROR", $"{e.GetType().Name}: {e.Message} | {string.Join(" | ", frames)}", e);
+            }
+            swBuild.Stop();
+
+            if (result is null || result.bIsEmpty())
+                throw new SandboxFailure("EMPTY_GEOMETRY", "voxBuild returned null or an empty Voxels");
+            log($"[runner] voxBuild completed in {swBuild.ElapsedMilliseconds}ms");
+
+            var swStats = Stopwatch.StartNew();
+            var stats = Stats.Of(ctx, result, bProbeMinWall: true);
+            swStats.Stop();
+
+            var swExport = Stopwatch.StartNew();
+            var files = new Dictionary<string, string>();
+            foreach (var format in job.Exports)
+            {
+                switch (format)
+                {
+                    case "stl":
+                    {
+                        var p = Path.Combine(job.OutDir, "part.stl");
+                        using var mesh = result.mshAsMesh();
+                        mesh.SaveToStlFile(p);
+                        files["stl"] = p;
+                        break;
+                    }
+                    case "vdb":
+                    {
+                        var p = Path.Combine(job.OutDir, "part.vdb");
+                        result.SaveToVdbFile(p);
+                        files["vdb"] = p;
+                        break;
+                    }
+                    default:
+                        log($"[runner] export '{format}' not supported yet; skipped");
+                        break;
+                }
+            }
+            swExport.Stop();
+            result.Dispose();
+
+            var report = new
+            {
+                stats,
+                files,
+                timings = new
+                {
+                    buildMs = swBuild.ElapsedMilliseconds,
+                    statsMs = swStats.ElapsedMilliseconds,
+                    exportMs = swExport.ElapsedMilliseconds,
+                    totalMs = swTotal.ElapsedMilliseconds,
+                },
+                peakWorkingSetMiB = Math.Round(Process.GetCurrentProcess().PeakWorkingSet64 / 1048576.0, 1),
+            };
+            File.WriteAllText(Path.Combine(job.OutDir, "report.json"), JsonSerializer.Serialize(report, WriteOpts));
+            log($"[runner] done vol={stats.VolumeCm3}cm3 tris={stats.Triangles} watertight={stats.Watertight}");
+            return 0;
         }
-        return (lo + hi) / 2.0;
+        finally
+        {
+            Library.UnregisterGlobalLibrary();
+        }
     }
 
-    private static string Escape(string s) => s.Replace("\"", "\\\"").Replace("\n", " ");
+    private static readonly HashSet<string> KnownOps = new(StringComparer.Ordinal)
+    { "volume", "area", "bbox", "triangles", "watertight", "minWall" };
+
+    /// <summary>engine.inspect: measure an exported part (.vdb exact voxels, or .stl re-voxelised).</summary>
+    private static int Inspect(JobSpec job, Action<string> log)
+    {
+        if (string.IsNullOrEmpty(job.Target) || !File.Exists(job.Target))
+            throw new SandboxFailure("INSPECT_TARGET", $"Inspect target not found: {job.Target}");
+        var ops = job.Ops.Count == 0 ? KnownOps.ToList() : job.Ops.ToList();
+        var unknown = ops.Where(o => !KnownOps.Contains(o)).ToList();
+        if (unknown.Count > 0)
+            throw new SandboxFailure("INSPECT_TARGET", $"Unknown inspect op(s): {string.Join(", ", unknown)}. Known: {string.Join(", ", KnownOps)}");
+
+        float voxelMm = job.VoxelMm ?? DefaultVoxelMm;
+        var sw = Stopwatch.StartNew();
+        using var lib = new Library(voxelMm);
+        Library.RegisterGlobalLibrary(lib);
+        try
+        {
+            var ext = Path.GetExtension(job.Target);
+            Voxels vox;
+            if (ext.Equals(".vdb", StringComparison.OrdinalIgnoreCase))
+            {
+                vox = Voxels.voxFromVdbFile(job.Target);
+            }
+            else if (ext.Equals(".stl", StringComparison.OrdinalIgnoreCase))
+            {
+                using var msh = Mesh.mshFromStlFile(job.Target);
+                vox = new Voxels(msh);
+            }
+            else
+            {
+                throw new SandboxFailure("INSPECT_TARGET", $"Unsupported inspect target type '{ext}' (use .stl or .vdb)");
+            }
+
+            using (vox)
+            {
+                var ctx = new Ctx(voxelMm, new Dictionary<string, double>(), log, _ => { });
+                var s = Stats.Of(ctx, vox, bProbeMinWall: ops.Contains("minWall"));
+                var measures = new Dictionary<string, object?>();
+                foreach (var op in ops)
+                {
+                    measures[op] = op switch
+                    {
+                        "volume" => new { volumeCm3 = s.VolumeCm3 },
+                        "area" => new { areaCm2 = s.AreaCm2 },
+                        "bbox" => new { min = s.BboxMin, max = s.BboxMax },
+                        "triangles" => new { triangles = s.Triangles },
+                        "watertight" => new { watertight = s.Watertight, openEdges = s.OpenEdges },
+                        "minWall" => new { minWallProbeMm = s.MinWallProbeMm },
+                        _ => null,
+                    };
+                }
+                var outObj = new { target = job.Target, voxelSizeMm = voxelMm, measures, ms = sw.ElapsedMilliseconds };
+                File.WriteAllText(Path.Combine(job.OutDir, "inspect.json"), JsonSerializer.Serialize(outObj, WriteOpts));
+                log($"[runner] inspect done in {sw.ElapsedMilliseconds}ms");
+            }
+            return 0;
+        }
+        finally
+        {
+            Library.UnregisterGlobalLibrary();
+        }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types",
+        Justification = "Best-effort error.json write while already reporting a failure.")]
+    private static void WriteError(string? outDir, string code, string message, List<string>? logLines)
+    {
+        var json = JsonSerializer.Serialize(new { error = code, message, logTail = logLines?.TakeLast(30).ToArray() ?? [] });
+        Console.Error.WriteLine(json);
+        Console.Error.Flush();
+        if (outDir is null) return;
+        try { File.WriteAllText(Path.Combine(outDir, "error.json"), json); }
+        catch (Exception) { /* stderr line above is authoritative */ }
+    }
 }

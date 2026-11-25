@@ -5866,6 +5866,568 @@
           "sig": "const Voxels.ESliceMode SignedDistance"
         }
       ]
+    },
+    {
+      "name": "BladeSpec",
+      "fullName": "PicoForge.Kit.BladeSpec",
+      "namespace": "PicoForge.Kit",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "BladeSpec(float fHubR, float fTipR, int nSections, Func<float,float> fChordAt, Func<float,float> fBetaDegAt, Func<float,string> sNacaAt, float fRootExtendMM = 1.5f)"
+        },
+        {
+          "name": "<Clone>$",
+          "kind": "method",
+          "sig": "BladeSpec <Clone>$()"
+        },
+        {
+          "name": "Deconstruct",
+          "kind": "method",
+          "sig": "void Deconstruct(out float fHubR, out float fTipR, out int nSections, out Func<float,float> fChordAt, out Func<float,float> fBetaDegAt, out Func<float,string> sNacaAt, out float fRootExtendMM)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(object obj)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(BladeSpec other)"
+        },
+        {
+          "name": "GetHashCode",
+          "kind": "method",
+          "sig": "int GetHashCode()"
+        },
+        {
+          "name": "ToString",
+          "kind": "method",
+          "sig": "string ToString()"
+        },
+        {
+          "name": "op_Inequality",
+          "kind": "operator",
+          "sig": "static bool op_Inequality(BladeSpec left, BladeSpec right)"
+        },
+        {
+          "name": "op_Equality",
+          "kind": "operator",
+          "sig": "static bool op_Equality(BladeSpec left, BladeSpec right)"
+        },
+        {
+          "name": "fBetaDegAt",
+          "kind": "property",
+          "sig": "Func<float,float> fBetaDegAt { get; set; }"
+        },
+        {
+          "name": "fChordAt",
+          "kind": "property",
+          "sig": "Func<float,float> fChordAt { get; set; }"
+        },
+        {
+          "name": "fHubR",
+          "kind": "property",
+          "sig": "float fHubR { get; set; }"
+        },
+        {
+          "name": "fRootExtendMM",
+          "kind": "property",
+          "sig": "float fRootExtendMM { get; set; }"
+        },
+        {
+          "name": "fTipR",
+          "kind": "property",
+          "sig": "float fTipR { get; set; }"
+        },
+        {
+          "name": "nSections",
+          "kind": "property",
+          "sig": "int nSections { get; set; }"
+        },
+        {
+          "name": "sNacaAt",
+          "kind": "property",
+          "sig": "Func<float,string> sNacaAt { get; set; }"
+        }
+      ]
+    },
+    {
+      "name": "Ctx",
+      "fullName": "PicoForge.Kit.Ctx",
+      "namespace": "PicoForge.Kit",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Ctx(float voxelMm, IReadOnlyDictionary<string,double> parameters, Action<string> log, Action<float> progress, Material material = null, float timeLimitS = 120f, string runId = null)"
+        },
+        {
+          "name": "Log",
+          "kind": "method",
+          "sig": "void Log(string s)"
+        },
+        {
+          "name": "P",
+          "kind": "method",
+          "sig": "float P(string name)"
+        },
+        {
+          "name": "Pi",
+          "kind": "method",
+          "sig": "int Pi(string name)"
+        },
+        {
+          "name": "Progress",
+          "kind": "method",
+          "sig": "void Progress(float f01)"
+        },
+        {
+          "name": "Rng",
+          "kind": "property",
+          "sig": "Rng Rng { get; }"
+        },
+        {
+          "name": "fTimeLimitS",
+          "kind": "property",
+          "sig": "float fTimeLimitS { get; }"
+        },
+        {
+          "name": "fVoxelMM",
+          "kind": "property",
+          "sig": "float fVoxelMM { get; }"
+        },
+        {
+          "name": "oMat",
+          "kind": "property",
+          "sig": "Material oMat { get; }"
+        },
+        {
+          "name": "oParams",
+          "kind": "property",
+          "sig": "Params oParams { get; }"
+        }
+      ]
+    },
+    {
+      "name": "GeomStats",
+      "fullName": "PicoForge.Kit.GeomStats",
+      "namespace": "PicoForge.Kit",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "GeomStats()"
+        },
+        {
+          "name": "AreaCm2",
+          "kind": "property",
+          "sig": "double AreaCm2 { get; set; }"
+        },
+        {
+          "name": "BboxMax",
+          "kind": "property",
+          "sig": "IReadOnlyList<double> BboxMax { get; set; }"
+        },
+        {
+          "name": "BboxMin",
+          "kind": "property",
+          "sig": "IReadOnlyList<double> BboxMin { get; set; }"
+        },
+        {
+          "name": "MinWallProbeMm",
+          "kind": "property",
+          "sig": "double? MinWallProbeMm { get; set; }"
+        },
+        {
+          "name": "NonManifoldEdges",
+          "kind": "property",
+          "sig": "int NonManifoldEdges { get; set; }"
+        },
+        {
+          "name": "OpenEdges",
+          "kind": "property",
+          "sig": "int OpenEdges { get; set; }"
+        },
+        {
+          "name": "Triangles",
+          "kind": "property",
+          "sig": "int Triangles { get; set; }"
+        },
+        {
+          "name": "VolumeCm3",
+          "kind": "property",
+          "sig": "double VolumeCm3 { get; set; }"
+        },
+        {
+          "name": "VoxelSizeMm",
+          "kind": "property",
+          "sig": "double VoxelSizeMm { get; set; }"
+        },
+        {
+          "name": "Watertight",
+          "kind": "property",
+          "sig": "bool Watertight { get; set; }"
+        }
+      ]
+    },
+    {
+      "name": "Kit",
+      "fullName": "PicoForge.Kit.Kit",
+      "namespace": "PicoForge.Kit",
+      "kind": "static class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": "FilletClose",
+          "kind": "method",
+          "sig": "static Voxels FilletClose(Voxels v, float fR)"
+        },
+        {
+          "name": "RoundOpen",
+          "kind": "method",
+          "sig": "static Voxels RoundOpen(Voxels v, float fR)"
+        },
+        {
+          "name": "Shell",
+          "kind": "method",
+          "sig": "static Voxels Shell(Voxels v, float fWallMM)"
+        },
+        {
+          "name": "aCircle",
+          "kind": "method",
+          "sig": "static IReadOnlyList<Vector2> aCircle(float fR, int n = 64)"
+        },
+        {
+          "name": "aNaca4",
+          "kind": "method",
+          "sig": "static IReadOnlyList<Vector2> aNaca4(string sCode, float fChord, int n = 61, bool bBluntTE = true)"
+        },
+        {
+          "name": "aRoundedRect",
+          "kind": "method",
+          "sig": "static IReadOnlyList<Vector2> aRoundedRect(float fW, float fH, float fCornerR, int nPerCorner = 8)"
+        },
+        {
+          "name": "impGyroid",
+          "kind": "method",
+          "sig": "static IImplicit impGyroid(float fCellMM, float fWallMM)"
+        },
+        {
+          "name": "mshAxialBlade",
+          "kind": "method",
+          "sig": "static Mesh mshAxialBlade(BladeSpec s)"
+        },
+        {
+          "name": "mshLoft",
+          "kind": "method",
+          "sig": "static Mesh mshLoft(IReadOnlyList<IReadOnlyList<Vector3>> aRings, bool bCapEnds = true)"
+        },
+        {
+          "name": "mshTransform",
+          "kind": "method",
+          "sig": "static Mesh mshTransform(Mesh m, Matrix4x4 mat)"
+        },
+        {
+          "name": "oStats",
+          "kind": "method",
+          "sig": "static GeomStats oStats(Ctx c, Voxels v)"
+        },
+        {
+          "name": "voxAxialRotor",
+          "kind": "method",
+          "sig": "static Voxels voxAxialRotor(Ctx c, BladeSpec s, int nBlades, float fHubR, float fHubZ0, float fHubZ1, float fBoreR = 0f, float fFilletR = 0f)"
+        },
+        {
+          "name": "voxBox",
+          "kind": "method",
+          "sig": "static Voxels voxBox(Ctx c, Vector3 vMin, Vector3 vMax)"
+        },
+        {
+          "name": "voxBoxCentered",
+          "kind": "method",
+          "sig": "static Voxels voxBoxCentered(Ctx c, Vector3 vCenter, Vector3 vSize)"
+        },
+        {
+          "name": "voxCapsule",
+          "kind": "method",
+          "sig": "static Voxels voxCapsule(Ctx c, Vector3 vA, Vector3 vB, float fR)"
+        },
+        {
+          "name": "voxCone",
+          "kind": "method",
+          "sig": "static Voxels voxCone(Ctx c, Vector3 vBase, Vector3 vTip, float fRBase, float fRTip)"
+        },
+        {
+          "name": "voxCylinder",
+          "kind": "method",
+          "sig": "static Voxels voxCylinder(Ctx c, Vector3 vA, Vector3 vB, float fR)"
+        },
+        {
+          "name": "voxExtrudeZ",
+          "kind": "method",
+          "sig": "static Voxels voxExtrudeZ(Ctx c, IReadOnlyList<Vector2> aPolyXY, float fZ0, float fZ1)"
+        },
+        {
+          "name": "voxFromImplicit",
+          "kind": "method",
+          "sig": "static Voxels voxFromImplicit(Ctx c, IImplicit i, BBox3 bounds)"
+        },
+        {
+          "name": "voxLinearPattern",
+          "kind": "method",
+          "sig": "static Voxels voxLinearPattern(Ctx c, Mesh mOne, Vector3 vStep, int nCount)"
+        },
+        {
+          "name": "voxPolarPatternZ",
+          "kind": "method",
+          "sig": "static Voxels voxPolarPatternZ(Ctx c, Mesh mOne, int nCount)"
+        },
+        {
+          "name": "voxRevolve",
+          "kind": "method",
+          "sig": "static Voxels voxRevolve(Ctx c, IReadOnlyList<Vector2> aProfileRZ, float fDeg = 360f)"
+        },
+        {
+          "name": "voxSphere",
+          "kind": "method",
+          "sig": "static Voxels voxSphere(Ctx c, Vector3 vCenter, float fR)"
+        },
+        {
+          "name": "voxSweepCircle",
+          "kind": "method",
+          "sig": "static Voxels voxSweepCircle(Ctx c, IReadOnlyList<Vector3> aPath, float fR)"
+        },
+        {
+          "name": "voxTube",
+          "kind": "method",
+          "sig": "static Voxels voxTube(Ctx c, Vector3 vA, Vector3 vB, float fROuter, float fWall)"
+        }
+      ]
+    },
+    {
+      "name": "Material",
+      "fullName": "PicoForge.Kit.Material",
+      "namespace": "PicoForge.Kit",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Material(string Name, float DensityGcm3, float YieldMPa, float EGPa, float MinWallMM, float MaxTempC)"
+        },
+        {
+          "name": "<Clone>$",
+          "kind": "method",
+          "sig": "Material <Clone>$()"
+        },
+        {
+          "name": "Deconstruct",
+          "kind": "method",
+          "sig": "void Deconstruct(out string Name, out float DensityGcm3, out float YieldMPa, out float EGPa, out float MinWallMM, out float MaxTempC)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(object obj)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(Material other)"
+        },
+        {
+          "name": "FromName",
+          "kind": "method",
+          "sig": "static Material FromName(string name)"
+        },
+        {
+          "name": "GetHashCode",
+          "kind": "method",
+          "sig": "int GetHashCode()"
+        },
+        {
+          "name": "ToString",
+          "kind": "method",
+          "sig": "string ToString()"
+        },
+        {
+          "name": "op_Inequality",
+          "kind": "operator",
+          "sig": "static bool op_Inequality(Material left, Material right)"
+        },
+        {
+          "name": "op_Equality",
+          "kind": "operator",
+          "sig": "static bool op_Equality(Material left, Material right)"
+        },
+        {
+          "name": "DensityGcm3",
+          "kind": "property",
+          "sig": "float DensityGcm3 { get; set; }"
+        },
+        {
+          "name": "EGPa",
+          "kind": "property",
+          "sig": "float EGPa { get; set; }"
+        },
+        {
+          "name": "MaxTempC",
+          "kind": "property",
+          "sig": "float MaxTempC { get; set; }"
+        },
+        {
+          "name": "MinWallMM",
+          "kind": "property",
+          "sig": "float MinWallMM { get; set; }"
+        },
+        {
+          "name": "Name",
+          "kind": "property",
+          "sig": "string Name { get; set; }"
+        },
+        {
+          "name": "YieldMPa",
+          "kind": "property",
+          "sig": "float YieldMPa { get; set; }"
+        },
+        {
+          "name": "Abs",
+          "kind": "field",
+          "sig": "static Material Abs"
+        },
+        {
+          "name": "Al6061",
+          "kind": "field",
+          "sig": "static Material Al6061"
+        },
+        {
+          "name": "Pa12",
+          "kind": "field",
+          "sig": "static Material Pa12"
+        },
+        {
+          "name": "Petg",
+          "kind": "field",
+          "sig": "static Material Petg"
+        },
+        {
+          "name": "Pla",
+          "kind": "field",
+          "sig": "static Material Pla"
+        },
+        {
+          "name": "Resin",
+          "kind": "field",
+          "sig": "static Material Resin"
+        },
+        {
+          "name": "Ss316L",
+          "kind": "field",
+          "sig": "static Material Ss316L"
+        }
+      ]
+    },
+    {
+      "name": "Params",
+      "fullName": "PicoForge.Kit.Params",
+      "namespace": "PicoForge.Kit",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Params(IReadOnlyDictionary<string,double> raw)"
+        },
+        {
+          "name": "Has",
+          "kind": "method",
+          "sig": "bool Has(string name)"
+        },
+        {
+          "name": "f",
+          "kind": "method",
+          "sig": "float f(string name)"
+        },
+        {
+          "name": "n",
+          "kind": "method",
+          "sig": "int n(string name)"
+        },
+        {
+          "name": "Names",
+          "kind": "property",
+          "sig": "IReadOnlyCollection<string> Names { get; }"
+        }
+      ]
+    },
+    {
+      "name": "Rng",
+      "fullName": "PicoForge.Kit.Rng",
+      "namespace": "PicoForge.Kit",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Rng(string seed)"
+        },
+        {
+          "name": "NextFloat",
+          "kind": "method",
+          "sig": "float NextFloat()"
+        },
+        {
+          "name": "NextFloat",
+          "kind": "method",
+          "sig": "float NextFloat(float min, float max)"
+        },
+        {
+          "name": "NextInt",
+          "kind": "method",
+          "sig": "int NextInt(int min, int max)"
+        }
+      ]
+    },
+    {
+      "name": "Stats",
+      "fullName": "PicoForge.Kit.Stats",
+      "namespace": "PicoForge.Kit",
+      "kind": "static class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": "MinWallProbe",
+          "kind": "method",
+          "sig": "static double MinWallProbe(Voxels v, float baseVolMm3, BBox3 bbox, float voxelMm)"
+        },
+        {
+          "name": "Of",
+          "kind": "method",
+          "sig": "static GeomStats Of(Ctx c, Voxels v, bool bProbeMinWall = true)"
+        },
+        {
+          "name": "OfMesh",
+          "kind": "method",
+          "sig": "static GeomStats OfMesh(Mesh m)"
+        },
+        {
+          "name": "VolumeMm3",
+          "kind": "method",
+          "sig": "static double VolumeMm3(Voxels v)"
+        }
+      ]
     }
   ],
   "bannedNamespaces": [
