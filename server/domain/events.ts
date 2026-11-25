@@ -191,3 +191,11 @@ export const ServerEventSchema = z.discriminatedUnion("type", [
 ]);
 
 export type ServerEvent = z.infer<typeof ServerEventSchema>;
+
+/**
+ * A server frame before the hub stamps its seq. Distributive over the union, so an object
+ * literal is checked against its own variant (`Omit<ServerEvent, "seq">` is not, and needed casts).
+ */
+export type ServerFrame = ServerEvent extends infer E ? E extends { seq: number } ? Omit<E, "seq">
+  : never
+  : never;

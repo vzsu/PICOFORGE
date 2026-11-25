@@ -39,9 +39,7 @@ export const askUserTool: ToolModule<Input> = {
 
       // Emit ask_user event over WS so the UI renders option buttons
       if (ctx.wsHub) {
-        await (ctx.wsHub as {
-          sendToConversation(id: string, event: unknown): Promise<void>;
-        }).sendToConversation(ctx.conversationId, {
+        await ctx.wsHub.sendToConversation(ctx.conversationId, {
           type: "ask_user",
           question,
           options,

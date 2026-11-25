@@ -107,6 +107,15 @@ export class EngineRpcError extends Error {
   }
 }
 
+/** One ndjson frame from the host: a reply `{id, result|error}` or a notification `{method}`. */
+const rpcFrameSchema = z.object({
+  id: z.string().optional(),
+  result: z.unknown().optional(),
+  error: z.object({ code: z.unknown(), message: z.unknown() }).passthrough().optional(),
+  method: z.string().optional(),
+  payload: z.unknown().optional(),
+}).passthrough();
+
 const replyEnvelopeSchema = z.object({
   ok: z.boolean(),
   value: z.unknown().optional(),
@@ -138,18 +147,24 @@ export function unwrapEngineReply(raw: unknown, fallbackCode: string): EngineRep
   return { ok: false, error: { code: fallbackCode, detail: String(e) } };
 }
 
-export interface EngineHelloResult {
-  version: string;
-  picogkVersion: string;
-  dotnet: string;
-  symbolTableHash: string;
-}
+const engineHelloSchema = z.object({
+  version: z.string(),
+  picogkVersion: z.string().optional(),
+  dotnet: z.string().optional(),
+  symbolTableHash: z.string().optional(),
+}).passthrough();
+export type EngineHelloResult = z.infer<typeof engineHelloSchema>;
 
-export interface EngineCompileResult {
-  ok: boolean;
-  diagnostics: Array<{ id: string; severity: string; line: number; col: number; message: string }>;
-  dllCached: boolean;
+export type EngineCompileResult = z.infer<typeof engineCompileResultSchema>;
+
+const enginePingSchema = z.object({}).passthrough();
+
+/** RPC timeouts. `run` must cover the sandbox's own limit (runTimeoutS, default 120 s) — B-006. */
+export interface EngineTimeouts {
+  quick: number;
+  run: number;
 }
+const DEFAULT_TIMEOUTS: EngineTimeouts = { quick: 30_000, run: 330_000 };
 
 export interface EngineRunParams {
   code?: string;
@@ -166,7 +181,7 @@ export interface EngineRunParams {
 
 export type EngineRunResult = z.infer<typeof engineRunResultSchema>;
 
-export type EnginePingResult = { ok: boolean; rssMiB: number; children: number };
+export type EnginePingResult = z.infer<typeof enginePingSchema>;
 
 /**
  * Client for the forge-engine host process.
@@ -176,48 +191,52 @@ export type EnginePingResult = { ok: boolean; rssMiB: number; children: number }
 export class EngineClient implements EngineApi {
   private _process: Deno.ChildProcess | null = null;
   private _seq = 0;
-  // deno-lint-ignore no-explicit-any
-  private _pending = new Map<string, { resolve: (v: any) => void; reject: (e: Error) => void }>();
+  private _pending = new Map<
+    string,
+    { resolve: (v: unknown) => void; reject: (e: Error) => void }
+  >();
   private _ready = false;
+  private readonly args: string[];
+  private readonly timeouts: EngineTimeouts;
 
-  constructor(private readonly engineBin: string) {}
+  constructor(
+    private readonly engineBin: string,
+    opts: { args?: string[]; timeoutsMs?: Partial<EngineTimeouts> } = {},
+  ) {
+    this.args = opts.args ?? [];
+    this.timeouts = { ...DEFAULT_TIMEOUTS, ...opts.timeoutsMs };
+  }
 
   async start(): Promise<Result<EngineHelloResult, Error>> {
     try {
       const cmd = new Deno.Command(this.engineBin, {
+        args: this.args,
         stdin: "piped",
         stdout: "piped",
         stderr: "inherit",
       });
       this._process = cmd.spawn();
       this._readLoop();
-      const hello = await this.call<EngineHelloResult>("engine.hello", {});
+      const hello = await this.callParsed("engine.hello", {}, engineHelloSchema);
+      if (!hello.ok) return hello;
       this._ready = true;
-      log.info("Engine connected", { version: hello.version });
-      return ok(hello);
+      log.info("Engine connected", { version: hello.value.version });
+      return hello;
     } catch (e) {
       return err(e instanceof Error ? e : new Error(String(e)));
     }
   }
 
   async ping(): Promise<Result<EnginePingResult, Error>> {
-    try {
-      return ok(await this.call<EnginePingResult>("engine.ping", {}));
-    } catch (e) {
-      return err(e instanceof Error ? e : new Error(String(e)));
-    }
+    return await this.callParsed("engine.ping", {}, enginePingSchema);
   }
 
   async compile(code: string, codeId?: string): Promise<Result<EngineCompileResult, Error>> {
-    try {
-      return ok(await this.call<EngineCompileResult>("engine.compile", { code, codeId }));
-    } catch (e) {
-      return err(e instanceof Error ? e : new Error(String(e)));
-    }
+    return await this.callParsed("engine.compile", { code, codeId }, engineCompileResultSchema);
   }
 
   async run(params: EngineRunParams): Promise<Result<EngineRunResult, Error>> {
-    return await this.callParsed("engine.run", params, engineRunResultSchema);
+    return await this.callParsed("engine.run", params, engineRunResultSchema, this.timeouts.run);
   }
 
   /** `engine.inspect {target, ops}` → measurements (04 §5). */
@@ -234,9 +253,10 @@ export class EngineClient implements EngineApi {
     method: string,
     params: unknown,
     schema: S,
+    timeoutMs = this.timeouts.quick,
   ): Promise<Result<z.infer<S>, Error>> {
     try {
-      const raw = await this.call<unknown>(method, params);
+      const raw = await this.call(method, params, timeoutMs);
       const parsed = schema.safeParse(raw);
       if (!parsed.success) {
         return err(new EngineRpcError("ENGINE_PROTOCOL", `${method}: ${parsed.error.message}`));
@@ -257,21 +277,25 @@ export class EngineClient implements EngineApi {
     return this._ready;
   }
 
-  private async call<T>(method: string, params: unknown): Promise<T> {
+  private async call(
+    method: string,
+    params: unknown,
+    timeoutMs = this.timeouts.quick,
+  ): Promise<unknown> {
     if (!this._process) throw new Error("Engine not started");
     const id = String(++this._seq);
     const frame = JSON.stringify({ id, method, params }) + "\n";
     const writer = this._process.stdin.getWriter();
     await writer.write(new TextEncoder().encode(frame));
     writer.releaseLock();
-    return new Promise<T>((resolve, reject) => {
+    return new Promise<unknown>((resolve, reject) => {
       this._pending.set(id, { resolve, reject });
       setTimeout(() => {
         if (this._pending.has(id)) {
           this._pending.delete(id);
-          reject(new Error(`Engine RPC timeout: ${method}`));
+          reject(new Error(`Engine RPC timeout: ${method} after ${timeoutMs} ms`));
         }
-      }, 30_000);
+      }, timeoutMs);
     });
   }
 
@@ -286,7 +310,7 @@ export class EngineClient implements EngineApi {
       for (const line of lines) {
         if (!line.trim()) continue;
         try {
-          const msg = JSON.parse(line);
+          const msg = rpcFrameSchema.parse(JSON.parse(line));
           if (msg.id && this._pending.has(msg.id)) {
             const { resolve, reject } = this._pending.get(msg.id)!;
             this._pending.delete(msg.id);

@@ -4,6 +4,7 @@
 import { z } from "zod";
 import { ulid } from "../../domain/ids.ts";
 import { getDb, withTx } from "../db.ts";
+import { bool01, intOrNull, jsonCol } from "../rows.ts";
 
 // ─── Content block schema (mirrors UI render + model replay) ──────────────────
 
@@ -21,7 +22,8 @@ export type Content = z.infer<typeof ContentSchema>;
 
 // ─── Message type ─────────────────────────────────────────────────────────────
 
-export type MessageRole = "user" | "assistant" | "system";
+export const MessageRoleSchema = z.enum(["user", "assistant", "system"]);
+export type MessageRole = z.infer<typeof MessageRoleSchema>;
 
 export interface Message {
   id: string;
@@ -36,18 +38,28 @@ export interface Message {
 
 // ─── Row mapper ───────────────────────────────────────────────────────────────
 
+const MessageRow = z.object({
+  id: z.string(),
+  conversation_id: z.string(),
+  role: MessageRoleSchema,
+  content_json: jsonCol(ContentSchema),
+  created_at: z.number(),
+  tokens_in: intOrNull,
+  tokens_out: intOrNull,
+  pinned: bool01,
+}).transform((r): Message => ({
+  id: r.id,
+  conversationId: r.conversation_id,
+  role: r.role,
+  content: r.content_json,
+  createdAt: r.created_at,
+  tokensIn: r.tokens_in,
+  tokensOut: r.tokens_out,
+  pinned: r.pinned,
+}));
+
 function rowToMessage(row: unknown): Message {
-  const r = row as Record<string, unknown>;
-  return {
-    id: r.id as string,
-    conversationId: r.conversation_id as string,
-    role: r.role as MessageRole,
-    content: ContentSchema.parse(JSON.parse(r.content_json as string)),
-    createdAt: r.created_at as number,
-    tokensIn: (r.tokens_in as number | null) ?? null,
-    tokensOut: (r.tokens_out as number | null) ?? null,
-    pinned: (r.pinned as number) !== 0,
-  };
+  return MessageRow.parse(row);
 }
 
 // ─── Queries ──────────────────────────────────────────────────────────────────

@@ -4,6 +4,15 @@
 import { z } from "zod";
 import { ulid } from "../../domain/ids.ts";
 import { getDb, withTx } from "../db.ts";
+import {
+  bool01,
+  bool01OrNull,
+  intOrNull,
+  jsonCol,
+  jsonColOrNull,
+  jsonObject,
+  textOrNull,
+} from "../rows.ts";
 
 // ─── Run ──────────────────────────────────────────────────────────────────────
 
@@ -41,23 +50,38 @@ export interface Run {
   totalMs: number | null;
 }
 
+const RunRow = z.object({
+  id: z.string(),
+  conversation_id: z.string(),
+  message_id: textOrNull,
+  state: RunStateSchema,
+  attempt: z.number(),
+  error_code: textOrNull,
+  error_detail: textOrNull,
+  model: z.string(),
+  brief_json: jsonColOrNull(z.unknown()),
+  limits_json: jsonCol(jsonObject),
+  started_at: z.number(),
+  finished_at: intOrNull,
+  total_ms: intOrNull,
+}).transform((r): Run => ({
+  id: r.id,
+  conversationId: r.conversation_id,
+  messageId: r.message_id,
+  state: r.state,
+  attempt: r.attempt,
+  errorCode: r.error_code,
+  errorDetail: r.error_detail,
+  model: r.model,
+  briefJson: r.brief_json ?? null,
+  limitsJson: r.limits_json,
+  startedAt: r.started_at,
+  finishedAt: r.finished_at,
+  totalMs: r.total_ms,
+}));
+
 function rowToRun(row: unknown): Run {
-  const r = row as Record<string, unknown>;
-  return {
-    id: r.id as string,
-    conversationId: r.conversation_id as string,
-    messageId: (r.message_id as string | null) ?? null,
-    state: RunStateSchema.parse(r.state),
-    attempt: r.attempt as number,
-    errorCode: (r.error_code as string | null) ?? null,
-    errorDetail: (r.error_detail as string | null) ?? null,
-    model: r.model as string,
-    briefJson: r.brief_json ? JSON.parse(r.brief_json as string) : null,
-    limitsJson: JSON.parse((r.limits_json as string) || "{}"),
-    startedAt: r.started_at as number,
-    finishedAt: (r.finished_at as number | null) ?? null,
-    totalMs: (r.total_ms as number | null) ?? null,
-  };
+  return RunRow.parse(row);
 }
 
 export function runCreate(
@@ -111,10 +135,10 @@ export function runUpdateState(
   const now = Date.now();
   const finished = state === "done" || state === "failed" || state === "cancelled" ? now : null;
   withTx((db) => {
-    const existing = db.prepare("SELECT started_at FROM runs WHERE id=?").get(id) as
-      | Record<string, unknown>
-      | undefined;
-    const totalMs = finished && existing ? finished - (existing.started_at as number) : null;
+    const existing = z.object({ started_at: z.number() }).optional().parse(
+      db.prepare("SELECT started_at FROM runs WHERE id=?").get(id),
+    );
+    const totalMs = finished && existing ? finished - existing.started_at : null;
     db.prepare(
       `UPDATE runs SET state=?,attempt=COALESCE(?,attempt),error_code=COALESCE(?,error_code),
        error_detail=COALESCE(?,error_detail),brief_json=COALESCE(?,brief_json),
@@ -154,7 +178,7 @@ export function repairOrphanRuns(): string[] {
       `SELECT id FROM runs WHERE state NOT IN ('done','failed','cancelled')`,
     )
     .all();
-  const ids = orphans.map((r) => (r as Record<string, unknown>).id as string);
+  const ids = z.array(z.object({ id: z.string() })).parse(orphans).map((r) => r.id);
   if (ids.length > 0) {
     withTx((d) => {
       d.prepare(
@@ -168,18 +192,20 @@ export function repairOrphanRuns(): string[] {
 
 // ─── RunStep ──────────────────────────────────────────────────────────────────
 
-export type RunStepKind =
-  | "llm"
-  | "tool.search_docs"
-  | "tool.submit_design_brief"
-  | "tool.run_picogk"
-  | "tool.inspect_geometry"
-  | "tool.capture_viewport"
-  | "tool.export_artifact"
-  | "tool.ask_user"
-  | "compile"
-  | "execute"
-  | "validate";
+export const RunStepKindSchema = z.enum([
+  "llm",
+  "tool.search_docs",
+  "tool.submit_design_brief",
+  "tool.run_picogk",
+  "tool.inspect_geometry",
+  "tool.capture_viewport",
+  "tool.export_artifact",
+  "tool.ask_user",
+  "compile",
+  "execute",
+  "validate",
+]);
+export type RunStepKind = z.infer<typeof RunStepKindSchema>;
 
 export interface RunStep {
   id: string;
@@ -194,20 +220,32 @@ export interface RunStep {
   createdAt: number;
 }
 
+const RunStepRow = z.object({
+  id: z.string(),
+  run_id: z.string(),
+  seq: z.number(),
+  kind: RunStepKindSchema,
+  title: z.string(),
+  input_json: jsonColOrNull(z.unknown()),
+  output_json: jsonColOrNull(z.unknown()),
+  ok: bool01OrNull,
+  duration_ms: intOrNull,
+  created_at: z.number(),
+}).transform((r): RunStep => ({
+  id: r.id,
+  runId: r.run_id,
+  seq: r.seq,
+  kind: r.kind,
+  title: r.title,
+  inputJson: r.input_json ?? null,
+  outputJson: r.output_json ?? null,
+  ok: r.ok,
+  durationMs: r.duration_ms,
+  createdAt: r.created_at,
+}));
+
 function rowToStep(row: unknown): RunStep {
-  const r = row as Record<string, unknown>;
-  return {
-    id: r.id as string,
-    runId: r.run_id as string,
-    seq: r.seq as number,
-    kind: r.kind as RunStepKind,
-    title: r.title as string,
-    inputJson: r.input_json ? JSON.parse(r.input_json as string) : null,
-    outputJson: r.output_json ? JSON.parse(r.output_json as string) : null,
-    ok: r.ok !== null && r.ok !== undefined ? (r.ok as number) !== 0 : null,
-    durationMs: (r.duration_ms as number | null) ?? null,
-    createdAt: r.created_at as number,
-  };
+  return RunStepRow.parse(row);
 }
 
 export function runStepCreate(
@@ -220,10 +258,9 @@ export function runStepCreate(
   const id = ulid();
   const db = getDb();
   // Get next seq
-  const seqRow = db
-    .prepare("SELECT COALESCE(MAX(seq),0)+1 AS next FROM run_steps WHERE run_id=?")
-    .get(runId) as Record<string, unknown>;
-  const seq = seqRow.next as number;
+  const { next: seq } = z.object({ next: z.number() }).parse(
+    db.prepare("SELECT COALESCE(MAX(seq),0)+1 AS next FROM run_steps WHERE run_id=?").get(runId),
+  );
   withTx((d) => {
     d.prepare(
       `INSERT INTO run_steps(id,run_id,seq,kind,title,input_json,created_at)
@@ -338,25 +375,39 @@ export function codeVersionFindByHash(sourceHash: string): CodeVersion | undefin
     .prepare("SELECT * FROM code_versions WHERE source_hash=? ORDER BY created_at DESC LIMIT 1")
     .get(sourceHash);
   if (!row) return undefined;
-  const r = row as Record<string, unknown>;
-  return {
-    id: r.id as string,
-    projectId: r.project_id as string,
-    runId: (r.run_id as string | null) ?? null,
-    parentId: (r.parent_id as string | null) ?? null,
-    source: r.source as string,
-    sourceHash: r.source_hash as string,
-    paramsJson: JSON.parse((r.params_json as string) || "{}"),
-    compileOk: r.compile_ok !== null ? (r.compile_ok as number) !== 0 : null,
-    diagnosticsJson: r.diagnostics_json ? JSON.parse(r.diagnostics_json as string) : null,
-    createdAt: r.created_at as number,
-  };
+  return CodeVersionRow.parse(row);
 }
+
+const CodeVersionRow = z.object({
+  id: z.string(),
+  project_id: z.string(),
+  run_id: textOrNull,
+  parent_id: textOrNull,
+  source: z.string(),
+  source_hash: z.string(),
+  params_json: jsonCol(jsonObject),
+  compile_ok: bool01OrNull,
+  diagnostics_json: jsonColOrNull(z.array(z.unknown())),
+  created_at: z.number(),
+}).transform((r): CodeVersion => ({
+  id: r.id,
+  projectId: r.project_id,
+  runId: r.run_id,
+  parentId: r.parent_id,
+  source: r.source,
+  sourceHash: r.source_hash,
+  paramsJson: r.params_json,
+  compileOk: r.compile_ok,
+  diagnosticsJson: r.diagnostics_json,
+  createdAt: r.created_at,
+}));
 
 // ─── Artifact ─────────────────────────────────────────────────────────────────
 
-export type ArtifactKind = "mesh" | "voxels" | "image" | "report" | "export";
-export type ArtifactFormat = "stl" | "glb" | "vdb" | "3mf" | "cli" | "png" | "json";
+export const ArtifactKindSchema = z.enum(["mesh", "voxels", "image", "report", "export"]);
+export type ArtifactKind = z.infer<typeof ArtifactKindSchema>;
+export const ArtifactFormatSchema = z.enum(["stl", "glb", "vdb", "3mf", "cli", "png", "json"]);
+export type ArtifactFormat = z.infer<typeof ArtifactFormatSchema>;
 
 export interface Artifact {
   id: string;
@@ -373,22 +424,36 @@ export interface Artifact {
   createdAt: number;
 }
 
+const ArtifactRow = z.object({
+  id: z.string(),
+  project_id: z.string(),
+  run_id: textOrNull,
+  code_version_id: textOrNull,
+  kind: ArtifactKindSchema,
+  format: ArtifactFormatSchema,
+  path: z.string(),
+  size_bytes: z.number(),
+  sha256: z.string(),
+  stats_json: jsonCol(jsonObject),
+  pinned: bool01,
+  created_at: z.number(),
+}).transform((r): Artifact => ({
+  id: r.id,
+  projectId: r.project_id,
+  runId: r.run_id,
+  codeVersionId: r.code_version_id,
+  kind: r.kind,
+  format: r.format,
+  path: r.path,
+  sizeBytes: r.size_bytes,
+  sha256: r.sha256,
+  statsJson: r.stats_json,
+  pinned: r.pinned,
+  createdAt: r.created_at,
+}));
+
 function rowToArtifact(row: unknown): Artifact {
-  const r = row as Record<string, unknown>;
-  return {
-    id: r.id as string,
-    projectId: r.project_id as string,
-    runId: (r.run_id as string | null) ?? null,
-    codeVersionId: (r.code_version_id as string | null) ?? null,
-    kind: r.kind as ArtifactKind,
-    format: r.format as ArtifactFormat,
-    path: r.path as string,
-    sizeBytes: r.size_bytes as number,
-    sha256: r.sha256 as string,
-    statsJson: JSON.parse((r.stats_json as string) || "{}"),
-    pinned: (r.pinned as number) !== 0,
-    createdAt: r.created_at as number,
-  };
+  return ArtifactRow.parse(row);
 }
 
 export function artifactCreate(

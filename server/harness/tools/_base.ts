@@ -5,6 +5,20 @@ import { z } from "npm:zod@^3.23.0";
 import { ToolDefinition } from "../anthropic.ts";
 import { err, ok, Result } from "../../domain/result.ts";
 import type { EngineApi } from "../../engine/client.ts";
+import type { ServerFrame } from "../../domain/events.ts";
+
+/** Canonical capture views (ViewportCaptureRequestEvent.view). */
+export type CaptureView = "iso" | "front" | "top" | "right" | "current";
+
+/** The WS hub the tools talk to (server/http/ws.ts `wsHub`). */
+export interface WsHub {
+  requestCapture(
+    conversationId: string,
+    view: CaptureView,
+    timeoutMs: number,
+  ): Promise<string | null>;
+  sendToConversation(conversationId: string, frame: ServerFrame): Promise<void>;
+}
 
 export type { ToolDefinition };
 export { err, ok, z };
@@ -27,7 +41,7 @@ export interface RunCtx {
   // Injected by orchestrator before calling tools
   engineClient?: EngineApi; // only engine/client.ts speaks engine RPC
   db?: unknown; // DB from db/db.ts — typed in M3
-  wsHub?: unknown; // WsHub from ws/hub.ts — typed in M4
+  wsHub?: WsHub; // server/http/ws.ts; absent when headless (capture/ask degrade gracefully)
   /** Root under which run folders live (`<dataDir>/runs/<runId>`). Defaults to ".". */
   dataDir?: string;
   brief?: AcceptedBrief; // set by submit_design_brief on acceptance

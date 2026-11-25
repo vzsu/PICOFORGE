@@ -21,22 +21,28 @@ interface DatabaseSync {
 }
 let DatabaseSyncCtor: new (path: string) => DatabaseSync;
 
-interface SqliteModule {
-  DatabaseSync?: new (path: string) => DatabaseSync;
-  default?: new (path: string) => DatabaseSync;
-  Database?: new (path: string) => DatabaseSync;
+/** Both drivers export a class whose instances fit DatabaseSync structurally. */
+function isDriverCtor(v: unknown): v is new (path: string) => DatabaseSync {
+  return typeof v === "function";
 }
 
 async function loadDriver(): Promise<new (path: string) => DatabaseSync> {
   if (DatabaseSyncCtor) return DatabaseSyncCtor;
   try {
-    const mod = await (eval('import("node:sqlite")') as Promise<SqliteModule>);
-    DatabaseSyncCtor = mod.DatabaseSync!;
+    const ctor: unknown = (await import("node:sqlite")).DatabaseSync;
+    if (!isDriverCtor(ctor)) throw new Error("node:sqlite has no DatabaseSync");
+    DatabaseSyncCtor = ctor;
     return DatabaseSyncCtor;
   } catch {
-    // Fallback: jsr:@db/sqlite (bundles FTS5) per DATA_SCHEMA §1
-    const mod = await (eval('import("jsr:@db/sqlite")') as Promise<SqliteModule>);
-    DatabaseSyncCtor = (mod.default ?? mod.Database)!;
+    // Fallback: jsr:@db/sqlite (bundles FTS5) per DATA_SCHEMA §1. A variable specifier keeps it
+    // out of the module graph unless this branch runs.
+    const spec = "jsr:@db/sqlite";
+    const mod: unknown = await import(spec);
+    const ctor = typeof mod === "object" && mod !== null && "Database" in mod ? mod.Database : null;
+    if (!isDriverCtor(ctor)) {
+      throw new Error("no SQLite driver available (node:sqlite, jsr:@db/sqlite)");
+    }
+    DatabaseSyncCtor = ctor;
     return DatabaseSyncCtor;
   }
 }

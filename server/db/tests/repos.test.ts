@@ -26,7 +26,7 @@ import {
   runStepList,
   runUpdateState,
 } from "../repo/runs.ts";
-import { settingsGet, settingsSet } from "../repo/settings.ts";
+import { settingsGet, SettingsPatchSchema, settingsSet } from "../repo/settings.ts";
 import { kbDocCount, kbDocUpsert, kbSearch } from "../repo/kb.ts";
 
 // ─── Test DB setup ────────────────────────────────────────────────────────────
@@ -346,4 +346,15 @@ Deno.test("DB-RUNSTATE-01 every orchestrator run state persists; run steps survi
   assertEquals(runStepList(run.id).map((x) => x.id), [step.id]);
   const fk = getDb().prepare("PRAGMA foreign_key_check").all();
   assertEquals(fk, []);
+});
+
+// SETTINGS-PATCH-01: patching one nested field keeps its siblings (the PATCH body used
+// SettingsSchema.partial(), whose nested defaults reset untouched fields; an `as` cast hid it).
+Deno.test("SETTINGS-PATCH-01 nested settings patch keeps sibling values", async () => {
+  await setupDb();
+  settingsSet({ retention: { runsPerProject: 7 } });
+  const body = SettingsPatchSchema.parse({ retention: { maxBytes: 5_000_000 } });
+  const s = settingsSet(body);
+  assertEquals(s.retention, { runsPerProject: 7, maxBytes: 5_000_000 });
+  assertEquals(settingsGet().retention.runsPerProject, 7);
 });

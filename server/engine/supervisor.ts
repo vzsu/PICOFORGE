@@ -33,7 +33,7 @@ export class EngineSupervisor {
     lastHeartbeat: null,
   };
   private _missedHeartbeats = 0;
-  private _heartbeatTimer: number | null = null;
+  private _heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private _restartTimestamps: number[] = [];
   private _onOrphanRun?: (runId: string) => Promise<void>;
 
@@ -83,7 +83,7 @@ export class EngineSupervisor {
   private _scheduleHeartbeat(): void {
     this._heartbeatTimer = setInterval(async () => {
       await this._heartbeat();
-    }, HEARTBEAT_INTERVAL_MS) as unknown as number;
+    }, HEARTBEAT_INTERVAL_MS);
   }
 
   private async _heartbeat(): Promise<void> {

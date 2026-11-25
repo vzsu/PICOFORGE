@@ -26,7 +26,7 @@ Format: `- [ ] P<phase> · <item> · tests: <IDs> · spec: docs/NN §x`. Top unb
 - [ ] P3 · First shape preview ≤ 10 s: today mesh visible at 17.9 s (mock, SwiftShader) · tests: PERF-TTFP-02
 - [ ] P2 · Smoother thin-blade edges (serrated tips at 0.5 mm voxels) — investigate engine smoothing/voxel size for blades
 - [ ] P0 · FAIL-F15/F16 drills for new failure rows · spec: docs/04 §7
-- [ ] P0 · Remove remaining `as` casts (~125: db repos via zod row schemas, router/ws frame casts, anthropic.ts, prompts) · spec: CLAUDE.md #2
+- [x] P0 · (✓ server; app still has a few) Remove `as` casts in server code (SETTINGS-PATCH-01, ENG-CLIENT-TIMEOUT-01, B-006..B-009) · spec: CLAUDE.md #2
 - [ ] P0 · SPEC-GAP: settle `engine.build` vs `engine.run`; add `engine.convert` to docs/04 §5
 
 ## P1 · Contracts

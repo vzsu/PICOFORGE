@@ -4,6 +4,7 @@
 import { z } from "zod";
 import { ulid } from "../../domain/ids.ts";
 import { getDb, withTx } from "../db.ts";
+import { bool01, jsonCol } from "../rows.ts";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -28,16 +29,24 @@ export interface Project {
 
 // ─── Row mapper ───────────────────────────────────────────────────────────────
 
+const ProjectRow = z.object({
+  id: z.string(),
+  name: z.string(),
+  created_at: z.number(),
+  updated_at: z.number(),
+  archived: bool01,
+  settings_json: jsonCol(ProjectSettingsSchema),
+}).transform((r): Project => ({
+  id: r.id,
+  name: r.name,
+  createdAt: r.created_at,
+  updatedAt: r.updated_at,
+  archived: r.archived,
+  settings: r.settings_json,
+}));
+
 function rowToProject(row: unknown): Project {
-  const r = row as Record<string, unknown>;
-  return {
-    id: r.id as string,
-    name: r.name as string,
-    createdAt: r.created_at as number,
-    updatedAt: r.updated_at as number,
-    archived: (r.archived as number) !== 0,
-    settings: ProjectSettingsSchema.parse(JSON.parse(r.settings_json as string)),
-  };
+  return ProjectRow.parse(row);
 }
 
 // ─── Queries ──────────────────────────────────────────────────────────────────

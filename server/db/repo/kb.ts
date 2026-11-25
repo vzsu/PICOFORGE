@@ -1,10 +1,13 @@
 // server/db/repo/kb.ts — Knowledge base repository
 // DATA_SCHEMA §3 + §4.5: FTS5 search for the search_docs tool
 
+import { z } from "zod";
 import { ulid } from "../../domain/ids.ts";
 import { getDb, withTx } from "../db.ts";
+import { jsonCol, jsonObject } from "../rows.ts";
 
-export type KbSource = "picogk_api" | "kit" | "recipes" | "physics" | "picogk_docs";
+export const KbSourceSchema = z.enum(["picogk_api", "kit", "recipes", "physics", "picogk_docs"]);
+export type KbSource = z.infer<typeof KbSourceSchema>;
 
 export interface KbDoc {
   id: string;
@@ -24,16 +27,33 @@ export interface KbSearchResult {
   score: number;
 }
 
+const KbDocRow = z.object({
+  id: z.string(),
+  source: KbSourceSchema,
+  title: z.string(),
+  section: z.string(),
+  content: z.string(),
+  meta_json: jsonCol(jsonObject),
+}).transform((r): KbDoc => ({
+  id: r.id,
+  source: r.source,
+  title: r.title,
+  section: r.section,
+  content: r.content,
+  metaJson: r.meta_json,
+}));
+
+const KbHitRow = z.object({
+  id: z.string(),
+  source: KbSourceSchema,
+  title: z.string(),
+  section: z.string(),
+  content: z.string(),
+  score: z.number(),
+});
+
 function rowToDoc(row: unknown): KbDoc {
-  const r = row as Record<string, unknown>;
-  return {
-    id: r.id as string,
-    source: r.source as KbSource,
-    title: r.title as string,
-    section: r.section as string,
-    content: r.content as string,
-    metaJson: JSON.parse((r.meta_json as string) || "{}"),
-  };
+  return KbDocRow.parse(row);
 }
 
 export function kbDocUpsert(
@@ -76,17 +96,7 @@ export function kbSearch(query: string, limit = 6): KbSearchResult[] {
          LIMIT ?`,
       )
       .all(query, limit);
-    return rows.map((r) => {
-      const row = r as Record<string, unknown>;
-      return {
-        id: row.id as string,
-        source: row.source as KbSource,
-        title: row.title as string,
-        section: row.section as string,
-        content: row.content as string,
-        score: row.score as number,
-      };
-    });
+    return z.array(KbHitRow).parse(rows);
   } catch {
     // FTS5 not available or query syntax error — return empty
     return [];
@@ -103,6 +113,8 @@ export function kbDocList(source?: KbSource): KbDoc[] {
 
 export function kbDocCount(): number {
   const db = getDb();
-  const row = db.prepare("SELECT COUNT(*) AS n FROM kb_docs").get() as Record<string, unknown>;
-  return (row?.n as number) ?? 0;
+  const row = z.object({ n: z.number() }).optional().parse(
+    db.prepare("SELECT COUNT(*) AS n FROM kb_docs").get(),
+  );
+  return row?.n ?? 0;
 }

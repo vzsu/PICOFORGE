@@ -6,6 +6,14 @@ import type { AnthropicMessage } from "../anthropic.ts";
 
 const MAX_HISTORY_BLOCKS = 20;
 
+/** `notes` of a past run_picogk input, if it has one. */
+function notesOf(input: unknown): string {
+  return typeof input === "object" && input !== null && "notes" in input &&
+      typeof input.notes === "string"
+    ? input.notes
+    : "";
+}
+
 // Brief/stats block shape (from DB in M3; stub for M2)
 export interface HistoryEntry {
   role: "user" | "assistant";
@@ -72,7 +80,7 @@ export function buildContextMessages(
             name: "run_picogk",
             input: {
               code: `[code v${entry.codeVersion} — ${entry.codeLines ?? "?"} lines, ${status}]`,
-              notes: (block.input as { notes?: string }).notes ?? "",
+              notes: notesOf(block.input),
             },
           });
           continue;
@@ -81,14 +89,14 @@ export function buildContextMessages(
 
       if (block.type === "tool_result") {
         // Drop image blocks from past captures (keep only text)
-        const filteredContent = block.content
-          .filter((c) => c.type === "text" || entry.captureIncluded)
-          .map((c) => c as { type: "text"; text: string });
+        const filteredContent = block.content.filter((c) =>
+          c.type === "text" || entry.captureIncluded
+        );
         content.push({ ...block, content: filteredContent });
         continue;
       }
 
-      content.push(block as AnthropicMessage["content"][number]);
+      content.push(block);
     }
 
     if (content.length > 0) {

@@ -1,4 +1,5 @@
 import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
+import { z } from "zod";
 import { getDb, withTx } from "./db.ts";
 import { makeLogger } from "../log.ts";
 import { settingsGet } from "./repo/settings.ts";
@@ -21,7 +22,7 @@ export async function runGc(): Promise<void> {
   try {
     withTx((tx) => {
       // Find runs to delete: runs that are unpinned and rank > runsPerProject within their project
-      const runsToDelete = tx.prepare(`
+      const rankedRows = tx.prepare(`
         WITH RankedRuns AS (
           SELECT r.id as run_id,
                  ROW_NUMBER() OVER(PARTITION BY c.project_id ORDER BY r.started_at DESC) as rn,
@@ -32,7 +33,8 @@ export async function runGc(): Promise<void> {
         )
         SELECT run_id FROM RankedRuns 
         WHERE rn > ? AND is_pinned = 0
-      `).all(runsPerProject) as Array<{ run_id: string }>;
+      `).all(runsPerProject);
+      const runsToDelete = z.array(z.object({ run_id: z.string() })).parse(rankedRows);
 
       if (runsToDelete.length > 0) {
         const stmt = tx.prepare(`DELETE FROM runs WHERE id = ?`);
@@ -79,9 +81,9 @@ export async function runGc(): Promise<void> {
       }
     }
 
-    const dbArtifacts = db.prepare(`SELECT id, format FROM artifacts`).all() as Array<
-      { id: string; format: string }
-    >;
+    const dbArtifacts = z.array(z.object({ id: z.string(), format: z.string() })).parse(
+      db.prepare(`SELECT id, format FROM artifacts`).all(),
+    );
     const filesInDb = new Set<string>();
 
     for (const row of dbArtifacts) {
@@ -120,11 +122,12 @@ export async function runGc(): Promise<void> {
 
   // 4. VACUUM if freelist > 20%
   try {
-    const pageCount =
-      (db.prepare(`PRAGMA page_count`).get() as Record<string, unknown>)["page_count"] as number;
-    const freelistCount = (db.prepare(`PRAGMA freelist_count`).get() as Record<string, unknown>)[
-      "freelist_count"
-    ] as number;
+    const { page_count: pageCount } = z.object({ page_count: z.number() }).parse(
+      db.prepare(`PRAGMA page_count`).get(),
+    );
+    const { freelist_count: freelistCount } = z.object({ freelist_count: z.number() }).parse(
+      db.prepare(`PRAGMA freelist_count`).get(),
+    );
     if (pageCount > 0 && freelistCount / pageCount > 0.20) {
       log.info(`GC: VACUUMing database (freelist ${freelistCount}/${pageCount})`);
       db.prepare(`VACUUM`).run();

@@ -7,7 +7,7 @@
     "check": "deno fmt --check && deno lint && deno task typecheck && deno task typecheck:app && deno task test",
     "typecheck": "deno check server/main.ts server/harness/orchestrator.ts server/http/router.ts server/http/ws.ts scripts/setup.ts scripts/doctor.ts scripts/logs.ts scripts/ui_check.ts scripts/smoke_live.ts scripts/secret_scan.ts server/http/chatRun.ts scripts/smoke_mock.ts",
     "typecheck:app": "cd app && npm run typecheck",
-    "test": "deno test --allow-read --allow-write --allow-net=127.0.0.1 --allow-env --allow-run=git server/harness/tests/ server/db/tests/ server/tests/ server/http/tests/ scripts/tests/",
+    "test": "deno test --allow-read --allow-write --allow-net=127.0.0.1 --allow-env --allow-run server/harness/tests/ server/db/tests/ server/tests/ server/http/tests/ server/engine/tests/ scripts/tests/",
     "doctor": "deno run --allow-read --allow-env --allow-run --allow-sys scripts/doctor.ts",
     "start": "cd app && npm run build && cd .. && deno run --allow-net --allow-read --allow-write --allow-run --allow-env server/main.ts",
     "check:engine": "dotnet build engine/PicoForge.sln -warnaserror -m:1 && dotnet test engine/PicoForge.sln --no-build",

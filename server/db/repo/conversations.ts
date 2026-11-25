@@ -1,6 +1,7 @@
 // server/db/repo/conversations.ts — Conversation repository
 // DATA_SCHEMA §3 + §5
 
+import { z } from "zod";
 import { ulid } from "../../domain/ids.ts";
 import { getDb, withTx } from "../db.ts";
 
@@ -12,15 +13,22 @@ export interface Conversation {
   updatedAt: number;
 }
 
+const ConversationRow = z.object({
+  id: z.string(),
+  project_id: z.string(),
+  title: z.string(),
+  created_at: z.number(),
+  updated_at: z.number(),
+}).transform((r): Conversation => ({
+  id: r.id,
+  projectId: r.project_id,
+  title: r.title,
+  createdAt: r.created_at,
+  updatedAt: r.updated_at,
+}));
+
 function rowToConversation(row: unknown): Conversation {
-  const r = row as Record<string, unknown>;
-  return {
-    id: r.id as string,
-    projectId: r.project_id as string,
-    title: r.title as string,
-    createdAt: r.created_at as number,
-    updatedAt: r.updated_at as number,
-  };
+  return ConversationRow.parse(row);
 }
 
 export function conversationCreate(projectId: string, title = "Untitled"): Conversation {

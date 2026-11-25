@@ -4,7 +4,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { makeLogger } from "../log.ts";
-import { broadcast, handleWsUpgrade, resolveCapture } from "./ws.ts";
+import { broadcast, handleWsUpgrade, resolveCapture, wsHub } from "./ws.ts";
 import { serveFile } from "./staticFiles.ts";
 import { serveStatic } from "npm:hono@^4/deno";
 import {
@@ -18,12 +18,11 @@ import {
 import { conversationCreate, conversationGet, conversationList } from "../db/repo/conversations.ts";
 import { messageCreate, messageList } from "../db/repo/messages.ts";
 import { artifactGet, runCreate, runUpdateState } from "../db/repo/runs.ts";
-import { settingsGet, SettingsSchema, settingsSet } from "../db/repo/settings.ts";
+import { settingsGet, SettingsPatchSchema, settingsSet } from "../db/repo/settings.ts";
 import { clearBaseUrl, getConfig, writeApiKey, writeBaseUrl } from "../config.ts";
 import { AVAILABLE_MODELS } from "../harness/anthropic.ts";
 import { runChat } from "./chatRun.ts";
 import type { EngineSupervisor } from "../engine/supervisor.ts";
-import type { ServerEvent } from "../domain/events.ts";
 import { getBootToken } from "../config.ts";
 
 const log = makeLogger("http");
@@ -222,7 +221,7 @@ export function buildRouter(supervisor?: EngineSupervisor): Hono {
 
   app.put("/api/settings", async (c) => {
     // Allow apiKey + apiBaseUrl in PUT body — written to keystore, never to DB
-    const BodySchema = SettingsSchema.partial().extend({
+    const BodySchema = SettingsPatchSchema.extend({
       apiKey: z.string().min(10).optional(),
       apiBaseUrl: z.string().url().optional().or(z.literal("")),
     });
@@ -243,7 +242,7 @@ export function buildRouter(supervisor?: EngineSupervisor): Hono {
         return c.json(errRes("KEYSTORE_WRITE_FAILED", "Could not write base URL to keystore"), 500);
       }
     }
-    const settings = settingsSet(patch as Parameters<typeof settingsSet>[0]);
+    const settings = settingsSet(patch);
     return c.json({ settings });
   });
 
@@ -333,10 +332,7 @@ public class Design {
         runUpdateState(ev.runId, "cancelled");
         broadcast(
           conversationId,
-          { type: "run.status", runId: ev.runId, state: "cancelled", attempt: 1 } as Omit<
-            ServerEvent,
-            "seq"
-          >,
+          { type: "run.status", runId: ev.runId, state: "cancelled", attempt: 1 },
         );
       }
 
@@ -349,7 +345,16 @@ public class Design {
         const msg = messageCreate(conversationId, "user", [{ t: "text", text: ev.text }]);
         broadcast(
           conversationId,
-          { type: "message.created", message: msg } as Omit<ServerEvent, "seq">,
+          {
+            type: "message.created",
+            message: {
+              id: msg.id,
+              role: msg.role,
+              // MessageCreatedEvent carries the text; block structure stays server-side
+              content: msg.content.map((b) => (b.t === "text" ? b.text : "")).join(""),
+              createdAt: msg.createdAt,
+            },
+          },
         );
 
         // 2. Create DB run
@@ -361,10 +366,7 @@ public class Design {
         const run = runCreate(conversationId, model, { messageId: msg.id });
         broadcast(
           conversationId,
-          { type: "run.status", runId: run.id, state: "queued", attempt: 1 } as Omit<
-            ServerEvent,
-            "seq"
-          >,
+          { type: "run.status", runId: run.id, state: "queued", attempt: 1 },
         );
 
         // 3. Launch headless orchestrator in background
@@ -384,6 +386,7 @@ public class Design {
             {
               emit: (frame) => broadcast(conversationId, frame),
               ...(supervisor?.client ? { engine: supervisor.client } : {}),
+              hub: wsHub,
               dataDir: getConfig().DATA_DIR,
               signal: controller.signal,
               onState: (rId, state, failure) =>

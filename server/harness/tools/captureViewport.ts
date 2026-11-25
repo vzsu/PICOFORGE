@@ -47,15 +47,11 @@ export const captureViewportTool: ToolModule<Input> = {
         }]);
       }
 
-      const hub = ctx.wsHub as {
-        requestCapture(
-          conversationId: string,
-          view: string,
-          timeoutMs: number,
-        ): Promise<string | null>;
-      };
-
-      const base64png = await hub.requestCapture(ctx.conversationId, view, CAPTURE_TIMEOUT_MS);
+      const base64png = await ctx.wsHub.requestCapture(
+        ctx.conversationId,
+        view,
+        CAPTURE_TIMEOUT_MS,
+      );
 
       if (!base64png) {
         return ok([{

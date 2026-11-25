@@ -3,8 +3,14 @@
 // monotonic seq, ring-buffer resume (last 500 events), backpressure.
 
 import { makeLogger } from "../log.ts";
-import { ClientEventSchema, ServerEvent, ServerEventSchema } from "../domain/events.ts";
+import {
+  ClientEventSchema,
+  type ServerEvent,
+  ServerEventSchema,
+  type ServerFrame,
+} from "../domain/events.ts";
 import { getBootToken } from "../config.ts";
+import type { CaptureView, WsHub } from "../harness/tools/_base.ts";
 
 const log = makeLogger("ws");
 
@@ -44,7 +50,7 @@ function getOrCreateConv(conversationId: string): ConvState {
 /** Broadcast a typed server event to all sessions for a conversation */
 export function broadcast(
   conversationId: string,
-  event: Omit<ServerEvent, "seq">,
+  event: ServerFrame,
 ): void {
   const state = convMap.get(conversationId);
   if (!state) return;
@@ -52,12 +58,12 @@ export function broadcast(
   const frame = JSON.stringify({ ...event, seq });
 
   // Persist in ring
-  state.ring.push({ seq, frame, type: (event as { type: string }).type });
+  state.ring.push({ seq, frame, type: event.type });
   if (state.ring.length > RING_SIZE) state.ring.shift();
 
   // Fan-out to connected sessions
   for (const session of state.sessions.values()) {
-    sendToSession(session, frame, (event as { type: string }).type);
+    sendToSession(session, frame, event.type);
   }
 }
 
@@ -66,8 +72,7 @@ export function sendToSession(session: Session, frame: string, type: string): vo
   if (session.socket.readyState !== WebSocket.OPEN) return;
   try {
     // Backpressure: drop step.log if queue is too large (SYS_DESIGN §3.3)
-    const buffered = (session.socket as unknown as { bufferedAmount?: number })
-      .bufferedAmount ?? 0;
+    const buffered = session.socket.bufferedAmount;
     if (buffered > QUEUE_WATERMARK && type === "step.log") return;
     session.socket.send(frame);
   } catch (e) {
@@ -81,7 +86,7 @@ const pendingCaptures = new Map<string, (base64: string | null) => void>();
 
 export function requestCapture(
   conversationId: string,
-  view: string,
+  view: CaptureView,
   timeoutMs: number,
 ): Promise<string | null> {
   return new Promise((resolve) => {
@@ -107,7 +112,7 @@ export function requestCapture(
       view,
       width: 1024,
       height: 1024,
-    } as Omit<ServerEvent, "seq">);
+    });
   });
 }
 
@@ -120,10 +125,10 @@ export function resolveCapture(requestId: string, base64png?: string): void {
 
 // ─── wsHub for tools ──────────────────────────────────────────────────────────
 
-export const wsHub = {
+export const wsHub: WsHub = {
   requestCapture,
-  sendToConversation: (id: string, event: unknown) => {
-    broadcast(id, event as Omit<ServerEvent, "seq">);
+  sendToConversation: (id: string, frame: ServerFrame) => {
+    broadcast(id, frame);
     return Promise.resolve();
   },
 };
@@ -177,7 +182,8 @@ export function handleWsUpgrade(
 
   socket.onmessage = (ev) => {
     try {
-      const raw = JSON.parse(ev.data as string);
+      if (typeof ev.data !== "string") return; // binary client frames are not part of the protocol
+      const raw: unknown = JSON.parse(ev.data);
       const parsed = ClientEventSchema.safeParse(raw);
       if (!parsed.success) {
         log.warn("Invalid client WS event", { sessionId, errors: parsed.error.issues });

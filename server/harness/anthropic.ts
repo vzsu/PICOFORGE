@@ -203,9 +203,7 @@ async function runStream(
   let inputTokens = 0;
   let outputTokens = 0;
 
-  // Cast messages to match SDK type (our types are a subset of theirs)
-  // deno-lint-ignore no-explicit-any
-  const sdkMessages = messages as any[];
+  const sdkMessages = messages.map(toSdkMessage);
 
   const stream = await client.messages.stream({
     model,
@@ -213,7 +211,7 @@ async function runStream(
     temperature,
     system,
     messages: sdkMessages,
-    tools: tools as Anthropic.Tool[],
+    tools: tools.map(toSdkTool),
   });
 
   for await (const event of stream) {
@@ -265,7 +263,10 @@ async function runStream(
         break;
 
       case "message_delta":
-        stopReason = event.delta.stop_reason as TurnResult["stopReason"] ?? "end_turn";
+        stopReason = event.delta.stop_reason === "tool_use" ||
+            event.delta.stop_reason === "max_tokens"
+          ? event.delta.stop_reason
+          : "end_turn";
         outputTokens = event.usage.output_tokens;
         break;
     }
@@ -278,6 +279,53 @@ async function runStream(
     toolCalls: toolCalls.length,
   });
   return { stopReason, textBlocks, toolCalls, inputTokens, outputTokens };
+}
+
+// ─── Our message shapes → SDK params (explicit, so a shape drift fails typecheck) ───────────
+
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"] as const;
+type ImageMediaType = (typeof IMAGE_TYPES)[number];
+function isImageMediaType(t: string): t is ImageMediaType {
+  return (IMAGE_TYPES as readonly string[]).includes(t);
+}
+
+function toSdkImage(
+  source: { type: "base64"; media_type: string; data: string },
+): Anthropic.ImageBlockParam {
+  // Captures are PNG; anything unexpected is sent as PNG rather than rejected mid-run.
+  const media_type = isImageMediaType(source.media_type) ? source.media_type : "image/png";
+  return { type: "image", source: { type: "base64", media_type, data: source.data } };
+}
+
+function toSdkBlock(c: MessageContent): Anthropic.ContentBlockParam {
+  switch (c.type) {
+    case "text":
+      return { type: "text", text: c.text };
+    case "tool_use":
+      return { type: "tool_use", id: c.id, name: c.name, input: c.input };
+    case "image":
+      return toSdkImage(c.source);
+    case "tool_result":
+      return {
+        type: "tool_result",
+        tool_use_id: c.tool_use_id,
+        content: c.content.map((r) =>
+          r.type === "text" ? { type: "text", text: r.text } : toSdkImage(r.source)
+        ),
+      };
+  }
+}
+
+function toSdkMessage(m: AnthropicMessage): Anthropic.MessageParam {
+  return { role: m.role, content: m.content.map(toSdkBlock) };
+}
+
+function toSdkTool(t: ToolDefinition): Anthropic.Tool {
+  return {
+    name: t.name,
+    description: t.description,
+    input_schema: { ...t.input_schema, type: "object" },
+  };
 }
 
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {

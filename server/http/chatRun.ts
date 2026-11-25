@@ -7,19 +7,20 @@ import { relative } from "jsr:@std/path@^1.0.0";
 import { driveRun, type RunState } from "../harness/orchestrator.ts";
 import type { HistoryEntry } from "../harness/prompts/context.ts";
 import { type EngineApi, engineStatsSchema } from "../engine/client.ts";
-import type { ServerEvent } from "../domain/events.ts";
+import type { ServerFrame } from "../domain/events.ts";
+import type { WsHub } from "../harness/tools/_base.ts";
 import { makeLogger } from "../log.ts";
 
 const log = makeLogger("ws");
 
 /** A server frame before the hub stamps its seq. */
-export type ChatFrame = ServerEvent extends infer E ? E extends { seq: number } ? Omit<E, "seq">
-  : never
-  : never;
+export type ChatFrame = ServerFrame;
 
 export interface ChatRunDeps {
   emit: (frame: ChatFrame) => void;
   engine?: EngineApi;
+  /** WS hub for capture_viewport / ask_user; absent when headless. */
+  hub?: WsHub;
   dataDir: string;
   signal: AbortSignal;
   /** Persist run state (DB). Called for every state the orchestrator reports. */
@@ -57,7 +58,11 @@ export async function runChat(deps: ChatRunDeps, args: ChatRunArgs): Promise<Run
       userMessage: args.text,
       history: args.history,
       signal: deps.signal,
-      ctx: { dataDir, ...(deps.engine ? { engineClient: deps.engine } : {}) },
+      ctx: {
+        dataDir,
+        ...(deps.engine ? { engineClient: deps.engine } : {}),
+        ...(deps.hub ? { wsHub: deps.hub } : {}),
+      },
       callbacks: {
         onStateChange: (_r, state) => status(state),
         onTextDelta: (_r, delta) =>

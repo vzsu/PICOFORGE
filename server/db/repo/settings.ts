@@ -3,6 +3,7 @@
 
 import { z } from "zod";
 import { getDb, withTx } from "../db.ts";
+import { jsonCol } from "../rows.ts";
 
 // ─── Default settings ─────────────────────────────────────────────────────────
 
@@ -34,23 +35,56 @@ export type Settings = z.infer<typeof SettingsSchema>;
 
 const DEFAULT_SETTINGS: Settings = SettingsSchema.parse({});
 
+/**
+ * A settings change: every field optional, no defaults, nested objects partial. Defaults belong to
+ * the stored document only: SettingsSchema.partial() would fill nested defaults into a patch and
+ * reset untouched siblings (SETTINGS-PATCH-01).
+ */
+export const SettingsPatchSchema = z.object({
+  model: z.string().optional(),
+  temperature: z.number().min(0).max(1).optional(),
+  maxOutputTokens: z.number().int().min(512).max(8192).optional(),
+  maxRepairAttempts: z.number().int().min(1).max(10).optional(),
+  voxelCellCapHard: z.number().optional(),
+  voxelCellCapWarn: z.number().optional(),
+  runTimeoutS: z.number().int().min(10).max(300).optional(),
+  maxRssMiB: z.number().int().min(512).max(32768).optional(),
+  retention: z.object({
+    runsPerProject: z.number().int().min(1).optional(),
+    maxBytes: z.number().optional(),
+  }).optional(),
+  renderer: z.object({
+    preferWebGPU: z.boolean().optional(),
+    ptMaxSamples: z.number().int().optional(),
+    ptEnabled: z.boolean().optional(),
+  }).optional(),
+  telemetry: z.boolean().optional(),
+});
+export type SettingsPatch = z.infer<typeof SettingsPatchSchema>;
+
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
 export function settingsGet(): Settings {
   const db = getDb();
   const rows = db.prepare("SELECT key,value_json FROM settings").all();
   const kv: Record<string, unknown> = {};
-  for (const row of rows) {
-    const r = row as Record<string, unknown>;
-    kv[r.key as string] = JSON.parse(r.value_json as string);
+  for (
+    const r of z.array(z.object({ key: z.string(), value_json: jsonCol(z.unknown()) })).parse(rows)
+  ) {
+    kv[r.key] = r.value_json;
   }
   return SettingsSchema.parse({ ...DEFAULT_SETTINGS, ...kv });
 }
 
-export function settingsSet(patch: Partial<Settings>): Settings {
+export function settingsSet(patch: SettingsPatch): Settings {
   const now = Date.now();
   const current = settingsGet();
-  const merged = SettingsSchema.parse({ ...current, ...patch });
+  const merged = SettingsSchema.parse({
+    ...current,
+    ...patch,
+    retention: { ...current.retention, ...patch.retention },
+    renderer: { ...current.renderer, ...patch.renderer },
+  });
   withTx((db) => {
     for (const [key, value] of Object.entries(merged)) {
       db.prepare(
