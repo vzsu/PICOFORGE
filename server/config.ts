@@ -133,6 +133,30 @@ export async function clearBaseUrl(): Promise<boolean> {
   }
 }
 
+/** Repo root: two levels up from this file (server/config.ts). */
+const REPO_ROOT = join(import.meta.dirname ?? ".", "..");
+
+/**
+ * Engine host binary: ENGINE_BIN if set; else the engine built in this repo (Release, then Debug);
+ * else the bare name for a PATH lookup (packaged install, docs/01 §4 P9). B-010, CFG-ENGINE-01.
+ */
+export async function resolveEngineBin(
+  envValue: string | undefined,
+  repoRoot = REPO_ROOT,
+): Promise<string> {
+  if (envValue) return envValue;
+  const exe = Deno.build.os === "windows" ? "forge-engine.exe" : "forge-engine";
+  for (const config of ["Release", "Debug"]) {
+    const p = join(repoRoot, "engine", "ForgeEngine", "bin", config, "net9.0", exe);
+    try {
+      if ((await Deno.stat(p)).isFile) return p;
+    } catch {
+      // not built in this configuration
+    }
+  }
+  return "forge-engine";
+}
+
 export async function loadConfig(): Promise<Config> {
   if (_config) return _config;
 
@@ -141,7 +165,7 @@ export async function loadConfig(): Promise<Config> {
     HOST: Deno.env.get("HOST"),
     DATA_DIR: Deno.env.get("DATA_DIR"),
     NODE_ENV: Deno.env.get("NODE_ENV"),
-    ENGINE_BIN: Deno.env.get("ENGINE_BIN"),
+    ENGINE_BIN: await resolveEngineBin(Deno.env.get("ENGINE_BIN")),
   };
 
   const partial = ConfigSchema.omit({ ANTHROPIC_API_KEY: true, ANTHROPIC_BASE_URL: true }).parse(
