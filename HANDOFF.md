@@ -8,9 +8,10 @@ P0 Make it real. Gate status:
 - ✗ the same with a **real** model: `smoke:live` not run (costs money; needs your approval)
 
 ## Works now
-- `deno task check`: 107 passed / 0 failed (fmt, lint, server + app typecheck, unit/golden/drill tests).
+- `deno task check`: 110 passed / 0 failed (fmt, lint, server + app typecheck, unit/golden/drill tests).
 - `deno task check:engine`: 0 warnings / 0 errors; Kit.Tests 15/15, ForgeEngine.Tests 28/28.
 - `deno task e2e`: 4 passed / 0 failed (UI-VIS-mock-main ×3, UI-FLOW-fan-mock).
+- `deno task bench`: engine median of 3 vs baseline, no regression > 10 % (cube 1.9 s, fan 4.7 s, gyroid 9.3 s).
 - `deno task start`, then open the printed `http://localhost:7317/?t=<token>`: live studio. Prompt → brief card → live status → done → real mesh in the T0 viewport. `PICOFORGE_MODEL=mock` needs no key.
 - Without a token (or with `?mock=1`): the image-prompt mock-up with the procedural cylinder head.
 - No `as` casts or lint suppressions in server code.
@@ -19,7 +20,6 @@ P0 Make it real. Gate status:
 - Nothing in flight.
 - Known gaps, all in `BACKLOG.md`:
   - The pre-P0 amber UI is still in the tree (`app/src/chat`, `panels`, `state/chatStore.ts`, `viewport/ViewportEngine.ts`); nothing on the main path imports it.
-  - `deno task bench` isn't wired to real benches.
   - Linux sandbox limits aren't done.
 
 ## Next step (do this first)
