@@ -1,0 +1,11 @@
+### PERF: <metric> · <change>
+- Machine / tier: <CPU, RAM, GPU> · T<n> (or simulated: 4× CPU throttle, 1366×768)
+- Budget: <value> (docs/NN §x)
+- Baseline (median of 3): 
+- After (median of 3): 
+- Δ: <+/-%> · Noise band: <±%>
+- Other metrics checked for regressions: 
+- Method: <command, flags, scene>
+- Kept? yes / no — why
+- Baseline updated? yes (reason) / no
+- Things tried that did not help: 

@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PicoForge Agent Docs</title>
+<meta name="description" content="Install PicoForge and connect any AI agent to it over MCP, with copy-paste prompts.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Doto:wght@600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #1E1E20; --panel: #232325; --card: #2C2C2E; --raised: #343437; --line: #3A3A3D;
+  --ink: #EDEDED; --ink-2: #A1A1A6; --ink-3: #8E8E93;
+  --accent: #D71921; --ok: #30D158; --warn: #FFD60A; --code-bg: #19191B;
+  --font-sans: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --font-dot: "Doto", var(--font-mono);
+  --r-cell: 10px; --r-card: 14px; --r-pill: 999px;
+  --header-h: 56px; --nav-w: 264px; --toc-w: 220px;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #F5F5F7; --panel: #FFFFFF; --card: #FFFFFF; --raised: #EDEDF0; --line: #D9D9DE;
+  --ink: #1D1D1F; --ink-2: #48484A; --ink-3: #6E6E73; --code-bg: #F0F0F3;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #F5F5F7; --panel: #FFFFFF; --card: #FFFFFF; --raised: #EDEDF0; --line: #D9D9DE;
+    --ink: #1D1D1F; --ink-2: #48484A; --ink-3: #6E6E73; --code-bg: #F0F0F3;
+    color-scheme: light;
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: calc(var(--header-h) + 16px); }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font-sans); -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration-color: var(--line); text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--ink-2); }
+code, pre, kbd { font-family: var(--font-mono); }
+:focus-visible { outline: 2px solid var(--ink-3); outline-offset: 2px; border-radius: 4px; }
+
+/* header */
+.top { position: sticky; top: 0; z-index: 20; height: var(--header-h); display: flex; align-items: center; gap: 16px;
+  padding: 0 20px; background: color-mix(in srgb, var(--panel) 92%, transparent); border-bottom: 1px solid var(--line); backdrop-filter: saturate(1.2) blur(6px); }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.brand .mark { font-family: var(--font-dot); font-weight: 600; font-size: 20px; letter-spacing: .06em; }
+.brand .sub { font: 500 10.5px/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+.search { flex: 0 1 340px; margin-left: 16px; position: relative; }
+.search input { width: 100%; height: 34px; padding: 0 12px 0 32px; background: var(--card); color: var(--ink); border: 1px solid var(--line);
+  border-radius: var(--r-pill); font: 14px var(--font-sans); }
+.search svg { position: absolute; left: 11px; top: 10px; width: 14px; height: 14px; stroke: var(--ink-3); }
+.spacer { flex: 1; }
+.chip { font: 500 11px/1 var(--font-mono); color: var(--ink-3); border: 1px solid var(--line); padding: 6px 10px; border-radius: var(--r-pill); white-space: nowrap; }
+.icon-btn { width: 34px; height: 34px; display: grid; place-items: center; background: transparent; border: 1px solid var(--line); border-radius: 50%; color: var(--ink-2); cursor: pointer; }
+.icon-btn:hover { background: var(--raised); }
+.menu-btn { display: none; }
+
+/* layout */
+.layout { display: grid; grid-template-columns: var(--nav-w) minmax(0, 1fr) var(--toc-w); max-width: 1440px; margin: 0 auto; }
+nav.side { position: sticky; top: var(--header-h); height: calc(100vh - var(--header-h)); overflow-y: auto; padding: 24px 12px 40px 20px; border-right: 1px solid var(--line); }
+.nav-group { margin-bottom: 22px; }
+.nav-label { font: 500 10.5px/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); padding: 0 10px 8px; }
+nav.side a { display: block; padding: 6px 10px; border-radius: 8px; color: var(--ink-2); text-decoration: none; font-size: 14px; }
+nav.side a:hover { background: var(--raised); color: var(--ink); }
+nav.side a.active { background: var(--raised); color: var(--ink); font-weight: 500; }
+nav.side a.hidden { display: none; }
+main { min-width: 0; padding: 40px 48px 120px; }
+article { max-width: 780px; }
+aside.toc { position: sticky; top: var(--header-h); height: calc(100vh - var(--header-h)); overflow-y: auto; padding: 40px 20px; }
+aside.toc .nav-label { padding-left: 0; }
+aside.toc a { display: block; font-size: 13px; color: var(--ink-3); text-decoration: none; padding: 4px 0 4px 12px; border-left: 1px solid var(--line); }
+aside.toc a.active { color: var(--ink); border-left-color: var(--ink); }
+
+/* type */
+.eyebrow { font: 500 10.5px/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 12px; }
+h1 { font-size: 34px; line-height: 1.15; letter-spacing: -.01em; margin: 0 0 12px; font-weight: 600; }
+h2 { font-size: 22px; line-height: 1.25; margin: 56px 0 12px; font-weight: 600; padding-top: 8px; }
+h3 { font-size: 16px; margin: 28px 0 8px; font-weight: 600; }
+p, li { color: var(--ink-2); }
+p strong, li strong { color: var(--ink); font-weight: 500; }
+.lead { font-size: 17px; color: var(--ink-2); max-width: 640px; }
+:not(pre) > code { font-size: 13px; background: var(--card); border: 1px solid var(--line); padding: 1px 6px; border-radius: 6px; color: var(--ink); }
+hr { border: 0; border-top: 1px solid var(--line); margin: 40px 0; }
+
+/* callout */
+.callout { display: flex; gap: 12px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-card); padding: 14px 16px; margin: 20px 0; }
+.callout .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); margin-top: 8px; flex: none; }
+.callout.live .dot { background: var(--accent); }
+.callout.ok .dot { background: var(--ok); }
+.callout p { margin: 0; }
+
+/* fill-in panel */
+.fill { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-card); padding: 6px 0; margin: 24px 0; }
+.fill .row { display: grid; grid-template-columns: 170px 1fr; align-items: center; gap: 12px; padding: 8px 16px; }
+.fill .row + .row { border-top: 1px solid var(--line); }
+.fill label { font-size: 14px; color: var(--ink); }
+.fill input { width: 100%; height: 34px; padding: 0 10px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; font: 13px var(--font-mono); }
+.fill .hint { grid-column: 2; font-size: 12px; color: var(--ink-3); margin-top: -4px; }
+
+/* code */
+.code { position: relative; background: var(--code-bg); border: 1px solid var(--line); border-radius: var(--r-cell); margin: 14px 0 20px; }
+.code .bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 8px 8px 14px; border-bottom: 1px solid var(--line); }
+.code .lang { font: 500 10.5px/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+.code pre { margin: 0; padding: 14px 16px; overflow-x: auto; font-size: 13px; line-height: 1.6; color: var(--ink); white-space: pre; }
+.copy { font: 500 12px/1 var(--font-mono); color: var(--ink-2); background: transparent; border: 1px solid var(--line); border-radius: var(--r-pill); padding: 6px 10px; cursor: pointer; }
+.copy:hover { background: var(--raised); color: var(--ink); }
+.copy.done { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 50%, var(--line)); }
+
+/* tabs */
+.tabs { margin: 16px 0 24px; }
+.tablist { display: inline-flex; gap: 2px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 3px; flex-wrap: wrap; }
+.tablist button { font: 500 13px/1 var(--font-sans); color: var(--ink-2); background: transparent; border: 0; border-radius: var(--r-pill); padding: 8px 12px; cursor: pointer; }
+.tablist button[aria-selected="true"] { background: var(--raised); color: var(--ink); }
+.tabpanel[hidden] { display: none; }
+
+/* prompt cards */
+.prompts { display: grid; gap: 14px; margin: 18px 0; }
+.prompt { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-card); overflow: hidden; }
+.prompt header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 14px 16px 10px; }
+.prompt h3 { margin: 0 0 2px; font-size: 15px; }
+.prompt .desc { margin: 0; font-size: 13px; color: var(--ink-3); }
+.prompt pre { margin: 0; padding: 12px 16px 16px; font: 13px/1.6 var(--font-mono); color: var(--ink); white-space: pre-wrap; border-top: 1px solid var(--line); background: var(--code-bg); }
+.prompt.featured { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.prompt.featured .tag { display: inline-flex; align-items: center; gap: 6px; font: 500 10.5px/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 6px; }
+.prompt.featured .tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+/* tables */
+.table-wrap { overflow-x: auto; margin: 14px 0 22px; border: 1px solid var(--line); border-radius: var(--r-cell); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; font: 500 10.5px/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); padding: 12px 14px; background: var(--panel); border-bottom: 1px solid var(--line); }
+td { padding: 10px 14px; border-bottom: 1px solid var(--line); color: var(--ink-2); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+td code { white-space: nowrap; }
+
+/* steps */
+ol.steps { list-style: none; counter-reset: s; padding: 0; margin: 16px 0; }
+ol.steps li { counter-increment: s; position: relative; padding: 0 0 14px 40px; }
+ol.steps li::before { content: counter(s, decimal-leading-zero); position: absolute; left: 0; top: 1px; font: 500 12px/1.6 var(--font-mono); color: var(--ink-3); }
+
+footer.page { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line); font: 12px var(--font-mono); color: var(--ink-3); }
+
+/* responsive */
+@media (max-width: 1200px) { .layout { grid-template-columns: var(--nav-w) minmax(0, 1fr); } aside.toc { display: none; } }
+@media (max-width: 900px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  nav.side { position: fixed; top: var(--header-h); left: 0; width: min(300px, 86vw); z-index: 15; background: var(--panel); transform: translateX(-102%); transition: transform 200ms ease-out; }
+  body.nav-open nav.side { transform: none; }
+  .menu-btn { display: grid; }
+  main { padding: 28px 16px 96px; }
+  .search { display: none; }
+  .chip.ver { display: none; }
+  .fill .row { grid-template-columns: 1fr; gap: 6px; }
+  .fill .hint { grid-column: 1; }
+  h1 { font-size: 28px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <button class="icon-btn menu-btn" id="menuBtn" aria-label="Open navigation" aria-expanded="false">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+  </button>
+  <a class="brand" href="#intro"><span class="mark">PICOFORGE</span><span class="sub">Agent docs</span></a>
+  <div class="search">
+    <svg viewBox="0 0 16 16" fill="none" stroke-width="1.5"><circle cx="7" cy="7" r="5"/><path d="M11 11l3 3"/></svg>
+    <input id="navFilter" type="search" placeholder="Filter sections" aria-label="Filter sections">
+  </div>
+  <div class="spacer"></div>
+  <span class="chip ver">MCP · spec 2026-07-28</span>
+  <button class="icon-btn" id="themeBtn" aria-label="Toggle colour theme">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="3.2"/><path d="M8 1.5v1.6M8 12.9v1.6M1.5 8h1.6M12.9 8h1.6M3.4 3.4l1.1 1.1M11.5 11.5l1.1 1.1M3.4 12.6l1.1-1.1M11.5 4.5l1.1-1.1"/></svg>
+  </button>
+</header>
+
+<div class="layout">
+  <nav class="side" id="sideNav" aria-label="Documentation">
+    <div class="nav-group">
+      <div class="nav-label">Getting started</div>
+      <a href="#intro">Introduction</a>
+      <a href="#quickstart">Quickstart prompt</a>
+      <a href="#prereqs">Prerequisites</a>
+      <a href="#install">Install PicoForge</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Connect</div>
+      <a href="#connect">Connect your agent</a>
+      <a href="#verify">Verify the connection</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Use</div>
+      <a href="#loop">The working loop</a>
+      <a href="#prompts">Prompt library</a>
+      <a href="#rules">Rules for agents</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Reference</div>
+      <a href="#tools">Tools</a>
+      <a href="#resources">Resources and prompts</a>
+      <a href="#errors">Error codes</a>
+      <a href="#limits">Limits</a>
+      <a href="#troubleshooting">Troubleshooting</a>
+    </div>
+  </nav>
+
+  <main id="main">
+    <article>
+      <section id="intro">
+        <p class="eyebrow">Getting started</p>
+        <h1>Drive PicoForge from any AI agent</h1>
+        <p class="lead">PicoForge is a local computational engineering studio. Connect Claude Code, Codex, Gemini CLI, Cursor or VS Code to it over MCP, and your agent can design parts while you watch them build in the PicoForge viewport and edit them yourself.</p>
+        <div class="callout"><span class="dot"></span><p>Fill in your repository URL below and every command and prompt on this page updates. The token is only needed for the HTTP connection; stdio does not need it.</p></div>
+        <div class="fill" role="group" aria-label="Values used in the commands on this page">
+          <div class="row"><label for="fRepo">Repository URL</label><input id="fRepo" placeholder="https://github.com/you/picoforge" autocomplete="off" spellcheck="false"></div>
+          <div class="row"><label for="fToken">MCP token (optional)</label><input id="fToken" placeholder="From Settings → MCP connections" autocomplete="off" spellcheck="false"><div class="hint">Stays in this browser only.</div></div>
+        </div>
+      </section>
+
+      <section id="quickstart">
+        <h2>Quickstart prompt</h2>
+        <p>Paste this into your agent. It checks prerequisites, installs PicoForge, connects itself, and confirms the tools are available. It asks before installing system software.</p>
+        <div class="prompts">
+          <div class="prompt featured">
+            <header><div><div class="tag">Start here</div><h3>Install and connect</h3><p class="desc">One prompt from nothing to a connected agent.</p></div><button class="copy" data-copy-next>Copy</button></header>
+<pre data-tpl>Install and connect PicoForge.
+1. Check that Deno ≥ 2.2, .NET SDK ≥ 9 and Git are installed. Ask me before installing anything missing.
+2. Clone {{REPO}} into a folder named picoforge and run `deno task setup` inside it.
+3. Start it with `deno task start` and run `deno run -A server/main.ts --selftest`; it must exit 0.
+4. Register the MCP server for this client using stdio (command `picoforged`, args `--mcp`). Use this client's own MCP configuration method.
+5. Reload MCP servers (or tell me to restart the session) and confirm the picoforge tools are listed.
+6. Load the `forge_engineer` prompt from picoforge and summarise the working loop in five lines.</pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="prereqs">
+        <h2>Prerequisites</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Tool</th><th>Check</th><th>Minimum</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td>Deno</td><td><code>deno --version</code></td><td>2.2</td><td>Server, MCP, tasks</td></tr>
+            <tr><td>.NET SDK</td><td><code>dotnet --version</code></td><td>9.0</td><td>Geometry engine (PicoGK)</td></tr>
+            <tr><td>Node.js</td><td><code>node --version</code></td><td>20</td><td>Only to build the UI from source</td></tr>
+            <tr><td>Git</td><td><code>git --version</code></td><td>any</td><td>Clone the repository</td></tr>
+          </tbody>
+        </table></div>
+        <p>Runs on an 8 GB machine without a dedicated GPU (tier T0: draft resolution first, one heavy job at a time). Windows 10/11 is the primary platform.</p>
+      </section>
+
+      <section id="install">
+        <h2>Install PicoForge</h2>
+        <div class="code"><div class="bar"><span class="lang">Shell</span><button class="copy" data-copy-next>Copy</button></div>
+<pre data-tpl>git clone {{REPO}} picoforge
+cd picoforge
+deno task setup        # restores PicoGK, builds the engine, generates the API card
+deno task start        # 127.0.0.1:7317, opens the app window
+deno run -A server/main.ts --selftest</pre></div>
+        <div class="callout ok"><span class="dot"></span><p>The first launch asks for your model API key and runs a self-test that builds a 10 mm cube. When the cube appears, the engine works.</p></div>
+      </section>
+
+      <section id="connect">
+        <h2>Connect your agent</h2>
+        <p><strong>stdio is recommended.</strong> The client starts <code>picoforged --mcp</code>, which attaches to the running app, so there is no token to copy. Use HTTP only when the agent runs somewhere that cannot start a local process.</p>
+        <div class="tabs" data-tabs>
+          <div class="tablist" role="tablist" aria-label="Client">
+            <button role="tab" aria-selected="true">Claude Code</button>
+            <button role="tab" aria-selected="false">Codex</button>
+            <button role="tab" aria-selected="false">Gemini CLI</button>
+            <button role="tab" aria-selected="false">Cursor</button>
+            <button role="tab" aria-selected="false">VS Code</button>
+            <button role="tab" aria-selected="false">HTTP</button>
+          </div>
+          <div class="tabpanel" role="tabpanel">
+            <div class="code"><div class="bar"><span class="lang">Shell</span><button class="copy" data-copy-next>Copy</button></div>
+<pre>claude mcp add picoforge -- picoforged --mcp</pre></div>
+            <p>Add <code>--scope project</code> to share the server with everyone who opens the project (writes <code>.mcp.json</code>).</p>
+          </div>
+          <div class="tabpanel" role="tabpanel" hidden>
+            <div class="code"><div class="bar"><span class="lang">~/.codex/config.toml</span><button class="copy" data-copy-next>Copy</button></div>
+<pre>[mcp_servers.picoforge]
+command = "picoforged"
+args = ["--mcp"]</pre></div>
+          </div>
+          <div class="tabpanel" role="tabpanel" hidden>
+            <div class="code"><div class="bar"><span class="lang">~/.gemini/settings.json</span><button class="copy" data-copy-next>Copy</button></div>
+<pre>{
+  "mcpServers": {
+    "picoforge": { "command": "picoforged", "args": ["--mcp"] }
+  }
+}</pre></div>
+          </div>
+          <div class="tabpanel" role="tabpanel" hidden>
+            <div class="code"><div class="bar"><span class="lang">.cursor/mcp.json</span><button class="copy" data-copy-next>Copy</button></div>
+<pre>{
+  "mcpServers": {
+    "picoforge": { "command": "picoforged", "args": ["--mcp"] }
+  }
+}</pre></div>
+          </div>
+          <div class="tabpanel" role="tabpanel" hidden>
+            <div class="code"><div class="bar"><span class="lang">.vscode/mcp.json</span><button class="copy" data-copy-next>Copy</button></div>
+<pre>{
+  "servers": {
+    "picoforge": { "type": "stdio", "command": "picoforged", "args": ["--mcp"] }
+  }
+}</pre></div>
+          </div>
+          <div class="tabpanel" role="tabpanel" hidden>
+            <div class="code"><div class="bar"><span class="lang">Claude Code over HTTP</span><button class="copy" data-copy-next>Copy</button></div>
+<pre data-tpl>claude mcp add --transport http picoforge http://127.0.0.1:7317/mcp \
+  --header "X-PicoForge-Token: {{TOKEN}}"</pre></div>
+            <p>The app must be running. The token is shown in PicoForge → Settings → MCP connections, where you can also rotate it and revoke clients.</p>
+          </div>
+        </div>
+        <div class="callout"><span class="dot"></span><p>Client configuration formats change. If a snippet is rejected, check that client's MCP documentation; the values (command <code>picoforged</code>, argument <code>--mcp</code>) stay the same.</p></div>
+      </section>
+
+      <section id="verify">
+        <h2>Verify the connection</h2>
+        <ol class="steps">
+          <li>Ask your agent to list the picoforge tools. You should see <code>open_project</code>, <code>submit_design_brief</code>, <code>define_part</code>, <code>run_build</code> and others.</li>
+          <li>In PicoForge, the top bar shows <code>AGENTS 1</code>. Settings → MCP connections lists the client by name.</li>
+          <li>Ask the agent to build a 20 mm cube in a project called "Hello". It appears in your viewport with a small <code>mcp · &lt;client&gt;</code> chip on its run card.</li>
+        </ol>
+      </section>
+
+      <section id="loop">
+        <h2>The working loop</h2>
+        <p>Agents follow this order. The server enforces the important parts, so skipping a step returns an error with the next step to take.</p>
+        <ol class="steps">
+          <li>Load the <code>forge_engineer</code> prompt and read <code>picoforge://api/picogk-card</code>.</li>
+          <li><code>open_project</code>; read <code>picoforge://session/selection</code> and <code>/pins</code> if the human points at something.</li>
+          <li><code>search_docs</code> for a matching recipe and the relevant formulas.</li>
+          <li><code>submit_design_brief</code> with parameters as expressions, targets and physics checks.</li>
+          <li><code>define_part</code> once per part; every dimension from <code>ctx.P("name")</code>.</li>
+          <li><code>assemble</code>, then <code>run_build</code> with stage <code>final</code>; poll <code>get_run</code> if it returns a handle.</li>
+          <li>On failure, follow <code>repairHint</code> and re-send only the failing part.</li>
+          <li><code>inspect_geometry</code>, then report numbers with units and their analysis tier.</li>
+        </ol>
+      </section>
+
+      <section id="prompts">
+        <h2>Prompt library</h2>
+        <p>Copy a prompt, replace the angle-bracket parts, and paste it into your agent.</p>
+        <div class="prompts">
+          <div class="prompt"><header><div><h3>Design something new</h3><p class="desc">Full loop from description to validated part.</p></div><button class="copy" data-copy-next>Copy</button></header>
+<pre>Using the picoforge MCP server: load `forge_engineer`, open project "&lt;project name&gt;", then design &lt;what it is, sizes, loads, material, how it will be made&gt;. Submit a brief first, define parts one at a time, assemble, run the final build, and inspect the result. Report volume, mass, minimum wall thickness, and any failed or unverified checks. Respect all pins.</pre></div>
+          <div class="prompt"><header><div><h3>Change an existing design</h3><p class="desc">Edit parameters or move parts without regenerating everything.</p></div><button class="copy" data-copy-next>Copy</button></header>
+<pre>In picoforge project "&lt;project name&gt;", variant "&lt;variant&gt;": call `get_scene`, then change &lt;what&gt; using `set_param` or `transform_part` with the current `baseRev`. Rebuild only what is affected and give me before and after numbers.</pre></div>
+          <div class="prompt"><header><div><h3>Design around what I selected</h3><p class="desc">Uses the human's selection and pins in the viewport.</p></div><button class="copy" data-copy-next>Copy</button></header>
+<pre>Read `picoforge://session/selection` and `picoforge://session/pins` for project "&lt;project name&gt;". Design &lt;a bracket, clamp, duct…&gt; that mounts to the selected feature, keeps every pinned feature unchanged, and stays inside &lt;envelope&gt;. Show me the brief before building.</pre></div>
+          <div class="prompt"><header><div><h3>Optimise (Raman mode)</h3><p class="desc">Long study with a ledger of rounds.</p></div><button class="copy" data-copy-next>Copy</button></header>
+<pre>In picoforge project "&lt;project name&gt;", start a RAMAN study on variant "&lt;variant&gt;". Goal: minimise mass. Constraints: &lt;safety factor, max deflection, envelope, min wall&gt;. Poll `get_study` every minute. When it stops, show the best three rounds from the ledger and recommend one, with each number's analysis tier.</pre></div>
+          <div class="prompt"><header><div><h3>Review a design</h3><p class="desc">Structured critique before making the part.</p></div><button class="copy" data-copy-next>Copy</button></header>
+<pre>Load the `forge_review` prompt for variant "&lt;variant&gt;" in picoforge project "&lt;project name&gt;". Review loads, walls, overhangs, fits and mass, and list the three most important fixes with the parameter changes you would make.</pre></div>
+          <div class="prompt"><header><div><h3>Export for manufacturing</h3><p class="desc">Files for printing or cutting.</p></div><button class="copy" data-copy-next>Copy</button></header>
+<pre>Export variant "&lt;variant&gt;" of picoforge project "&lt;project name&gt;" as &lt;stl | 3mf | glb&gt;, one file per part, and tell me each part's volume, mass and bounding box.</pre></div>
+        </div>
+      </section>
+
+      <section id="rules">
+        <h2>Rules for agents</h2>
+        <ul>
+          <li>Never build before the brief is accepted (<code>BRIEF_REQUIRED</code>).</li>
+          <li>Never edit the user region of the design file; it holds the human's direct edits.</li>
+          <li>Never remove or work around a human pin. If a pin blocks the goal, explain and offer options.</li>
+          <li>Send <code>baseRev</code> from your latest <code>get_scene</code>; on <code>STALE_REV</code>, re-read and re-apply.</li>
+          <li>One run per variant. Use <code>fork_variant</code> to try alternatives in parallel.</li>
+          <li>Label estimates. Results from analysis tier A2 are indicative, not certified.</li>
+          <li>On <code>NEEDS_DECISION</code>, stop and ask the human using the options provided.</li>
+        </ul>
+      </section>
+
+      <section id="tools">
+        <h2>Tools</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Tool</th><th>Use it to</th></tr></thead>
+          <tbody>
+            <tr><td><code>open_project</code></td><td>Open or create a project; returns ids, default variant, hardware tier</td></tr>
+            <tr><td><code>get_scene</code></td><td>Read parts, parameters with expressions, pins and the current <code>rev</code></td></tr>
+            <tr><td><code>fork_variant</code></td><td>Branch a variant to work in parallel</td></tr>
+            <tr><td><code>search_docs</code></td><td>Search the API card, Kit helpers, recipes, physics formulas</td></tr>
+            <tr><td><code>submit_design_brief</code></td><td>Submit the brief; required before any build</td></tr>
+            <tr><td><code>define_part</code></td><td>Send one part function; it compiles and builds a draft right away</td></tr>
+            <tr><td><code>assemble</code></td><td>Send the <code>Design.Build</code> body that registers parts and operations</td></tr>
+            <tr><td><code>run_build</code></td><td>Build draft or final; returns stats, a typed error, or a run handle</td></tr>
+            <tr><td><code>run_picogk</code></td><td>Send a whole design file at once (compatibility path)</td></tr>
+            <tr><td><code>set_param</code> · <code>transform_part</code> · <code>add_op</code></td><td>Edit parameters, move parts, add booleans and other operations</td></tr>
+            <tr><td><code>get_run</code></td><td>Poll a run: state, stage, stats, warnings, log tail</td></tr>
+            <tr><td><code>inspect_geometry</code></td><td>Measure: distances, slices, minimum wall</td></tr>
+            <tr><td><code>capture_viewport</code></td><td>Get a picture of the design from a standard view</td></tr>
+            <tr><td><code>start_study</code> · <code>get_study</code> · <code>stop_study</code></td><td>Run and follow DEEP or RAMAN studies</td></tr>
+            <tr><td><code>export_artifact</code></td><td>Export STL, 3MF or GLB</td></tr>
+            <tr><td><code>annotate</code></td><td>Point at something in the human's viewport without moving their camera</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <section id="resources">
+        <h2>Resources and prompts</h2>
+        <div class="code"><div class="bar"><span class="lang">Resources</span><button class="copy" data-copy-next>Copy</button></div>
+<pre>picoforge://rules/doctrine
+picoforge://api/picogk-card
+picoforge://api/kit-card
+picoforge://kb/recipes/{category}
+picoforge://kb/physics
+picoforge://kb/materials
+picoforge://project/{p}/variant/{v}/scene
+picoforge://project/{p}/variant/{v}/brief
+picoforge://project/{p}/variant/{v}/code
+picoforge://project/{p}/variant/{v}/last-run
+picoforge://session/selection
+picoforge://session/pins
+picoforge://hardware/profile</pre></div>
+        <p>Prompts: <code>forge_engineer</code> (start every session with it), <code>forge_repair</code> (fix a failed run), <code>forge_review</code> (critique a variant).</p>
+        <p>On hosts that support MCP Apps, build results also appear as a small live 3D view inside the agent's window.</p>
+      </section>
+
+      <section id="errors">
+        <h2>Error codes</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Code</th><th>Meaning</th><th>Next step</th></tr></thead>
+          <tbody>
+            <tr><td><code>BRIEF_REQUIRED</code></td><td>No accepted brief for this variant</td><td>Call <code>submit_design_brief</code></td></tr>
+            <tr><td><code>BRIEF_STALE</code></td><td>The human changed a governing value or pin during the run</td><td><code>get_scene</code>, rebuild with current values</td></tr>
+            <tr><td><code>STALE_REV</code></td><td>Your <code>baseRev</code> is behind</td><td>Re-read and re-apply your change</td></tr>
+            <tr><td><code>RUN_BUSY</code></td><td>A run is active on this variant</td><td>Wait with <code>get_run</code> or <code>fork_variant</code></td></tr>
+            <tr><td><code>NEEDS_DECISION</code></td><td>Repair budget or rate limit reached</td><td>Ask the human using the attached options</td></tr>
+            <tr><td><code>FORBIDDEN</code></td><td>Not allowed for agents, or client revoked</td><td>Do not retry</td></tr>
+            <tr><td><code>INVALID_INPUT</code></td><td>Input failed schema validation</td><td>Fix the input</td></tr>
+            <tr><td><code>COMPILE_ERROR</code> · <code>RUNTIME_ERROR</code></td><td>Your C# did not compile or threw</td><td>Follow <code>repairHint</code>; re-send the failing part only</td></tr>
+            <tr><td><code>OOM</code> · <code>TIMEOUT</code></td><td>Build exceeded memory or time on this machine</td><td>Use the suggested coarser voxel size or simplify</td></tr>
+            <tr><td><code>EMPTY_GEOMETRY</code> · <code>BELOW_MIN_WALL</code> · <code>PIN_VIOLATED</code></td><td>Built, but failed a geometry check</td><td>Adjust the named dimension; the payload has measured numbers</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <section id="limits">
+        <h2>Limits</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Limit</th><th>Default</th></tr></thead>
+          <tbody>
+            <tr><td>Repairs per brief (compile / runtime / geometry)</td><td>3 / 2 / 2</td></tr>
+            <tr><td>Build-type tool calls per brief</td><td>14</td></tr>
+            <tr><td>Builds per minute per client</td><td>6</td></tr>
+            <tr><td>Concurrent runs per variant</td><td>1</td></tr>
+          </tbody>
+        </table></div>
+        <p>Agents cannot change settings or keys, clear the cache, delete projects, see file paths, remove a human's pin, or move the human's camera. The human's Stop button cancels agent runs too.</p>
+      </section>
+
+      <section id="troubleshooting">
+        <h2>Troubleshooting</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Symptom</th><th>Fix</th></tr></thead>
+          <tbody>
+            <tr><td>Tools do not appear in the agent</td><td>Reload MCP servers or restart the agent session; check that <code>picoforged</code> is on <code>PATH</code></td></tr>
+            <tr><td><code>picoforged: command not found</code></td><td>Use the full path to the binary in the config, or add the folder that contains it to <code>PATH</code></td></tr>
+            <tr><td>HTTP connection returns 401</td><td>Token missing or rotated; copy the current one from Settings → MCP connections</td></tr>
+            <tr><td>Self-test fails at the engine step</td><td>Install the .NET 9 SDK and run <code>deno task setup</code> again</td></tr>
+            <tr><td>Builds fail with <code>OOM</code> on a small laptop</td><td>Expected on very large parts at fine resolution; accept the suggested voxel size or split the part</td></tr>
+            <tr><td>The agent cannot see what I selected</td><td>Select in the viewport first, then ask; the agent reads <code>picoforge://session/selection</code></td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <footer class="page">PicoForge · agent docs · generated from docs/15_AGENT_USAGE_GUIDE.md</footer>
+    </article>
+  </main>
+
+  <aside class="toc" aria-label="On this page">
+    <div class="nav-label">On this page</div>
+    <div id="tocLinks"></div>
+  </aside>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var store = {
+    get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) { /* storage unavailable */ } }
+  };
+
+  /* theme */
+  var root = document.documentElement;
+  var savedTheme = store.get("pf-docs-theme");
+  if (savedTheme === "light" || savedTheme === "dark") root.setAttribute("data-theme", savedTheme);
+  document.getElementById("themeBtn").addEventListener("click", function () {
+    var current = root.getAttribute("data-theme") ||
+      (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    var next = current === "light" ? "dark" : "light";
+    root.setAttribute("data-theme", next);
+    store.set("pf-docs-theme", next);
+  });
+
+  /* template values */
+  var tplNodes = Array.prototype.slice.call(document.querySelectorAll("[data-tpl]"));
+  tplNodes.forEach(function (n) { n.__tpl = n.textContent; });
+  var fRepo = document.getElementById("fRepo");
+  var fToken = document.getElementById("fToken");
+  fRepo.value = store.get("pf-docs-repo") || "";
+  fToken.value = store.get("pf-docs-token") || "";
+  function render() {
+    var repo = fRepo.value.trim() || "<PICOFORGE_REPO_URL>";
+    var token = fToken.value.trim() || "<TOKEN>";
+    tplNodes.forEach(function (n) {
+      n.textContent = n.__tpl.split("{{REPO}}").join(repo).split("{{TOKEN}}").join(token);
+    });
+  }
+  fRepo.addEventListener("input", function () { store.set("pf-docs-repo", fRepo.value.trim()); render(); });
+  fToken.addEventListener("input", function () { store.set("pf-docs-token", fToken.value.trim()); render(); });
+  render();
+
+  /* copy buttons: copy the next <pre> in the same block */
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+    return new Promise(function (resolve, reject) {
+      var ta = document.createElement("textarea");
+      ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy") ? resolve() : reject(new Error("copy failed")); }
+      catch (e) { reject(e); }
+      finally { document.body.removeChild(ta); }
+    });
+  }
+  document.querySelectorAll("[data-copy-next]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var block = btn.closest(".code, .prompt");
+      var pre = block && block.querySelector("pre");
+      if (!pre) return;
+      copyText(pre.textContent).then(function () {
+        btn.textContent = "Copied"; btn.classList.add("done");
+        setTimeout(function () { btn.textContent = "Copy"; btn.classList.remove("done"); }, 1600);
+      }, function () {
+        btn.textContent = "Select and copy"; setTimeout(function () { btn.textContent = "Copy"; }, 2000);
+      });
+    });
+  });
+
+  /* tabs */
+  document.querySelectorAll("[data-tabs]").forEach(function (group) {
+    var tabs = group.querySelectorAll('[role="tab"]');
+    var panels = group.querySelectorAll('[role="tabpanel"]');
+    function select(i) {
+      tabs.forEach(function (t, j) { t.setAttribute("aria-selected", String(i === j)); t.tabIndex = i === j ? 0 : -1; });
+      panels.forEach(function (p, j) { p.hidden = i !== j; });
+      store.set("pf-docs-client", String(i));
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener("click", function () { select(i); });
+      t.addEventListener("keydown", function (e) {
+        if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+          var n = (i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length;
+          tabs[n].focus(); select(n);
+        }
+      });
+    });
+    var saved = parseInt(store.get("pf-docs-client") || "0", 10);
+    select(saved >= 0 && saved < tabs.length ? saved : 0);
+  });
+
+  /* table of contents + scroll spy */
+  var sections = Array.prototype.slice.call(document.querySelectorAll("article section[id]"));
+  var toc = document.getElementById("tocLinks");
+  sections.forEach(function (s) {
+    var h = s.querySelector("h1, h2");
+    if (!h) return;
+    var a = document.createElement("a");
+    a.href = "#" + s.id; a.textContent = h.textContent; a.dataset.id = s.id;
+    toc.appendChild(a);
+  });
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll("nav.side a"));
+  var tocLinks = Array.prototype.slice.call(toc.querySelectorAll("a"));
+  function setActive(id) {
+    navLinks.concat(tocLinks).forEach(function (a) { a.classList.toggle("active", a.getAttribute("href") === "#" + id); });
+  }
+  if ("IntersectionObserver" in window) {
+    var visible = {};
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { visible[e.target.id] = e.isIntersecting; });
+      for (var i = 0; i < sections.length; i++) { if (visible[sections[i].id]) { setActive(sections[i].id); break; } }
+    }, { rootMargin: "-64px 0px -60% 0px" });
+    sections.forEach(function (s) { io.observe(s); });
+  }
+  setActive(sections[0].id);
+
+  /* nav filter */
+  document.getElementById("navFilter").addEventListener("input", function (e) {
+    var q = e.target.value.trim().toLowerCase();
+    navLinks.forEach(function (a) { a.classList.toggle("hidden", q !== "" && a.textContent.toLowerCase().indexOf(q) === -1); });
+  });
+
+  /* mobile nav */
+  var menuBtn = document.getElementById("menuBtn");
+  menuBtn.addEventListener("click", function () {
+    var open = document.body.classList.toggle("nav-open");
+    menuBtn.setAttribute("aria-expanded", String(open));
+  });
+  navLinks.forEach(function (a) {
+    a.addEventListener("click", function () { document.body.classList.remove("nav-open"); menuBtn.setAttribute("aria-expanded", "false"); });
+  });
+})();
+</script>
+</body>
+</html>

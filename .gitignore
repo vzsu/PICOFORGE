@@ -1,0 +1,33 @@
+# --- runtime & secrets ---
+.env
+secret.env
+*.log
+
+# --- js/deno ---
+node_modules/
+dist/
+app/dist/
+server/public/
+coverage/
+
+# --- dotnet ---
+bin/
+obj/
+*.user
+
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- graphify (removed; codegraph replaces it, ADR-001) ---
+graphify-out/
+
+# --- reports (keep baselines) ---
+reports/
+test-results/
+playwright-report/
+backups/
+
+# --- local tool checkouts ---
+.tools/
