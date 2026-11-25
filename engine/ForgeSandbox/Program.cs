@@ -1,31 +1,24 @@
-// ForgeSandbox/Program.cs — Sandbox child entry point (full M1)
-// Receives job path via stdin line, runs Runner, exits.
-// SYS_DESIGN §4.3: "child: load DLL → reflect Design.voxBuild → invoke → receive Voxels"
+// ForgeSandbox/Program.cs — Sandbox child entry point
+// Receives the job path via `--job <path>` or the first stdin line (prewarmed spare), runs Runner, exits.
+// docs/04 §2: one child per job, killed on any fault.
 
 using ForgeSandbox;
 
-// Read job path from first stdin line (host writes it after handing spare to a job)
-var jobPath = (string?)null;
-
-// Support both --job <path> arg and stdin line
+string? jobPath = null;
 for (int i = 0; i < args.Length - 1; i++)
     if (args[i] == "--job") { jobPath = args[i + 1]; break; }
 
-if (jobPath is null)
-{
-    // Read from stdin (prewarmed spare receives job via stdin)
-    jobPath = Console.ReadLine()?.Trim();
-}
+jobPath ??= Console.ReadLine()?.Trim();
 
 if (string.IsNullOrEmpty(jobPath))
 {
-    Console.Error.WriteLine("{\"error\":\"NO_JOB\",\"detail\":\"No job path provided via --job or stdin\"}");
+    Console.Error.WriteLine("{\"error\":\"NO_JOB\",\"message\":\"No job path provided via --job or stdin\"}");
     return 1;
 }
 
 if (!File.Exists(jobPath))
 {
-    Console.Error.WriteLine($"{{\"error\":\"JOB_NOT_FOUND\",\"detail\":\"Job file not found: {jobPath}\"}}");
+    Console.Error.WriteLine(System.Text.Json.JsonSerializer.Serialize(new { error = "JOB_NOT_FOUND", message = $"Job file not found: {jobPath}" }));
     return 1;
 }
 

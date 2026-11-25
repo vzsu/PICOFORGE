@@ -1,0 +1,6443 @@
+{
+  "version": "1.0.0-p0",
+  "picogkVersion": "2.2.0",
+  "picogkAssemblyVersion": "2.2.0.0",
+  "types": [
+    {
+      "name": "ActiveVoxelCounterScalar",
+      "fullName": "PicoGK.ActiveVoxelCounterScalar",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "ITraverseScalarField"
+      ],
+      "members": [
+        {
+          "name": "InformActiveValue",
+          "kind": "method",
+          "sig": "void InformActiveValue(in Vector3 vecPosition, float fValue)"
+        },
+        {
+          "name": "nCount",
+          "kind": "method",
+          "sig": "static int nCount(ScalarField oField)"
+        }
+      ]
+    },
+    {
+      "name": "AddVectorFieldToViewer",
+      "fullName": "PicoGK.AddVectorFieldToViewer",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "ITraverseVectorField"
+      ],
+      "members": [
+        {
+          "name": "AddToViewer",
+          "kind": "method",
+          "sig": "static void AddToViewer(Viewer oViewer, VectorField oField, ColorFloat clr, int nStep = 10, float fArrow = 1f, int nGroup = 0)"
+        },
+        {
+          "name": "InformActiveValue",
+          "kind": "method",
+          "sig": "void InformActiveValue(in Vector3 vecPosition, in Vector3 vecValue)"
+        }
+      ]
+    },
+    {
+      "name": "Animation",
+      "fullName": "PicoGK.Animation",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Animation(Animation.IAction xAction, float fDurationInSeconds, Animation.EType eType, Easing.EEasing eEasing)"
+        },
+        {
+          "name": "End",
+          "kind": "method",
+          "sig": "void End()"
+        },
+        {
+          "name": "bAnimate",
+          "kind": "method",
+          "sig": "bool bAnimate(float fCurrentTime)"
+        }
+      ]
+    },
+    {
+      "name": "Animation.EType",
+      "fullName": "PicoGK.Animation+EType",
+      "namespace": "PicoGK",
+      "kind": "enum",
+      "interfaces": [],
+      "enumValues": [
+        "Once",
+        "Repeat",
+        "Wiggle"
+      ],
+      "members": [
+        {
+          "name": "Once",
+          "kind": "field",
+          "sig": "const Animation.EType Once"
+        },
+        {
+          "name": "Repeat",
+          "kind": "field",
+          "sig": "const Animation.EType Repeat"
+        },
+        {
+          "name": "Wiggle",
+          "kind": "field",
+          "sig": "const Animation.EType Wiggle"
+        }
+      ]
+    },
+    {
+      "name": "Animation.IAction",
+      "fullName": "PicoGK.Animation+IAction",
+      "namespace": "PicoGK",
+      "kind": "interface",
+      "interfaces": [],
+      "members": [
+        {
+          "name": "Do",
+          "kind": "method",
+          "sig": "void Do(float fTime)"
+        }
+      ]
+    },
+    {
+      "name": "AnimationQueue",
+      "fullName": "PicoGK.AnimationQueue",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "AnimationQueue()"
+        },
+        {
+          "name": "Add",
+          "kind": "method",
+          "sig": "void Add(Animation oAnim)"
+        },
+        {
+          "name": "Clear",
+          "kind": "method",
+          "sig": "void Clear()"
+        },
+        {
+          "name": "bIsIdle",
+          "kind": "method",
+          "sig": "bool bIsIdle()"
+        },
+        {
+          "name": "bPulse",
+          "kind": "method",
+          "sig": "bool bPulse()"
+        }
+      ]
+    },
+    {
+      "name": "BBox2",
+      "fullName": "PicoGK.BBox2",
+      "namespace": "PicoGK",
+      "kind": "struct",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "BBox2()"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "BBox2(float fMinX, float fMinY, float fMaxX, float fMaxY)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "BBox2(in Vector2 vecSetMin, in Vector2 vecSetMax)"
+        },
+        {
+          "name": "Grow",
+          "kind": "method",
+          "sig": "void Grow(float fGrowBy)"
+        },
+        {
+          "name": "Include",
+          "kind": "method",
+          "sig": "void Include(Vector2 vec)"
+        },
+        {
+          "name": "Include",
+          "kind": "method",
+          "sig": "void Include(BBox2 oBox)"
+        },
+        {
+          "name": "ToString",
+          "kind": "method",
+          "sig": "string ToString()"
+        },
+        {
+          "name": "bContains",
+          "kind": "method",
+          "sig": "bool bContains(Vector2 vec)"
+        },
+        {
+          "name": "bIsEmpty",
+          "kind": "method",
+          "sig": "bool bIsEmpty()"
+        },
+        {
+          "name": "vecCenter",
+          "kind": "method",
+          "sig": "Vector2 vecCenter()"
+        },
+        {
+          "name": "vecSize",
+          "kind": "method",
+          "sig": "Vector2 vecSize()"
+        },
+        {
+          "name": "vecMax",
+          "kind": "field",
+          "sig": "Vector2 vecMax"
+        },
+        {
+          "name": "vecMin",
+          "kind": "field",
+          "sig": "Vector2 vecMin"
+        }
+      ]
+    },
+    {
+      "name": "BBox3",
+      "fullName": "PicoGK.BBox3",
+      "namespace": "PicoGK",
+      "kind": "struct",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "BBox3()"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "BBox3(float fMinX, float fMinY, float fMinZ, float fMaxX, float fMaxY, float fMaxZ)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "BBox3(in Vector3 vecSetMin, in Vector3 vecSetMax)"
+        },
+        {
+          "name": "Grow",
+          "kind": "method",
+          "sig": "void Grow(float fGrowBy)"
+        },
+        {
+          "name": "Include",
+          "kind": "method",
+          "sig": "void Include(Vector3 vec)"
+        },
+        {
+          "name": "Include",
+          "kind": "method",
+          "sig": "void Include(BBox3 oBox)"
+        },
+        {
+          "name": "Include",
+          "kind": "method",
+          "sig": "void Include(BBox2 oBox, float fZ = 0f)"
+        },
+        {
+          "name": "ToString",
+          "kind": "method",
+          "sig": "string ToString()"
+        },
+        {
+          "name": "bContains",
+          "kind": "method",
+          "sig": "bool bContains(Vector3 vec)"
+        },
+        {
+          "name": "bIsEmpty",
+          "kind": "method",
+          "sig": "bool bIsEmpty()"
+        },
+        {
+          "name": "oAsBoundingBox2",
+          "kind": "method",
+          "sig": "BBox2 oAsBoundingBox2()"
+        },
+        {
+          "name": "oFitInto",
+          "kind": "method",
+          "sig": "BBox3 oFitInto(in BBox3 oBounds, out float fScale, out Vector3 vecOffset)"
+        },
+        {
+          "name": "vecCenter",
+          "kind": "method",
+          "sig": "Vector3 vecCenter()"
+        },
+        {
+          "name": "vecRandomVectorInside",
+          "kind": "method",
+          "sig": "Vector3 vecRandomVectorInside(ref Random oRand)"
+        },
+        {
+          "name": "vecSize",
+          "kind": "method",
+          "sig": "Vector3 vecSize()"
+        },
+        {
+          "name": "vecMax",
+          "kind": "field",
+          "sig": "Vector3 vecMax"
+        },
+        {
+          "name": "vecMin",
+          "kind": "field",
+          "sig": "Vector3 vecMin"
+        }
+      ]
+    },
+    {
+      "name": "CliIo",
+      "fullName": "PicoGK.CliIo",
+      "namespace": "PicoGK",
+      "kind": "static class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": "WriteSlicesToCliFile",
+          "kind": "method",
+          "sig": "static void WriteSlicesToCliFile(PolySliceStack oSlices, string strFilePath, CliIo.EFormat eFormat, string strDate = \"\", float fUnitsInMM = 0f, IProgress xProgress = null)"
+        },
+        {
+          "name": "oSlicesFromCliFile",
+          "kind": "method",
+          "sig": "static CliIo.Result oSlicesFromCliFile(string strFilePath)"
+        }
+      ]
+    },
+    {
+      "name": "CliIo.EFormat",
+      "fullName": "PicoGK.CliIo+EFormat",
+      "namespace": "PicoGK",
+      "kind": "enum",
+      "interfaces": [],
+      "enumValues": [
+        "UseEmptyFirstLayer",
+        "FirstLayerWithContent"
+      ],
+      "members": [
+        {
+          "name": "FirstLayerWithContent",
+          "kind": "field",
+          "sig": "const CliIo.EFormat FirstLayerWithContent"
+        },
+        {
+          "name": "UseEmptyFirstLayer",
+          "kind": "field",
+          "sig": "const CliIo.EFormat UseEmptyFirstLayer"
+        }
+      ]
+    },
+    {
+      "name": "CliIo.Result",
+      "fullName": "PicoGK.CliIo+Result",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Result()"
+        },
+        {
+          "name": "b32BitAlign",
+          "kind": "field",
+          "sig": "bool b32BitAlign"
+        },
+        {
+          "name": "bBinary",
+          "kind": "field",
+          "sig": "bool bBinary"
+        },
+        {
+          "name": "fUnitsHeader",
+          "kind": "field",
+          "sig": "float fUnitsHeader"
+        },
+        {
+          "name": "nLayers",
+          "kind": "field",
+          "sig": "uint nLayers"
+        },
+        {
+          "name": "nVersion",
+          "kind": "field",
+          "sig": "uint nVersion"
+        },
+        {
+          "name": "oBBoxFile",
+          "kind": "field",
+          "sig": "BBox3 oBBoxFile"
+        },
+        {
+          "name": "oSlices",
+          "kind": "field",
+          "sig": "PolySliceStack oSlices"
+        },
+        {
+          "name": "strHeaderDate",
+          "kind": "field",
+          "sig": "string strHeaderDate"
+        },
+        {
+          "name": "strWarnings",
+          "kind": "field",
+          "sig": "string strWarnings"
+        }
+      ]
+    },
+    {
+      "name": "ColorBgr24",
+      "fullName": "PicoGK.ColorBgr24",
+      "namespace": "PicoGK",
+      "kind": "struct",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ColorBgr24(byte byB, byte byG, byte byR)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ColorBgr24(ColorFloat clr)"
+        },
+        {
+          "name": "op_Implicit",
+          "kind": "operator",
+          "sig": "static ColorBgr24 op_Implicit(ColorFloat clr)"
+        },
+        {
+          "name": "B",
+          "kind": "field",
+          "sig": "byte B"
+        },
+        {
+          "name": "G",
+          "kind": "field",
+          "sig": "byte G"
+        },
+        {
+          "name": "R",
+          "kind": "field",
+          "sig": "byte R"
+        }
+      ]
+    },
+    {
+      "name": "ColorBgra32",
+      "fullName": "PicoGK.ColorBgra32",
+      "namespace": "PicoGK",
+      "kind": "struct",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ColorBgra32(byte byB, byte byG, byte byR, byte byA = 255)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ColorBgra32(ColorFloat clr)"
+        },
+        {
+          "name": "op_Implicit",
+          "kind": "operator",
+          "sig": "static ColorBgra32 op_Implicit(ColorFloat clr)"
+        },
+        {
+          "name": "A",
+          "kind": "field",
+          "sig": "byte A"
+        },
+        {
+          "name": "B",
+          "kind": "field",
+          "sig": "byte B"
+        },
+        {
+          "name": "G",
+          "kind": "field",
+          "sig": "byte G"
+        },
+        {
+          "name": "R",
+          "kind": "field",
+          "sig": "byte R"
+        }
+      ]
+    },
+    {
+      "name": "ColorFloat",
+      "fullName": "PicoGK.ColorFloat",
+      "namespace": "PicoGK",
+      "kind": "struct",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ColorFloat(string strHex)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ColorFloat(float fGray, float fAlpha = 1f)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ColorFloat(float fR, float fG, float fB, float fAlpha = 1f)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ColorFloat(ColorRgb24 clr)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ColorFloat(ColorRgba32 clr)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ColorFloat(ColorBgr24 clr)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ColorFloat(ColorBgra32 clr)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ColorFloat(ColorFloat clr, float fAlphaOverride)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ColorFloat(ColorHSV clrHSV)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ColorFloat(ColorHLS clrHLS)"
+        },
+        {
+          "name": "ToString",
+          "kind": "method",
+          "sig": "string ToString()"
+        },
+        {
+          "name": "clrRandom",
+          "kind": "method",
+          "sig": "static ColorFloat clrRandom(Random oRand = null)"
+        },
+        {
+          "name": "clrWeighted",
+          "kind": "method",
+          "sig": "static ColorFloat clrWeighted(ColorFloat clr1, ColorFloat clr2, float fWeight)"
+        },
+        {
+          "name": "strAsABGRHexCode",
+          "kind": "method",
+          "sig": "string strAsABGRHexCode()"
+        },
+        {
+          "name": "strAsHexCode",
+          "kind": "method",
+          "sig": "string strAsHexCode()"
+        },
+        {
+          "name": "op_Implicit",
+          "kind": "operator",
+          "sig": "static ColorFloat op_Implicit(string hex)"
+        },
+        {
+          "name": "A",
+          "kind": "field",
+          "sig": "float A"
+        },
+        {
+          "name": "B",
+          "kind": "field",
+          "sig": "float B"
+        },
+        {
+          "name": "G",
+          "kind": "field",
+          "sig": "float G"
+        },
+        {
+          "name": "R",
+          "kind": "field",
+          "sig": "float R"
+        }
+      ]
+    },
+    {
+      "name": "ColorHLS",
+      "fullName": "PicoGK.ColorHLS",
+      "namespace": "PicoGK",
+      "kind": "struct",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ColorHLS(float fH, float fL, float fS)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ColorHLS(ColorFloat clr)"
+        },
+        {
+          "name": "op_Implicit",
+          "kind": "operator",
+          "sig": "static ColorHLS op_Implicit(ColorFloat clr)"
+        },
+        {
+          "name": "op_Implicit",
+          "kind": "operator",
+          "sig": "static ColorFloat op_Implicit(ColorHLS clrHLS)"
+        },
+        {
+          "name": "H",
+          "kind": "field",
+          "sig": "float H"
+        },
+        {
+          "name": "L",
+          "kind": "field",
+          "sig": "float L"
+        },
+        {
+          "name": "S",
+          "kind": "field",
+          "sig": "float S"
+        }
+      ]
+    },
+    {
+      "name": "ColorHSV",
+      "fullName": "PicoGK.ColorHSV",
+      "namespace": "PicoGK",
+      "kind": "struct",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ColorHSV(float fH, float fS, float fV)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ColorHSV(ColorFloat clr)"
+        },
+        {
+          "name": "op_Implicit",
+          "kind": "operator",
+          "sig": "static ColorHSV op_Implicit(ColorFloat clr)"
+        },
+        {
+          "name": "op_Implicit",
+          "kind": "operator",
+          "sig": "static ColorFloat op_Implicit(ColorHSV clrHSV)"
+        },
+        {
+          "name": "H",
+          "kind": "field",
+          "sig": "float H"
+        },
+        {
+          "name": "S",
+          "kind": "field",
+          "sig": "float S"
+        },
+        {
+          "name": "V",
+          "kind": "field",
+          "sig": "float V"
+        }
+      ]
+    },
+    {
+      "name": "ColorRgb24",
+      "fullName": "PicoGK.ColorRgb24",
+      "namespace": "PicoGK",
+      "kind": "struct",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ColorRgb24(byte byR, byte byG, byte byB)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ColorRgb24(ColorFloat clr)"
+        },
+        {
+          "name": "op_Implicit",
+          "kind": "operator",
+          "sig": "static ColorRgb24 op_Implicit(ColorFloat clr)"
+        },
+        {
+          "name": "B",
+          "kind": "field",
+          "sig": "byte B"
+        },
+        {
+          "name": "G",
+          "kind": "field",
+          "sig": "byte G"
+        },
+        {
+          "name": "R",
+          "kind": "field",
+          "sig": "byte R"
+        }
+      ]
+    },
+    {
+      "name": "ColorRgba32",
+      "fullName": "PicoGK.ColorRgba32",
+      "namespace": "PicoGK",
+      "kind": "struct",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ColorRgba32(byte byR, byte byG, byte byB, byte byA = 255)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ColorRgba32(ColorFloat clr)"
+        },
+        {
+          "name": "op_Implicit",
+          "kind": "operator",
+          "sig": "static ColorRgba32 op_Implicit(ColorFloat clr)"
+        },
+        {
+          "name": "A",
+          "kind": "field",
+          "sig": "byte A"
+        },
+        {
+          "name": "B",
+          "kind": "field",
+          "sig": "byte B"
+        },
+        {
+          "name": "G",
+          "kind": "field",
+          "sig": "byte G"
+        },
+        {
+          "name": "R",
+          "kind": "field",
+          "sig": "byte R"
+        }
+      ]
+    },
+    {
+      "name": "Config",
+      "fullName": "PicoGK.Config",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Config()"
+        },
+        {
+          "name": "strPicoGKLib",
+          "kind": "field",
+          "sig": "const string strPicoGKLib"
+        }
+      ]
+    },
+    {
+      "name": "Coord",
+      "fullName": "PicoGK.Coord",
+      "namespace": "PicoGK",
+      "kind": "struct",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Coord(int x, int y, int z)"
+        },
+        {
+          "name": "X",
+          "kind": "field",
+          "sig": "int X"
+        },
+        {
+          "name": "Y",
+          "kind": "field",
+          "sig": "int Y"
+        },
+        {
+          "name": "Z",
+          "kind": "field",
+          "sig": "int Z"
+        }
+      ]
+    },
+    {
+      "name": "CsvTable",
+      "fullName": "PicoGK.CsvTable",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "IDataTable"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "CsvTable(IEnumerable<string> astrColumnIDs = null)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "CsvTable(string strFilePath, string strDelimiters = \",\")"
+        },
+        {
+          "name": "AddRow",
+          "kind": "method",
+          "sig": "void AddRow(IEnumerable<string> astrData)"
+        },
+        {
+          "name": "Save",
+          "kind": "method",
+          "sig": "void Save(string strFilePath, string strDelimiter = \",\")"
+        },
+        {
+          "name": "SetColumnIds",
+          "kind": "method",
+          "sig": "void SetColumnIds(IEnumerable<string> astrIds)"
+        },
+        {
+          "name": "SetKeyColumn",
+          "kind": "method",
+          "sig": "void SetKeyColumn(int nColumn)"
+        },
+        {
+          "name": "bFindColumn",
+          "kind": "method",
+          "sig": "bool bFindColumn(string strColumnName, out int nColumn)"
+        },
+        {
+          "name": "bGetAt",
+          "kind": "method",
+          "sig": "bool bGetAt(in string strKey, ref float fVal)"
+        },
+        {
+          "name": "bGetAt",
+          "kind": "method",
+          "sig": "bool bGetAt(in string strKey, ref string strVal)"
+        },
+        {
+          "name": "nMaxColumnCount",
+          "kind": "method",
+          "sig": "int nMaxColumnCount()"
+        },
+        {
+          "name": "nRowCount",
+          "kind": "method",
+          "sig": "int nRowCount()"
+        },
+        {
+          "name": "strColumnId",
+          "kind": "method",
+          "sig": "string strColumnId(int nColumn)"
+        },
+        {
+          "name": "strGetAt",
+          "kind": "method",
+          "sig": "string strGetAt(int nRow, int nColumn)"
+        }
+      ]
+    },
+    {
+      "name": "Easing",
+      "fullName": "PicoGK.Easing",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Easing()"
+        },
+        {
+          "name": "fEaseCubicIn",
+          "kind": "method",
+          "sig": "static float fEaseCubicIn(float x)"
+        },
+        {
+          "name": "fEaseCubicInOut",
+          "kind": "method",
+          "sig": "static float fEaseCubicInOut(float x)"
+        },
+        {
+          "name": "fEaseCubicOut",
+          "kind": "method",
+          "sig": "static float fEaseCubicOut(float x)"
+        },
+        {
+          "name": "fEaseQuadIn",
+          "kind": "method",
+          "sig": "static float fEaseQuadIn(float x)"
+        },
+        {
+          "name": "fEaseQuadInOut",
+          "kind": "method",
+          "sig": "static float fEaseQuadInOut(float x)"
+        },
+        {
+          "name": "fEaseQuadOut",
+          "kind": "method",
+          "sig": "static float fEaseQuadOut(float x)"
+        },
+        {
+          "name": "fEaseSineIn",
+          "kind": "method",
+          "sig": "static float fEaseSineIn(float x)"
+        },
+        {
+          "name": "fEaseSineInOut",
+          "kind": "method",
+          "sig": "static float fEaseSineInOut(float x)"
+        },
+        {
+          "name": "fEaseSineOut",
+          "kind": "method",
+          "sig": "static float fEaseSineOut(float x)"
+        },
+        {
+          "name": "fEasingFunction",
+          "kind": "method",
+          "sig": "static float fEasingFunction(float x, Easing.EEasing eEasing)"
+        }
+      ]
+    },
+    {
+      "name": "Easing.EEasing",
+      "fullName": "PicoGK.Easing+EEasing",
+      "namespace": "PicoGK",
+      "kind": "enum",
+      "interfaces": [],
+      "enumValues": [
+        "LINEAR",
+        "SINE_IN",
+        "SINE_OUT",
+        "SINE_INOUT",
+        "QUAD_IN",
+        "QUAD_OUT",
+        "QUAD_INOUT",
+        "CUBIC_IN",
+        "CUBIC_OUT",
+        "CUBIC_INOUT"
+      ],
+      "members": [
+        {
+          "name": "CUBIC_IN",
+          "kind": "field",
+          "sig": "const Easing.EEasing CUBIC_IN"
+        },
+        {
+          "name": "CUBIC_INOUT",
+          "kind": "field",
+          "sig": "const Easing.EEasing CUBIC_INOUT"
+        },
+        {
+          "name": "CUBIC_OUT",
+          "kind": "field",
+          "sig": "const Easing.EEasing CUBIC_OUT"
+        },
+        {
+          "name": "LINEAR",
+          "kind": "field",
+          "sig": "const Easing.EEasing LINEAR"
+        },
+        {
+          "name": "QUAD_IN",
+          "kind": "field",
+          "sig": "const Easing.EEasing QUAD_IN"
+        },
+        {
+          "name": "QUAD_INOUT",
+          "kind": "field",
+          "sig": "const Easing.EEasing QUAD_INOUT"
+        },
+        {
+          "name": "QUAD_OUT",
+          "kind": "field",
+          "sig": "const Easing.EEasing QUAD_OUT"
+        },
+        {
+          "name": "SINE_IN",
+          "kind": "field",
+          "sig": "const Easing.EEasing SINE_IN"
+        },
+        {
+          "name": "SINE_INOUT",
+          "kind": "field",
+          "sig": "const Easing.EEasing SINE_INOUT"
+        },
+        {
+          "name": "SINE_OUT",
+          "kind": "field",
+          "sig": "const Easing.EEasing SINE_OUT"
+        }
+      ]
+    },
+    {
+      "name": "FieldMetadata",
+      "fullName": "PicoGK.FieldMetadata",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "IDisposable"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "FieldMetadata(Library oLibrary, VdbMetaHandle hSource)"
+        },
+        {
+          "name": "Dispose",
+          "kind": "method",
+          "sig": "void Dispose()"
+        },
+        {
+          "name": "RemoveValue",
+          "kind": "method",
+          "sig": "void RemoveValue(string strFieldName)"
+        },
+        {
+          "name": "SetValue",
+          "kind": "method",
+          "sig": "void SetValue(string strFieldName, string strValue)"
+        },
+        {
+          "name": "SetValue",
+          "kind": "method",
+          "sig": "void SetValue(string strFieldName, float fValue)"
+        },
+        {
+          "name": "SetValue",
+          "kind": "method",
+          "sig": "void SetValue(string strFieldName, Vector3 vecValue)"
+        },
+        {
+          "name": "ToString",
+          "kind": "method",
+          "sig": "string ToString()"
+        },
+        {
+          "name": "bGetNameAt",
+          "kind": "method",
+          "sig": "bool bGetNameAt(int nIndex, out string strValueName)"
+        },
+        {
+          "name": "bGetValueAt",
+          "kind": "method",
+          "sig": "bool bGetValueAt(string strFieldName, out string strValue)"
+        },
+        {
+          "name": "bGetValueAt",
+          "kind": "method",
+          "sig": "bool bGetValueAt(string strFieldName, out float fValue)"
+        },
+        {
+          "name": "bGetValueAt",
+          "kind": "method",
+          "sig": "bool bGetValueAt(string strFieldName, out Vector3 vecValue)"
+        },
+        {
+          "name": "eTypeAt",
+          "kind": "method",
+          "sig": "FieldMetadata.EType eTypeAt(string strName)"
+        },
+        {
+          "name": "nCount",
+          "kind": "method",
+          "sig": "int nCount()"
+        },
+        {
+          "name": "strTypeAt",
+          "kind": "method",
+          "sig": "string strTypeAt(string strName)"
+        },
+        {
+          "name": "strTypeName",
+          "kind": "method",
+          "sig": "string strTypeName(FieldMetadata.EType eType)"
+        },
+        {
+          "name": "lib",
+          "kind": "field",
+          "sig": "Library lib"
+        }
+      ]
+    },
+    {
+      "name": "FieldMetadata.EType",
+      "fullName": "PicoGK.FieldMetadata+EType",
+      "namespace": "PicoGK",
+      "kind": "enum",
+      "interfaces": [],
+      "enumValues": [
+        "STRING",
+        "FLOAT",
+        "VECTOR",
+        "UNKNOWN"
+      ],
+      "members": [
+        {
+          "name": "FLOAT",
+          "kind": "field",
+          "sig": "const FieldMetadata.EType FLOAT"
+        },
+        {
+          "name": "STRING",
+          "kind": "field",
+          "sig": "const FieldMetadata.EType STRING"
+        },
+        {
+          "name": "UNKNOWN",
+          "kind": "field",
+          "sig": "const FieldMetadata.EType UNKNOWN"
+        },
+        {
+          "name": "VECTOR",
+          "kind": "field",
+          "sig": "const FieldMetadata.EType VECTOR"
+        }
+      ]
+    },
+    {
+      "name": "GpuTexHandle",
+      "fullName": "PicoGK.GpuTexHandle",
+      "namespace": "PicoGK",
+      "kind": "struct",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "GpuTexHandle(IntPtr Value)"
+        },
+        {
+          "name": "Deconstruct",
+          "kind": "method",
+          "sig": "void Deconstruct(out IntPtr Value)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(object obj)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(GpuTexHandle other)"
+        },
+        {
+          "name": "GetHashCode",
+          "kind": "method",
+          "sig": "int GetHashCode()"
+        },
+        {
+          "name": "ToString",
+          "kind": "method",
+          "sig": "string ToString()"
+        },
+        {
+          "name": "op_Inequality",
+          "kind": "operator",
+          "sig": "static bool op_Inequality(GpuTexHandle left, GpuTexHandle right)"
+        },
+        {
+          "name": "op_Equality",
+          "kind": "operator",
+          "sig": "static bool op_Equality(GpuTexHandle left, GpuTexHandle right)"
+        },
+        {
+          "name": "Value",
+          "kind": "property",
+          "sig": "IntPtr Value { get; set; }"
+        }
+      ]
+    },
+    {
+      "name": "GuiSideBarHandle",
+      "fullName": "PicoGK.GuiSideBarHandle",
+      "namespace": "PicoGK",
+      "kind": "struct",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "GuiSideBarHandle(IntPtr Value)"
+        },
+        {
+          "name": "Deconstruct",
+          "kind": "method",
+          "sig": "void Deconstruct(out IntPtr Value)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(object obj)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(GuiSideBarHandle other)"
+        },
+        {
+          "name": "GetHashCode",
+          "kind": "method",
+          "sig": "int GetHashCode()"
+        },
+        {
+          "name": "ToString",
+          "kind": "method",
+          "sig": "string ToString()"
+        },
+        {
+          "name": "op_Inequality",
+          "kind": "operator",
+          "sig": "static bool op_Inequality(GuiSideBarHandle left, GuiSideBarHandle right)"
+        },
+        {
+          "name": "op_Equality",
+          "kind": "operator",
+          "sig": "static bool op_Equality(GuiSideBarHandle left, GuiSideBarHandle right)"
+        },
+        {
+          "name": "Value",
+          "kind": "property",
+          "sig": "IntPtr Value { get; set; }"
+        }
+      ]
+    },
+    {
+      "name": "IBoundedImplicit",
+      "fullName": "PicoGK.IBoundedImplicit",
+      "namespace": "PicoGK",
+      "kind": "interface",
+      "interfaces": [
+        "IImplicit"
+      ],
+      "members": [
+        {
+          "name": "oBounds",
+          "kind": "property",
+          "sig": "BBox3 oBounds { get; }"
+        }
+      ]
+    },
+    {
+      "name": "IDataTable",
+      "fullName": "PicoGK.IDataTable",
+      "namespace": "PicoGK",
+      "kind": "interface",
+      "interfaces": [],
+      "members": [
+        {
+          "name": "AddRow",
+          "kind": "method",
+          "sig": "void AddRow(IEnumerable<string> astrData)"
+        },
+        {
+          "name": "SetColumnIds",
+          "kind": "method",
+          "sig": "void SetColumnIds(IEnumerable<string> astrIds)"
+        },
+        {
+          "name": "bFindColumn",
+          "kind": "method",
+          "sig": "bool bFindColumn(string strColumnName, out int nColumn)"
+        },
+        {
+          "name": "nMaxColumnCount",
+          "kind": "method",
+          "sig": "int nMaxColumnCount()"
+        },
+        {
+          "name": "nRowCount",
+          "kind": "method",
+          "sig": "int nRowCount()"
+        },
+        {
+          "name": "strColumnId",
+          "kind": "method",
+          "sig": "string strColumnId(int nColumn)"
+        },
+        {
+          "name": "strGetAt",
+          "kind": "method",
+          "sig": "string strGetAt(int nRow, int nColumn)"
+        }
+      ]
+    },
+    {
+      "name": "IFieldWithMetadata",
+      "fullName": "PicoGK.IFieldWithMetadata",
+      "namespace": "PicoGK",
+      "kind": "interface",
+      "interfaces": [],
+      "members": [
+        {
+          "name": "oMetaData",
+          "kind": "method",
+          "sig": "FieldMetadata oMetaData()"
+        }
+      ]
+    },
+    {
+      "name": "IImplicit",
+      "fullName": "PicoGK.IImplicit",
+      "namespace": "PicoGK",
+      "kind": "interface",
+      "interfaces": [],
+      "members": [
+        {
+          "name": "fSignedDistance",
+          "kind": "method",
+          "sig": "float fSignedDistance(in Vector3 vec)"
+        }
+      ]
+    },
+    {
+      "name": "ILog",
+      "fullName": "PicoGK.ILog",
+      "namespace": "PicoGK",
+      "kind": "interface",
+      "interfaces": [],
+      "members": [
+        {
+          "name": "Log",
+          "kind": "method",
+          "sig": "void Log(in string strFormat, params object[] args)"
+        }
+      ]
+    },
+    {
+      "name": "IProgress",
+      "fullName": "PicoGK.IProgress",
+      "namespace": "PicoGK",
+      "kind": "interface",
+      "interfaces": [],
+      "members": [
+        {
+          "name": "Progress",
+          "kind": "method",
+          "sig": "void Progress(float f)"
+        }
+      ]
+    },
+    {
+      "name": "ITraverseScalarField",
+      "fullName": "PicoGK.ITraverseScalarField",
+      "namespace": "PicoGK",
+      "kind": "interface",
+      "interfaces": [],
+      "members": [
+        {
+          "name": "InformActiveValue",
+          "kind": "method",
+          "sig": "void InformActiveValue(in Vector3 vecPosition, float fValue)"
+        }
+      ]
+    },
+    {
+      "name": "ITraverseVectorField",
+      "fullName": "PicoGK.ITraverseVectorField",
+      "namespace": "PicoGK",
+      "kind": "interface",
+      "interfaces": [],
+      "members": [
+        {
+          "name": "InformActiveValue",
+          "kind": "method",
+          "sig": "void InformActiveValue(in Vector3 vecPosition, in Vector3 vecValue)"
+        }
+      ]
+    },
+    {
+      "name": "Image",
+      "fullName": "PicoGK.Image",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": "DrawLine",
+          "kind": "method",
+          "sig": "void DrawLine(int x0, int y0, int x1, int y1, ColorFloat clr)"
+        },
+        {
+          "name": "DrawLine",
+          "kind": "method",
+          "sig": "void DrawLine(int x0, int y0, int x1, int y1, float fGrayscale)"
+        },
+        {
+          "name": "DrawLine",
+          "kind": "method",
+          "sig": "void DrawLine(int x0, int y0, int x1, int y1, bool bValue)"
+        },
+        {
+          "name": "SaveJpg",
+          "kind": "method",
+          "sig": "void SaveJpg(string strFileName, int iQuality = 100)"
+        },
+        {
+          "name": "SavePng",
+          "kind": "method",
+          "sig": "void SavePng(string strFileName, int iQuality = 100)"
+        },
+        {
+          "name": "SaveTga",
+          "kind": "method",
+          "sig": "void SaveTga(string strFileName)"
+        },
+        {
+          "name": "SetBgr24",
+          "kind": "method",
+          "sig": "void SetBgr24(int x, int y, ColorBgr24 sClr)"
+        },
+        {
+          "name": "SetBgra32",
+          "kind": "method",
+          "sig": "void SetBgra32(int x, int y, ColorBgra32 sClr)"
+        },
+        {
+          "name": "SetRgb24",
+          "kind": "method",
+          "sig": "void SetRgb24(int x, int y, ColorRgb24 sClr)"
+        },
+        {
+          "name": "SetRgba32",
+          "kind": "method",
+          "sig": "void SetRgba32(int x, int y, ColorRgba32 sClr)"
+        },
+        {
+          "name": "SetValue",
+          "kind": "method",
+          "sig": "void SetValue(int x, int y, in ColorFloat clr)"
+        },
+        {
+          "name": "SetValue",
+          "kind": "method",
+          "sig": "void SetValue(int x, int y, float fGray)"
+        },
+        {
+          "name": "SetValue",
+          "kind": "method",
+          "sig": "void SetValue(int x, int y, bool bValue)"
+        },
+        {
+          "name": "SetValue",
+          "kind": "method",
+          "sig": "void SetValue(int x, int y, byte byValue)"
+        },
+        {
+          "name": "bValue",
+          "kind": "method",
+          "sig": "bool bValue(int x, int y)"
+        },
+        {
+          "name": "byGetValue",
+          "kind": "method",
+          "sig": "byte byGetValue(int x, int y)"
+        },
+        {
+          "name": "clrGetAtNormalized",
+          "kind": "method",
+          "sig": "ColorFloat clrGetAtNormalized(float fTX, float fTY)"
+        },
+        {
+          "name": "clrValue",
+          "kind": "method",
+          "sig": "ColorFloat clrValue(int x, int y)"
+        },
+        {
+          "name": "fValue",
+          "kind": "method",
+          "sig": "float fValue(int x, int y)"
+        },
+        {
+          "name": "imgFromSKBitmap",
+          "kind": "method",
+          "sig": "static ImageRgba32 imgFromSKBitmap(SKBitmap oSKBitmap)"
+        },
+        {
+          "name": "imgLoadFromFile",
+          "kind": "method",
+          "sig": "static Image imgLoadFromFile(string strFileName)"
+        },
+        {
+          "name": "sGetBgr24",
+          "kind": "method",
+          "sig": "ColorBgr24 sGetBgr24(int x, int y)"
+        },
+        {
+          "name": "sGetBgra32",
+          "kind": "method",
+          "sig": "ColorBgra32 sGetBgra32(int x, int y)"
+        },
+        {
+          "name": "sGetRgb24",
+          "kind": "method",
+          "sig": "ColorRgb24 sGetRgb24(int x, int y)"
+        },
+        {
+          "name": "sGetRgba32",
+          "kind": "method",
+          "sig": "ColorRgba32 sGetRgba32(int x, int y)"
+        },
+        {
+          "name": "op_Implicit",
+          "kind": "operator",
+          "sig": "static SKBitmap op_Implicit(Image img)"
+        },
+        {
+          "name": "eType",
+          "kind": "field",
+          "sig": "Image.EType eType"
+        },
+        {
+          "name": "nHeight",
+          "kind": "field",
+          "sig": "int nHeight"
+        },
+        {
+          "name": "nWidth",
+          "kind": "field",
+          "sig": "int nWidth"
+        }
+      ]
+    },
+    {
+      "name": "Image.EType",
+      "fullName": "PicoGK.Image+EType",
+      "namespace": "PicoGK",
+      "kind": "enum",
+      "interfaces": [],
+      "enumValues": [
+        "BW",
+        "GRAY",
+        "COLOR"
+      ],
+      "members": [
+        {
+          "name": "BW",
+          "kind": "field",
+          "sig": "const Image.EType BW"
+        },
+        {
+          "name": "COLOR",
+          "kind": "field",
+          "sig": "const Image.EType COLOR"
+        },
+        {
+          "name": "GRAY",
+          "kind": "field",
+          "sig": "const Image.EType GRAY"
+        }
+      ]
+    },
+    {
+      "name": "ImageBWAbstract",
+      "fullName": "PicoGK.ImageBWAbstract",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "baseType": "Image",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ImageBWAbstract(int _nWidth, int _nHeight)"
+        },
+        {
+          "name": "SetValue",
+          "kind": "method",
+          "sig": "void SetValue(int x, int y, float fValue)"
+        },
+        {
+          "name": "SetValue",
+          "kind": "method",
+          "sig": "void SetValue(int x, int y, in ColorFloat clr)"
+        },
+        {
+          "name": "clrValue",
+          "kind": "method",
+          "sig": "ColorFloat clrValue(int x, int y)"
+        },
+        {
+          "name": "fValue",
+          "kind": "method",
+          "sig": "float fValue(int x, int y)"
+        }
+      ]
+    },
+    {
+      "name": "ImageColor",
+      "fullName": "PicoGK.ImageColor",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "baseType": "ImageColorAbstract",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ImageColor(int _nWidth, int _nHeight)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ImageColor(Image imgSource)"
+        },
+        {
+          "name": "SetValue",
+          "kind": "method",
+          "sig": "void SetValue(int x, int y, in ColorFloat clr)"
+        },
+        {
+          "name": "clrValue",
+          "kind": "method",
+          "sig": "ColorFloat clrValue(int x, int y)"
+        }
+      ]
+    },
+    {
+      "name": "ImageColorAbstract",
+      "fullName": "PicoGK.ImageColorAbstract",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "baseType": "Image",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ImageColorAbstract(int _iWidth, int _iHeight)"
+        },
+        {
+          "name": "SetValue",
+          "kind": "method",
+          "sig": "void SetValue(int x, int y, float f)"
+        },
+        {
+          "name": "SetValue",
+          "kind": "method",
+          "sig": "void SetValue(int x, int y, bool bValue)"
+        },
+        {
+          "name": "bValue",
+          "kind": "method",
+          "sig": "bool bValue(int x, int y)"
+        },
+        {
+          "name": "fValue",
+          "kind": "method",
+          "sig": "float fValue(int x, int y)"
+        }
+      ]
+    },
+    {
+      "name": "ImageGrayScale",
+      "fullName": "PicoGK.ImageGrayScale",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "baseType": "ImageGrayscaleAbstract",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ImageGrayScale(int _nWidth, int _nHeight)"
+        },
+        {
+          "name": "SetValue",
+          "kind": "method",
+          "sig": "void SetValue(int x, int y, float fGray)"
+        },
+        {
+          "name": "fValue",
+          "kind": "method",
+          "sig": "float fValue(int x, int y)"
+        },
+        {
+          "name": "imgGetColorCodedSDF",
+          "kind": "method",
+          "sig": "ImageColor imgGetColorCodedSDF(float fBackground)"
+        },
+        {
+          "name": "imgGetInterpolated",
+          "kind": "method",
+          "sig": "static ImageGrayScale imgGetInterpolated(ImageGrayScale oImg1, ImageGrayScale oImg2, float fWeight = 0.5f)"
+        },
+        {
+          "name": "m_afValues",
+          "kind": "field",
+          "sig": "float[] m_afValues"
+        }
+      ]
+    },
+    {
+      "name": "ImageGrayscaleAbstract",
+      "fullName": "PicoGK.ImageGrayscaleAbstract",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "baseType": "Image",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ImageGrayscaleAbstract(int _nWidth, int _nHeight)"
+        },
+        {
+          "name": "SetValue",
+          "kind": "method",
+          "sig": "void SetValue(int x, int y, bool bValue)"
+        },
+        {
+          "name": "SetValue",
+          "kind": "method",
+          "sig": "void SetValue(int x, int y, in ColorFloat clr)"
+        },
+        {
+          "name": "bContainsActivePixels",
+          "kind": "method",
+          "sig": "bool bContainsActivePixels(float fThreshold = 0f)"
+        },
+        {
+          "name": "bValue",
+          "kind": "method",
+          "sig": "bool bValue(int x, int y)"
+        },
+        {
+          "name": "clrValue",
+          "kind": "method",
+          "sig": "ColorFloat clrValue(int x, int y)"
+        }
+      ]
+    },
+    {
+      "name": "ImageRgb24",
+      "fullName": "PicoGK.ImageRgb24",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "baseType": "ImageColorAbstract",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ImageRgb24(int _nWidth, int _nHeight)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ImageRgb24(Image imgSource)"
+        },
+        {
+          "name": "SetRgb24",
+          "kind": "method",
+          "sig": "void SetRgb24(int x, int y, ColorRgb24 clr)"
+        },
+        {
+          "name": "SetValue",
+          "kind": "method",
+          "sig": "void SetValue(int x, int y, in ColorFloat clr)"
+        },
+        {
+          "name": "clrValue",
+          "kind": "method",
+          "sig": "ColorFloat clrValue(int x, int y)"
+        },
+        {
+          "name": "sGetRgb24",
+          "kind": "method",
+          "sig": "ColorRgb24 sGetRgb24(int x, int y)"
+        }
+      ]
+    },
+    {
+      "name": "ImageRgba32",
+      "fullName": "PicoGK.ImageRgba32",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "baseType": "ImageColorAbstract",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ImageRgba32(int _nWidth, int _nHeight)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ImageRgba32(Image imgSource)"
+        },
+        {
+          "name": "SetRgba32",
+          "kind": "method",
+          "sig": "void SetRgba32(int x, int y, ColorRgba32 clr)"
+        },
+        {
+          "name": "SetValue",
+          "kind": "method",
+          "sig": "void SetValue(int x, int y, in ColorFloat clr)"
+        },
+        {
+          "name": "clrValue",
+          "kind": "method",
+          "sig": "ColorFloat clrValue(int x, int y)"
+        },
+        {
+          "name": "sGetRgba32",
+          "kind": "method",
+          "sig": "ColorRgba32 sGetRgba32(int x, int y)"
+        }
+      ]
+    },
+    {
+      "name": "LatHandle",
+      "fullName": "PicoGK.LatHandle",
+      "namespace": "PicoGK",
+      "kind": "struct",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "LatHandle(long Value)"
+        },
+        {
+          "name": "Deconstruct",
+          "kind": "method",
+          "sig": "void Deconstruct(out long Value)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(object obj)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(LatHandle other)"
+        },
+        {
+          "name": "GetHashCode",
+          "kind": "method",
+          "sig": "int GetHashCode()"
+        },
+        {
+          "name": "ToString",
+          "kind": "method",
+          "sig": "string ToString()"
+        },
+        {
+          "name": "op_Inequality",
+          "kind": "operator",
+          "sig": "static bool op_Inequality(LatHandle left, LatHandle right)"
+        },
+        {
+          "name": "op_Equality",
+          "kind": "operator",
+          "sig": "static bool op_Equality(LatHandle left, LatHandle right)"
+        },
+        {
+          "name": "Value",
+          "kind": "property",
+          "sig": "long Value { get; set; }"
+        }
+      ]
+    },
+    {
+      "name": "Lattice",
+      "fullName": "PicoGK.Lattice",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "IDisposable"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Lattice()"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Lattice(Library libSet)"
+        },
+        {
+          "name": "AddBeam",
+          "kind": "method",
+          "sig": "void AddBeam(in Vector3 vecA, float fRadA, in Vector3 vecB, float fRadB, bool bRoundCap = true)"
+        },
+        {
+          "name": "AddBeam",
+          "kind": "method",
+          "sig": "void AddBeam(in Vector3 vecA, in Vector3 vecB, float fRadA, float fRadB, bool bRoundCap = true)"
+        },
+        {
+          "name": "AddSphere",
+          "kind": "method",
+          "sig": "void AddSphere(in Vector3 vecCenter, float fRadius)"
+        },
+        {
+          "name": "Dispose",
+          "kind": "method",
+          "sig": "void Dispose()"
+        },
+        {
+          "name": "lib",
+          "kind": "field",
+          "sig": "Library lib"
+        }
+      ]
+    },
+    {
+      "name": "LibHandle",
+      "fullName": "PicoGK.LibHandle",
+      "namespace": "PicoGK",
+      "kind": "struct",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "LibHandle(long Value)"
+        },
+        {
+          "name": "Deconstruct",
+          "kind": "method",
+          "sig": "void Deconstruct(out long Value)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(object obj)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(LibHandle other)"
+        },
+        {
+          "name": "GetHashCode",
+          "kind": "method",
+          "sig": "int GetHashCode()"
+        },
+        {
+          "name": "ToString",
+          "kind": "method",
+          "sig": "string ToString()"
+        },
+        {
+          "name": "op_Inequality",
+          "kind": "operator",
+          "sig": "static bool op_Inequality(LibHandle left, LibHandle right)"
+        },
+        {
+          "name": "op_Equality",
+          "kind": "operator",
+          "sig": "static bool op_Equality(LibHandle left, LibHandle right)"
+        },
+        {
+          "name": "Value",
+          "kind": "property",
+          "sig": "long Value { get; set; }"
+        }
+      ]
+    },
+    {
+      "name": "Library",
+      "fullName": "PicoGK.Library",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "IDisposable"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Library(float fVoxelSizeMM)"
+        },
+        {
+          "name": "CancelEndTaskRequest",
+          "kind": "method",
+          "sig": "static void CancelEndTaskRequest()"
+        },
+        {
+          "name": "Dispose",
+          "kind": "method",
+          "sig": "void Dispose()"
+        },
+        {
+          "name": "EndTask",
+          "kind": "method",
+          "sig": "static void EndTask()"
+        },
+        {
+          "name": "Go",
+          "kind": "method",
+          "sig": "static void Go(float fVoxelSizeMM, ThreadStart fnTask, string strLogFilePath = \"\", bool bEndAppWithTask = false, string strWindowTitle = \"PicoGK\", string strLightsFile = \"\")"
+        },
+        {
+          "name": "Log",
+          "kind": "method",
+          "sig": "static void Log(string strFormat, params object[] args)"
+        },
+        {
+          "name": "MmToVoxels",
+          "kind": "method",
+          "sig": "void MmToVoxels(Vector3 vecMm, out int x, out int y, out int z)"
+        },
+        {
+          "name": "RegisterGlobalLibrary",
+          "kind": "method",
+          "sig": "static void RegisterGlobalLibrary(Library oLibrary)"
+        },
+        {
+          "name": "RegisterGlobalLog",
+          "kind": "method",
+          "sig": "static void RegisterGlobalLog(ILog xLog)"
+        },
+        {
+          "name": "RegisterGlobalViewer",
+          "kind": "method",
+          "sig": "static void RegisterGlobalViewer(Viewer oViewer)"
+        },
+        {
+          "name": "UnregisterGlobalLibrary",
+          "kind": "method",
+          "sig": "static void UnregisterGlobalLibrary()"
+        },
+        {
+          "name": "UnregisterGlobalLog",
+          "kind": "method",
+          "sig": "static void UnregisterGlobalLog()"
+        },
+        {
+          "name": "UnregisterGlobalViewer",
+          "kind": "method",
+          "sig": "static void UnregisterGlobalViewer()"
+        },
+        {
+          "name": "bContinueTask",
+          "kind": "method",
+          "sig": "static bool bContinueTask(bool bAppExitOnly = false)"
+        },
+        {
+          "name": "nLatticesAllocated",
+          "kind": "method",
+          "sig": "long nLatticesAllocated()"
+        },
+        {
+          "name": "nLatticesMemUsage",
+          "kind": "method",
+          "sig": "long nLatticesMemUsage()"
+        },
+        {
+          "name": "nMeshesAllocated",
+          "kind": "method",
+          "sig": "long nMeshesAllocated()"
+        },
+        {
+          "name": "nMeshesMemUsage",
+          "kind": "method",
+          "sig": "long nMeshesMemUsage()"
+        },
+        {
+          "name": "nPolyLinesAllocated",
+          "kind": "method",
+          "sig": "long nPolyLinesAllocated()"
+        },
+        {
+          "name": "nPolyLinesMemUsage",
+          "kind": "method",
+          "sig": "long nPolyLinesMemUsage()"
+        },
+        {
+          "name": "nScalarFieldsAllocated",
+          "kind": "method",
+          "sig": "long nScalarFieldsAllocated()"
+        },
+        {
+          "name": "nScalarFieldsMemUsage",
+          "kind": "method",
+          "sig": "long nScalarFieldsMemUsage()"
+        },
+        {
+          "name": "nTotalMemUsage",
+          "kind": "method",
+          "sig": "long nTotalMemUsage()"
+        },
+        {
+          "name": "nVdbFilesAllocated",
+          "kind": "method",
+          "sig": "long nVdbFilesAllocated()"
+        },
+        {
+          "name": "nVdbFilesMemUsage",
+          "kind": "method",
+          "sig": "long nVdbFilesMemUsage()"
+        },
+        {
+          "name": "nVdbMetasAllocated",
+          "kind": "method",
+          "sig": "long nVdbMetasAllocated()"
+        },
+        {
+          "name": "nVdbMetasMemUsage",
+          "kind": "method",
+          "sig": "long nVdbMetasMemUsage()"
+        },
+        {
+          "name": "nVectorFieldsAllocated",
+          "kind": "method",
+          "sig": "long nVectorFieldsAllocated()"
+        },
+        {
+          "name": "nVectorFieldsMemUsage",
+          "kind": "method",
+          "sig": "long nVectorFieldsMemUsage()"
+        },
+        {
+          "name": "nVoxelsAllocated",
+          "kind": "method",
+          "sig": "long nVoxelsAllocated()"
+        },
+        {
+          "name": "nVoxelsMemUsage",
+          "kind": "method",
+          "sig": "long nVoxelsMemUsage()"
+        },
+        {
+          "name": "oLibrary",
+          "kind": "method",
+          "sig": "static Library oLibrary()"
+        },
+        {
+          "name": "oViewer",
+          "kind": "method",
+          "sig": "static Viewer oViewer()"
+        },
+        {
+          "name": "strBuildInfo",
+          "kind": "method",
+          "sig": "static string strBuildInfo()"
+        },
+        {
+          "name": "strFindLightSetupFile",
+          "kind": "method",
+          "sig": "static string strFindLightSetupFile(out string strSearched)"
+        },
+        {
+          "name": "strName",
+          "kind": "method",
+          "sig": "static string strName()"
+        },
+        {
+          "name": "strVersion",
+          "kind": "method",
+          "sig": "static string strVersion()"
+        },
+        {
+          "name": "vecVoxelsToMm",
+          "kind": "method",
+          "sig": "Vector3 vecVoxelsToMm(int x, int y, int z)"
+        },
+        {
+          "name": "xLog",
+          "kind": "method",
+          "sig": "static ILog xLog()"
+        },
+        {
+          "name": "fVoxelSizeMM",
+          "kind": "property",
+          "sig": "static float fVoxelSizeMM { get; }"
+        },
+        {
+          "name": "strLogFolder",
+          "kind": "property",
+          "sig": "static string strLogFolder { get; }"
+        },
+        {
+          "name": "fVoxelSize",
+          "kind": "field",
+          "sig": "float fVoxelSize"
+        },
+        {
+          "name": "nStringLength",
+          "kind": "field",
+          "sig": "const int nStringLength"
+        }
+      ]
+    },
+    {
+      "name": "Library.GlobalInstance",
+      "fullName": "PicoGK.Library+GlobalInstance",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "IDisposable"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "GlobalInstance(float fVoxelSizeMM, string strLogPath = \"\", string strViewerTitle = \"PicoGK\", string strViewerEnvironment = \"\")"
+        },
+        {
+          "name": "Dispose",
+          "kind": "method",
+          "sig": "void Dispose()"
+        },
+        {
+          "name": "oLibrary",
+          "kind": "property",
+          "sig": "Library oLibrary { get; }"
+        },
+        {
+          "name": "oViewer",
+          "kind": "property",
+          "sig": "Viewer oViewer { get; }"
+        },
+        {
+          "name": "xLog",
+          "kind": "property",
+          "sig": "LogFile xLog { get; }"
+        }
+      ]
+    },
+    {
+      "name": "LogConsole",
+      "fullName": "PicoGK.LogConsole",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "ILog"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "LogConsole()"
+        },
+        {
+          "name": "Log",
+          "kind": "method",
+          "sig": "void Log(in string strFormat, params object[] args)"
+        }
+      ]
+    },
+    {
+      "name": "LogFile",
+      "fullName": "PicoGK.LogFile",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "IDisposable",
+        "ILog"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "LogFile(in string strFileName = \"\", in bool bOutputToConsole = true)"
+        },
+        {
+          "name": "Dispose",
+          "kind": "method",
+          "sig": "void Dispose()"
+        },
+        {
+          "name": "Log",
+          "kind": "method",
+          "sig": "void Log(in string strFormat, params object[] args)"
+        },
+        {
+          "name": "LogTime",
+          "kind": "method",
+          "sig": "void LogTime()"
+        }
+      ]
+    },
+    {
+      "name": "LogProgress",
+      "fullName": "PicoGK.LogProgress",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "IDisposable",
+        "IProgress"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "LogProgress(ILog xLog, string strInfo = \"Progress\", float fIntervalSeconds = 1f)"
+        },
+        {
+          "name": "Dispose",
+          "kind": "method",
+          "sig": "void Dispose()"
+        },
+        {
+          "name": "Progress",
+          "kind": "method",
+          "sig": "void Progress(float f)"
+        }
+      ]
+    },
+    {
+      "name": "Mesh",
+      "fullName": "PicoGK.Mesh",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "IDisposable"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Mesh()"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Mesh(Library libSet)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Mesh(in Voxels vox)"
+        },
+        {
+          "name": "AddQuad",
+          "kind": "method",
+          "sig": "void AddQuad(int n0, int n1, int n2, int n3, bool bFlipped = false)"
+        },
+        {
+          "name": "AddQuad",
+          "kind": "method",
+          "sig": "void AddQuad(in Vector3 vec0, in Vector3 vec1, in Vector3 vec2, in Vector3 vec3, bool bFlipped = false)"
+        },
+        {
+          "name": "AddVertices",
+          "kind": "method",
+          "sig": "void AddVertices(in IEnumerable<Vector3> avecVertices, out int[] anVertexIndex)"
+        },
+        {
+          "name": "Append",
+          "kind": "method",
+          "sig": "void Append(Mesh msh)"
+        },
+        {
+          "name": "Dispose",
+          "kind": "method",
+          "sig": "void Dispose()"
+        },
+        {
+          "name": "GetTriangle",
+          "kind": "method",
+          "sig": "void GetTriangle(int nTriangle, out Vector3 vecA, out Vector3 vecB, out Vector3 vecC)"
+        },
+        {
+          "name": "SaveToStlFile",
+          "kind": "method",
+          "sig": "void SaveToStlFile(string strFilePath, Mesh.EStlUnit eUnit = Mesh.EStlUnit.AUTO, Vector3? vecOffsetMM = null, float fScale = 1f)"
+        },
+        {
+          "name": "SaveToStlFile",
+          "kind": "method",
+          "sig": "void SaveToStlFile(FileStream oFile, Mesh.EStlUnit eUnit = Mesh.EStlUnit.AUTO, Vector3? vecOffsetMM = null, float fScale = 1f)"
+        },
+        {
+          "name": "bFindTriangleFromSurfacePoint",
+          "kind": "method",
+          "sig": "bool bFindTriangleFromSurfacePoint(Vector3 vecSurfacePoint, out int nTriangle)"
+        },
+        {
+          "name": "bPointLiesOnTriangle",
+          "kind": "method",
+          "sig": "static bool bPointLiesOnTriangle(Vector3 vecP, Vector3 vecA, Vector3 vecB, Vector3 vecC)"
+        },
+        {
+          "name": "mshCreateMirrored",
+          "kind": "method",
+          "sig": "Mesh mshCreateMirrored(Vector3 vecPlanePoint, Vector3 vecPlaneNormal)"
+        },
+        {
+          "name": "mshCreateTransformed",
+          "kind": "method",
+          "sig": "Mesh mshCreateTransformed(Vector3 vecScale, Vector3 vecOffset)"
+        },
+        {
+          "name": "mshCreateTransformed",
+          "kind": "method",
+          "sig": "Mesh mshCreateTransformed(Matrix4x4 matTrans)"
+        },
+        {
+          "name": "mshFromStlFile",
+          "kind": "method",
+          "sig": "static Mesh mshFromStlFile(string strFilePath, Mesh.EStlUnit eLoadUnit = Mesh.EStlUnit.AUTO, float fPostScale = 1f, Vector3? vecPostOffsetMM = null, Library libSet = null)"
+        },
+        {
+          "name": "mshFromStlFile",
+          "kind": "method",
+          "sig": "static Mesh mshFromStlFile(FileStream oFile, Mesh.EStlUnit eLoadUnit = Mesh.EStlUnit.AUTO, float fPostScale = 1f, Vector3? vecPostOffsetMM = null, Library lib = null)"
+        },
+        {
+          "name": "nAddTriangle",
+          "kind": "method",
+          "sig": "int nAddTriangle(in Triangle t)"
+        },
+        {
+          "name": "nAddTriangle",
+          "kind": "method",
+          "sig": "int nAddTriangle(int A, int B, int C)"
+        },
+        {
+          "name": "nAddTriangle",
+          "kind": "method",
+          "sig": "int nAddTriangle(in Vector3 vecA, in Vector3 vecB, in Vector3 vecC)"
+        },
+        {
+          "name": "nAddVertex",
+          "kind": "method",
+          "sig": "int nAddVertex(in Vector3 vec)"
+        },
+        {
+          "name": "nTriangleCount",
+          "kind": "method",
+          "sig": "int nTriangleCount()"
+        },
+        {
+          "name": "nVertexCount",
+          "kind": "method",
+          "sig": "int nVertexCount()"
+        },
+        {
+          "name": "oBoundingBox",
+          "kind": "method",
+          "sig": "BBox3 oBoundingBox()"
+        },
+        {
+          "name": "oTriangleAt",
+          "kind": "method",
+          "sig": "Triangle oTriangleAt(int nTriangle)"
+        },
+        {
+          "name": "vecVertexAt",
+          "kind": "method",
+          "sig": "Vector3 vecVertexAt(int nVertex)"
+        },
+        {
+          "name": "lib",
+          "kind": "field",
+          "sig": "Library lib"
+        },
+        {
+          "name": "m_eLoadUnits",
+          "kind": "field",
+          "sig": "Mesh.EStlUnit m_eLoadUnits"
+        },
+        {
+          "name": "m_strLoadHeaderData",
+          "kind": "field",
+          "sig": "string m_strLoadHeaderData"
+        }
+      ]
+    },
+    {
+      "name": "Mesh.EStlUnit",
+      "fullName": "PicoGK.Mesh+EStlUnit",
+      "namespace": "PicoGK",
+      "kind": "enum",
+      "interfaces": [],
+      "enumValues": [
+        "AUTO",
+        "MM",
+        "CM",
+        "M",
+        "FT",
+        "IN"
+      ],
+      "members": [
+        {
+          "name": "AUTO",
+          "kind": "field",
+          "sig": "const Mesh.EStlUnit AUTO"
+        },
+        {
+          "name": "CM",
+          "kind": "field",
+          "sig": "const Mesh.EStlUnit CM"
+        },
+        {
+          "name": "FT",
+          "kind": "field",
+          "sig": "const Mesh.EStlUnit FT"
+        },
+        {
+          "name": "IN",
+          "kind": "field",
+          "sig": "const Mesh.EStlUnit IN"
+        },
+        {
+          "name": "M",
+          "kind": "field",
+          "sig": "const Mesh.EStlUnit M"
+        },
+        {
+          "name": "MM",
+          "kind": "field",
+          "sig": "const Mesh.EStlUnit MM"
+        }
+      ]
+    },
+    {
+      "name": "MshHandle",
+      "fullName": "PicoGK.MshHandle",
+      "namespace": "PicoGK",
+      "kind": "struct",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "MshHandle(long Value)"
+        },
+        {
+          "name": "Deconstruct",
+          "kind": "method",
+          "sig": "void Deconstruct(out long Value)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(object obj)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(MshHandle other)"
+        },
+        {
+          "name": "GetHashCode",
+          "kind": "method",
+          "sig": "int GetHashCode()"
+        },
+        {
+          "name": "ToString",
+          "kind": "method",
+          "sig": "string ToString()"
+        },
+        {
+          "name": "op_Inequality",
+          "kind": "operator",
+          "sig": "static bool op_Inequality(MshHandle left, MshHandle right)"
+        },
+        {
+          "name": "op_Equality",
+          "kind": "operator",
+          "sig": "static bool op_Equality(MshHandle left, MshHandle right)"
+        },
+        {
+          "name": "Value",
+          "kind": "property",
+          "sig": "long Value { get; set; }"
+        }
+      ]
+    },
+    {
+      "name": "OpenVdbFile",
+      "fullName": "PicoGK.OpenVdbFile",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "IDisposable"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "OpenVdbFile()"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "OpenVdbFile(string strFileName)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "OpenVdbFile(Library libSet)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "OpenVdbFile(Library libSet, string strFileName)"
+        },
+        {
+          "name": "Dispose",
+          "kind": "method",
+          "sig": "void Dispose()"
+        },
+        {
+          "name": "SaveToFile",
+          "kind": "method",
+          "sig": "void SaveToFile(string strFileName)"
+        },
+        {
+          "name": "_hCreate",
+          "kind": "method",
+          "sig": "static VdbHandle _hCreate(LibHandle hLib)"
+        },
+        {
+          "name": "bIsPicoGKCompatible",
+          "kind": "method",
+          "sig": "bool bIsPicoGKCompatible()"
+        },
+        {
+          "name": "eFieldType",
+          "kind": "method",
+          "sig": "OpenVdbFile.EFieldType eFieldType(int nIndex)"
+        },
+        {
+          "name": "fPicoGKVoxelSizeMM",
+          "kind": "method",
+          "sig": "float fPicoGKVoxelSizeMM()"
+        },
+        {
+          "name": "libCreateCompatibleLibraryFor",
+          "kind": "method",
+          "sig": "static Library libCreateCompatibleLibraryFor(string strVdbFilePath)"
+        },
+        {
+          "name": "nAdd",
+          "kind": "method",
+          "sig": "int nAdd(Voxels vox, string strFieldName = \"\")"
+        },
+        {
+          "name": "nAdd",
+          "kind": "method",
+          "sig": "int nAdd(ScalarField oField, string strFieldName = \"\")"
+        },
+        {
+          "name": "nAdd",
+          "kind": "method",
+          "sig": "int nAdd(VectorField oField, string strFieldName = \"\")"
+        },
+        {
+          "name": "nFieldCount",
+          "kind": "method",
+          "sig": "int nFieldCount()"
+        },
+        {
+          "name": "oGetScalarField",
+          "kind": "method",
+          "sig": "ScalarField oGetScalarField(int nIndex)"
+        },
+        {
+          "name": "oGetScalarField",
+          "kind": "method",
+          "sig": "ScalarField oGetScalarField(string strName)"
+        },
+        {
+          "name": "oGetVectorField",
+          "kind": "method",
+          "sig": "VectorField oGetVectorField(int nIndex)"
+        },
+        {
+          "name": "oGetVectorField",
+          "kind": "method",
+          "sig": "VectorField oGetVectorField(string strName)"
+        },
+        {
+          "name": "strFieldName",
+          "kind": "method",
+          "sig": "string strFieldName(int nIndex)"
+        },
+        {
+          "name": "strFieldType",
+          "kind": "method",
+          "sig": "string strFieldType(int nIndex)"
+        },
+        {
+          "name": "voxGet",
+          "kind": "method",
+          "sig": "Voxels voxGet(int nIndex)"
+        },
+        {
+          "name": "voxGet",
+          "kind": "method",
+          "sig": "Voxels voxGet(string strName)"
+        },
+        {
+          "name": "xField",
+          "kind": "method",
+          "sig": "IFieldWithMetadata xField(int nIndex)"
+        },
+        {
+          "name": "lib",
+          "kind": "field",
+          "sig": "Library lib"
+        }
+      ]
+    },
+    {
+      "name": "OpenVdbFile.EFieldType",
+      "fullName": "PicoGK.OpenVdbFile+EFieldType",
+      "namespace": "PicoGK",
+      "kind": "enum",
+      "interfaces": [],
+      "enumValues": [
+        "Voxels",
+        "ScalarField",
+        "VectorField",
+        "Unsupported"
+      ],
+      "members": [
+        {
+          "name": "ScalarField",
+          "kind": "field",
+          "sig": "const OpenVdbFile.EFieldType ScalarField"
+        },
+        {
+          "name": "Unsupported",
+          "kind": "field",
+          "sig": "const OpenVdbFile.EFieldType Unsupported"
+        },
+        {
+          "name": "VectorField",
+          "kind": "field",
+          "sig": "const OpenVdbFile.EFieldType VectorField"
+        },
+        {
+          "name": "Voxels",
+          "kind": "field",
+          "sig": "const OpenVdbFile.EFieldType Voxels"
+        }
+      ]
+    },
+    {
+      "name": "PicoGKAllocException",
+      "fullName": "PicoGK.PicoGKAllocException",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "baseType": "Exception",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "PicoGKAllocException()"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "PicoGKAllocException(string message)"
+        }
+      ]
+    },
+    {
+      "name": "PicoGKLibraryMismatchException",
+      "fullName": "PicoGK.PicoGKLibraryMismatchException",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "baseType": "Exception",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "PicoGKLibraryMismatchException()"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "PicoGKLibraryMismatchException(string message)"
+        }
+      ]
+    },
+    {
+      "name": "PolyContour",
+      "fullName": "PicoGK.PolyContour",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "PolyContour(IEnumerable<Vector2> oVertices, PolyContour.EWinding eWinding = PolyContour.EWinding.UNKNOWN)"
+        },
+        {
+          "name": "AddVertex",
+          "kind": "method",
+          "sig": "void AddVertex(Vector2 vec)"
+        },
+        {
+          "name": "AsSvgPath",
+          "kind": "method",
+          "sig": "void AsSvgPath(out string str)"
+        },
+        {
+          "name": "AsSvgPolyline",
+          "kind": "method",
+          "sig": "void AsSvgPolyline(out string str)"
+        },
+        {
+          "name": "Close",
+          "kind": "method",
+          "sig": "void Close()"
+        },
+        {
+          "name": "DetectWinding",
+          "kind": "method",
+          "sig": "void DetectWinding()"
+        },
+        {
+          "name": "eDetectWinding",
+          "kind": "method",
+          "sig": "static PolyContour.EWinding eDetectWinding(List<Vector2> oVertices)"
+        },
+        {
+          "name": "eWinding",
+          "kind": "method",
+          "sig": "PolyContour.EWinding eWinding()"
+        },
+        {
+          "name": "nCount",
+          "kind": "method",
+          "sig": "int nCount()"
+        },
+        {
+          "name": "oBBox",
+          "kind": "method",
+          "sig": "BBox2 oBBox()"
+        },
+        {
+          "name": "oVertices",
+          "kind": "method",
+          "sig": "List<Vector2> oVertices()"
+        },
+        {
+          "name": "strWindingAsString",
+          "kind": "method",
+          "sig": "static string strWindingAsString(PolyContour.EWinding eWinding)"
+        },
+        {
+          "name": "vecVertex",
+          "kind": "method",
+          "sig": "Vector2 vecVertex(int n)"
+        }
+      ]
+    },
+    {
+      "name": "PolyContour.EWinding",
+      "fullName": "PicoGK.PolyContour+EWinding",
+      "namespace": "PicoGK",
+      "kind": "enum",
+      "interfaces": [],
+      "enumValues": [
+        "UNKNOWN",
+        "CLOCKWISE",
+        "COUNTERCLOCKWISE"
+      ],
+      "members": [
+        {
+          "name": "CLOCKWISE",
+          "kind": "field",
+          "sig": "const PolyContour.EWinding CLOCKWISE"
+        },
+        {
+          "name": "COUNTERCLOCKWISE",
+          "kind": "field",
+          "sig": "const PolyContour.EWinding COUNTERCLOCKWISE"
+        },
+        {
+          "name": "UNKNOWN",
+          "kind": "field",
+          "sig": "const PolyContour.EWinding UNKNOWN"
+        }
+      ]
+    },
+    {
+      "name": "PolyHandle",
+      "fullName": "PicoGK.PolyHandle",
+      "namespace": "PicoGK",
+      "kind": "struct",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "PolyHandle(long Value)"
+        },
+        {
+          "name": "Deconstruct",
+          "kind": "method",
+          "sig": "void Deconstruct(out long Value)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(object obj)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(PolyHandle other)"
+        },
+        {
+          "name": "GetHashCode",
+          "kind": "method",
+          "sig": "int GetHashCode()"
+        },
+        {
+          "name": "ToString",
+          "kind": "method",
+          "sig": "string ToString()"
+        },
+        {
+          "name": "op_Inequality",
+          "kind": "operator",
+          "sig": "static bool op_Inequality(PolyHandle left, PolyHandle right)"
+        },
+        {
+          "name": "op_Equality",
+          "kind": "operator",
+          "sig": "static bool op_Equality(PolyHandle left, PolyHandle right)"
+        },
+        {
+          "name": "Value",
+          "kind": "property",
+          "sig": "long Value { get; set; }"
+        }
+      ]
+    },
+    {
+      "name": "PolyLine",
+      "fullName": "PicoGK.PolyLine",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "IDisposable"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "PolyLine(ColorFloat clr)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "PolyLine(Library libSet, ColorFloat clr)"
+        },
+        {
+          "name": "Add",
+          "kind": "method",
+          "sig": "void Add(IEnumerable<Vector3> avec)"
+        },
+        {
+          "name": "AddArrow",
+          "kind": "method",
+          "sig": "void AddArrow(float fSizeMM = 1f, Vector3? _vecDir = null)"
+        },
+        {
+          "name": "AddCross",
+          "kind": "method",
+          "sig": "void AddCross(float fSizeMM = 1f)"
+        },
+        {
+          "name": "Dispose",
+          "kind": "method",
+          "sig": "void Dispose()"
+        },
+        {
+          "name": "GetColor",
+          "kind": "method",
+          "sig": "void GetColor(out ColorFloat clr)"
+        },
+        {
+          "name": "_hCreate",
+          "kind": "method",
+          "sig": "static PolyHandle _hCreate(LibHandle hLib, in ColorFloat clr)"
+        },
+        {
+          "name": "nAddVertex",
+          "kind": "method",
+          "sig": "int nAddVertex(in Vector3 vec)"
+        },
+        {
+          "name": "nVertexCount",
+          "kind": "method",
+          "sig": "int nVertexCount()"
+        },
+        {
+          "name": "oBoundingBox",
+          "kind": "method",
+          "sig": "BBox3 oBoundingBox()"
+        },
+        {
+          "name": "vecVertexAt",
+          "kind": "method",
+          "sig": "Vector3 vecVertexAt(int nIndex)"
+        },
+        {
+          "name": "lib",
+          "kind": "field",
+          "sig": "Library lib"
+        }
+      ]
+    },
+    {
+      "name": "PolySlice",
+      "fullName": "PicoGK.PolySlice",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "PolySlice(float fZPos)"
+        },
+        {
+          "name": "AddContour",
+          "kind": "method",
+          "sig": "void AddContour(PolyContour oPoly)"
+        },
+        {
+          "name": "Close",
+          "kind": "method",
+          "sig": "void Close()"
+        },
+        {
+          "name": "SaveToSvgFile",
+          "kind": "method",
+          "sig": "void SaveToSvgFile(string strPath, bool bSolid, BBox2? oBBoxToUse = null)"
+        },
+        {
+          "name": "bIsEmpty",
+          "kind": "method",
+          "sig": "bool bIsEmpty()"
+        },
+        {
+          "name": "fZPos",
+          "kind": "method",
+          "sig": "float fZPos()"
+        },
+        {
+          "name": "nContours",
+          "kind": "method",
+          "sig": "int nContours()"
+        },
+        {
+          "name": "oBBox",
+          "kind": "method",
+          "sig": "BBox2 oBBox()"
+        },
+        {
+          "name": "oContourAt",
+          "kind": "method",
+          "sig": "PolyContour oContourAt(int i)"
+        },
+        {
+          "name": "oFromSdf",
+          "kind": "method",
+          "sig": "static PolySlice oFromSdf(Image img, float fZPos, Vector2 vecOffset, float fScale)"
+        }
+      ]
+    },
+    {
+      "name": "PolySliceStack",
+      "fullName": "PicoGK.PolySliceStack",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "PolySliceStack()"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "PolySliceStack(List<PolySlice> oSlices)"
+        },
+        {
+          "name": "AddSlices",
+          "kind": "method",
+          "sig": "void AddSlices(List<PolySlice> oSlices)"
+        },
+        {
+          "name": "AddToViewer",
+          "kind": "method",
+          "sig": "void AddToViewer(Library lib, Viewer oViewer, ColorFloat? clrOutside = null, ColorFloat? clrInside = null, ColorFloat? clrDegenerate = null, int nGroup = 0)"
+        },
+        {
+          "name": "nCount",
+          "kind": "method",
+          "sig": "int nCount()"
+        },
+        {
+          "name": "oBBox",
+          "kind": "method",
+          "sig": "BBox3 oBBox()"
+        },
+        {
+          "name": "oSliceAt",
+          "kind": "method",
+          "sig": "PolySlice oSliceAt(int n)"
+        }
+      ]
+    },
+    {
+      "name": "ProgressCounter",
+      "fullName": "PicoGK.ProgressCounter",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ProgressCounter(IProgress xProgress, int nItemCount)"
+        },
+        {
+          "name": "SetItem",
+          "kind": "method",
+          "sig": "void SetItem(int nItem)"
+        },
+        {
+          "name": "op_Increment",
+          "kind": "operator",
+          "sig": "static ProgressCounter op_Increment(ProgressCounter pc)"
+        }
+      ]
+    },
+    {
+      "name": "ProgressNoop",
+      "fullName": "PicoGK.ProgressNoop",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "IProgress"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ProgressNoop()"
+        },
+        {
+          "name": "Progress",
+          "kind": "method",
+          "sig": "void Progress(float f)"
+        }
+      ]
+    },
+    {
+      "name": "QuadHandle",
+      "fullName": "PicoGK.QuadHandle",
+      "namespace": "PicoGK",
+      "kind": "struct",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "QuadHandle(IntPtr Value)"
+        },
+        {
+          "name": "Deconstruct",
+          "kind": "method",
+          "sig": "void Deconstruct(out IntPtr Value)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(object obj)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(QuadHandle other)"
+        },
+        {
+          "name": "GetHashCode",
+          "kind": "method",
+          "sig": "int GetHashCode()"
+        },
+        {
+          "name": "ToString",
+          "kind": "method",
+          "sig": "string ToString()"
+        },
+        {
+          "name": "op_Inequality",
+          "kind": "operator",
+          "sig": "static bool op_Inequality(QuadHandle left, QuadHandle right)"
+        },
+        {
+          "name": "op_Equality",
+          "kind": "operator",
+          "sig": "static bool op_Equality(QuadHandle left, QuadHandle right)"
+        },
+        {
+          "name": "Value",
+          "kind": "property",
+          "sig": "IntPtr Value { get; set; }"
+        }
+      ]
+    },
+    {
+      "name": "SKHelpers",
+      "fullName": "PicoGK.SKHelpers",
+      "namespace": "PicoGK",
+      "kind": "static class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": "clrAsColorRgba32",
+          "kind": "method",
+          "sig": "static ColorRgba32 clrAsColorRgba32(SKColor clr)"
+        },
+        {
+          "name": "oAsSkColor",
+          "kind": "method",
+          "sig": "static SKColor oAsSkColor(ColorRgba32 clr)"
+        },
+        {
+          "name": "oAsSkColor",
+          "kind": "method",
+          "sig": "static SKColor oAsSkColor(ColorFloat clr)"
+        }
+      ]
+    },
+    {
+      "name": "ScalarField",
+      "fullName": "PicoGK.ScalarField",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "IDisposable",
+        "IFieldWithMetadata",
+        "IImplicit"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ScalarField()"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ScalarField(Library libSet)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ScalarField(in ScalarField oSource)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ScalarField(Voxels vox)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ScalarField(Voxels vox, float fValue, float fSdThreshold = 0.5f)"
+        },
+        {
+          "name": "Dispose",
+          "kind": "method",
+          "sig": "void Dispose()"
+        },
+        {
+          "name": "GetVoxelDimensions",
+          "kind": "method",
+          "sig": "void GetVoxelDimensions(out int nXOrigin, out int nYOrigin, out int nZOrigin, out int nXSize, out int nYSize, out int nZSize)"
+        },
+        {
+          "name": "GetVoxelDimensions",
+          "kind": "method",
+          "sig": "void GetVoxelDimensions(out int nXSize, out int nYSize, out int nZSize)"
+        },
+        {
+          "name": "GetVoxelSlice",
+          "kind": "method",
+          "sig": "void GetVoxelSlice(in int nZSlice, ref ImageGrayScale img)"
+        },
+        {
+          "name": "RemoveValue",
+          "kind": "method",
+          "sig": "void RemoveValue(Vector3 vecPosition)"
+        },
+        {
+          "name": "SetValue",
+          "kind": "method",
+          "sig": "void SetValue(Vector3 vecPosition, float fValue)"
+        },
+        {
+          "name": "TraverseActive",
+          "kind": "method",
+          "sig": "void TraverseActive(ITraverseScalarField xTraverse)"
+        },
+        {
+          "name": "_hBuildFromVoxels",
+          "kind": "method",
+          "sig": "static ScalarFieldHandle _hBuildFromVoxels(LibHandle hLib, VoxHandle hVoxels, float fScalarValue, float fSdThreshold)"
+        },
+        {
+          "name": "_hCreate",
+          "kind": "method",
+          "sig": "static ScalarFieldHandle _hCreate(LibHandle hLib)"
+        },
+        {
+          "name": "_hCreateCopy",
+          "kind": "method",
+          "sig": "static ScalarFieldHandle _hCreateCopy(LibHandle hLib, ScalarFieldHandle hSource)"
+        },
+        {
+          "name": "_hCreateFromVoxels",
+          "kind": "method",
+          "sig": "static ScalarFieldHandle _hCreateFromVoxels(LibHandle hLib, VoxHandle hVoxels)"
+        },
+        {
+          "name": "bGetValue",
+          "kind": "method",
+          "sig": "bool bGetValue(Vector3 vecPosition, out float fValue)"
+        },
+        {
+          "name": "fSignedDistance",
+          "kind": "method",
+          "sig": "float fSignedDistance(in Vector3 vecPosition)"
+        },
+        {
+          "name": "oBoundingBox",
+          "kind": "method",
+          "sig": "BBox3 oBoundingBox()"
+        },
+        {
+          "name": "oMetaData",
+          "kind": "method",
+          "sig": "FieldMetadata oMetaData()"
+        },
+        {
+          "name": "lib",
+          "kind": "field",
+          "sig": "Library lib"
+        },
+        {
+          "name": "m_oMetadata",
+          "kind": "field",
+          "sig": "FieldMetadata m_oMetadata"
+        }
+      ]
+    },
+    {
+      "name": "ScalarFieldHandle",
+      "fullName": "PicoGK.ScalarFieldHandle",
+      "namespace": "PicoGK",
+      "kind": "struct",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ScalarFieldHandle(IntPtr Value)"
+        },
+        {
+          "name": "Deconstruct",
+          "kind": "method",
+          "sig": "void Deconstruct(out IntPtr Value)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(object obj)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(ScalarFieldHandle other)"
+        },
+        {
+          "name": "GetHashCode",
+          "kind": "method",
+          "sig": "int GetHashCode()"
+        },
+        {
+          "name": "ToString",
+          "kind": "method",
+          "sig": "string ToString()"
+        },
+        {
+          "name": "op_Inequality",
+          "kind": "operator",
+          "sig": "static bool op_Inequality(ScalarFieldHandle left, ScalarFieldHandle right)"
+        },
+        {
+          "name": "op_Equality",
+          "kind": "operator",
+          "sig": "static bool op_Equality(ScalarFieldHandle left, ScalarFieldHandle right)"
+        },
+        {
+          "name": "Value",
+          "kind": "property",
+          "sig": "IntPtr Value { get; set; }"
+        }
+      ]
+    },
+    {
+      "name": "SdfVisualizer",
+      "fullName": "PicoGK.SdfVisualizer",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "SdfVisualizer()"
+        },
+        {
+          "name": "bDoesSliceContainDefect",
+          "kind": "method",
+          "sig": "static bool bDoesSliceContainDefect(ScalarField oField, int nSlice)"
+        },
+        {
+          "name": "bVisualizeSdfSlicesAsTgaStack",
+          "kind": "method",
+          "sig": "static bool bVisualizeSdfSlicesAsTgaStack(ScalarField oField, float fBackgroundValue, string strPath, string strFilePrefix = \"Sdf_\", bool bOnlyDefective = false, ColorFloat? _clrBackground = null, ColorFloat? _clrSurface = null, ColorFloat? _clrInside = null, ColorFloat? _clrOutside = null, ColorFloat? _clrDefect = null)"
+        },
+        {
+          "name": "imgEncodeFromSdf",
+          "kind": "method",
+          "sig": "static ImageColor imgEncodeFromSdf(ScalarField oField, float fBackgroundValue, int nSlice, ColorFloat? _clrBackground = null, ColorFloat? _clrSurface = null, ColorFloat? _clrInside = null, ColorFloat? _clrOutside = null, ColorFloat? _clrDefect = null)"
+        }
+      ]
+    },
+    {
+      "name": "SliceViz",
+      "fullName": "PicoGK.SliceViz",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "IDisposable"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "SliceViz(Viewer oViewer, Voxels vox, Voxels.ESliceAxis eAxis = Voxels.ESliceAxis.Z)"
+        },
+        {
+          "name": "Dispose",
+          "kind": "method",
+          "sig": "void Dispose()"
+        },
+        {
+          "name": "Visualize",
+          "kind": "method",
+          "sig": "void Visualize(float fNormalized)"
+        },
+        {
+          "name": "Visualize",
+          "kind": "method",
+          "sig": "void Visualize(int nSlice)"
+        },
+        {
+          "name": "nSliceCount",
+          "kind": "property",
+          "sig": "int nSliceCount { get; }"
+        }
+      ]
+    },
+    {
+      "name": "SplitProgress",
+      "fullName": "PicoGK.SplitProgress",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "IProgress"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "SplitProgress(IProgress xProgress, int nSubTasks)"
+        },
+        {
+          "name": "Progress",
+          "kind": "method",
+          "sig": "void Progress(float f)"
+        },
+        {
+          "name": "op_Increment",
+          "kind": "operator",
+          "sig": "static SplitProgress op_Increment(SplitProgress pc)"
+        }
+      ]
+    },
+    {
+      "name": "SurfaceNormalFieldExtractor",
+      "fullName": "PicoGK.SurfaceNormalFieldExtractor",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "ITraverseScalarField"
+      ],
+      "members": [
+        {
+          "name": "InformActiveValue",
+          "kind": "method",
+          "sig": "void InformActiveValue(in Vector3 vecPosition, float fValue)"
+        },
+        {
+          "name": "oExtract",
+          "kind": "method",
+          "sig": "static VectorField oExtract(Voxels vox, float fSurfaceThresholdVx = 0.5f, Vector3? vecDirectionFilter = null, float fDirectionFilterTolerance = 0f, Vector3? vecScaleBy = null)"
+        }
+      ]
+    },
+    {
+      "name": "Text",
+      "fullName": "PicoGK.Text",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Text()"
+        },
+        {
+          "name": "imgRenderText",
+          "kind": "method",
+          "sig": "static ImageRgba32 imgRenderText(string strText, int nFontHeight, int nPadding = 10, ColorFloat? _clrBackground = null, ColorFloat? _clrText = null, SKTypeface _oTypeface = null)"
+        },
+        {
+          "name": "oDefaultTypeface",
+          "kind": "property",
+          "sig": "static SKTypeface oDefaultTypeface { get; }"
+        }
+      ]
+    },
+    {
+      "name": "TgaIo",
+      "fullName": "PicoGK.TgaIo",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "TgaIo()"
+        },
+        {
+          "name": "GetFileInfo",
+          "kind": "method",
+          "sig": "static void GetFileInfo(string strFilename, out Image.EType eType, out int nWidth, out int nHeight)"
+        },
+        {
+          "name": "GetFileInfo",
+          "kind": "method",
+          "sig": "static void GetFileInfo(in BinaryReader oReader, out Image.EType eType, out int nWidth, out int nHeight)"
+        },
+        {
+          "name": "LoadTga",
+          "kind": "method",
+          "sig": "static void LoadTga(string strFilename, out Image img)"
+        },
+        {
+          "name": "LoadTga",
+          "kind": "method",
+          "sig": "static void LoadTga(in BinaryReader oReader, out Image img)"
+        },
+        {
+          "name": "SaveTga",
+          "kind": "method",
+          "sig": "static void SaveTga(string strFilename, in Image img)"
+        },
+        {
+          "name": "SaveTga",
+          "kind": "method",
+          "sig": "static void SaveTga(in BinaryWriter oWriter, in Image img)"
+        }
+      ]
+    },
+    {
+      "name": "Triangle",
+      "fullName": "PicoGK.Triangle",
+      "namespace": "PicoGK",
+      "kind": "struct",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Triangle(int a, int b, int c)"
+        },
+        {
+          "name": "A",
+          "kind": "field",
+          "sig": "int A"
+        },
+        {
+          "name": "B",
+          "kind": "field",
+          "sig": "int B"
+        },
+        {
+          "name": "C",
+          "kind": "field",
+          "sig": "int C"
+        }
+      ]
+    },
+    {
+      "name": "Utils",
+      "fullName": "PicoGK.Utils",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Utils()"
+        },
+        {
+          "name": "bWaitForFileExistence",
+          "kind": "method",
+          "sig": "static bool bWaitForFileExistence(string strFile, float fTimeOut = 1000000f)"
+        },
+        {
+          "name": "mshCreateCube",
+          "kind": "method",
+          "sig": "static Mesh mshCreateCube(BBox3 oBox)"
+        },
+        {
+          "name": "mshCreateCube",
+          "kind": "method",
+          "sig": "static Mesh mshCreateCube(Vector3? vecScale = null, Vector3? vecOffsetMM = null)"
+        },
+        {
+          "name": "mshCreateCube",
+          "kind": "method",
+          "sig": "static Mesh mshCreateCube(Library lib, BBox3 oBox)"
+        },
+        {
+          "name": "mshCreateCube",
+          "kind": "method",
+          "sig": "static Mesh mshCreateCube(Library lib, Vector3? vecScale = null, Vector3? vecOffsetMM = null)"
+        },
+        {
+          "name": "strDateTimeFilename",
+          "kind": "method",
+          "sig": "static string strDateTimeFilename(in string strPrefix, in string strPostfix)"
+        },
+        {
+          "name": "strDocumentsFolder",
+          "kind": "method",
+          "sig": "static string strDocumentsFolder()"
+        },
+        {
+          "name": "strExecutableFolder",
+          "kind": "method",
+          "sig": "static string strExecutableFolder()"
+        },
+        {
+          "name": "strHomeFolder",
+          "kind": "method",
+          "sig": "static string strHomeFolder()"
+        },
+        {
+          "name": "strPicoGKSourceCodeFolder",
+          "kind": "method",
+          "sig": "static string strPicoGKSourceCodeFolder()"
+        },
+        {
+          "name": "strProjectRootFolder",
+          "kind": "method",
+          "sig": "static string strProjectRootFolder()"
+        },
+        {
+          "name": "strShorten",
+          "kind": "method",
+          "sig": "static string strShorten(string str, int iMaxCharacters)"
+        },
+        {
+          "name": "strStripExtension",
+          "kind": "method",
+          "sig": "static string strStripExtension(string strPath)"
+        },
+        {
+          "name": "strStripQuotesFromPath",
+          "kind": "method",
+          "sig": "static string strStripQuotesFromPath(string strPath)"
+        }
+      ]
+    },
+    {
+      "name": "Utils.TempFolder",
+      "fullName": "PicoGK.Utils+TempFolder",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "IDisposable"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "TempFolder()"
+        },
+        {
+          "name": "Dispose",
+          "kind": "method",
+          "sig": "void Dispose()"
+        },
+        {
+          "name": "strFolder",
+          "kind": "field",
+          "sig": "string strFolder"
+        }
+      ]
+    },
+    {
+      "name": "Vdb2Cli",
+      "fullName": "PicoGK.Vdb2Cli",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Vdb2Cli()"
+        },
+        {
+          "name": "Convert",
+          "kind": "method",
+          "sig": "static void Convert(string strVdbFilePath, float fCliLayerHeight, string strCliFilePath = \"\", string strVoxelFieldName = \"\", IProgress xProgress = null)"
+        }
+      ]
+    },
+    {
+      "name": "VdbHandle",
+      "fullName": "PicoGK.VdbHandle",
+      "namespace": "PicoGK",
+      "kind": "struct",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "VdbHandle(long Value)"
+        },
+        {
+          "name": "Deconstruct",
+          "kind": "method",
+          "sig": "void Deconstruct(out long Value)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(object obj)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(VdbHandle other)"
+        },
+        {
+          "name": "GetHashCode",
+          "kind": "method",
+          "sig": "int GetHashCode()"
+        },
+        {
+          "name": "ToString",
+          "kind": "method",
+          "sig": "string ToString()"
+        },
+        {
+          "name": "op_Inequality",
+          "kind": "operator",
+          "sig": "static bool op_Inequality(VdbHandle left, VdbHandle right)"
+        },
+        {
+          "name": "op_Equality",
+          "kind": "operator",
+          "sig": "static bool op_Equality(VdbHandle left, VdbHandle right)"
+        },
+        {
+          "name": "Value",
+          "kind": "property",
+          "sig": "long Value { get; set; }"
+        }
+      ]
+    },
+    {
+      "name": "VdbMetaHandle",
+      "fullName": "PicoGK.VdbMetaHandle",
+      "namespace": "PicoGK",
+      "kind": "struct",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "VdbMetaHandle(IntPtr Value)"
+        },
+        {
+          "name": "Deconstruct",
+          "kind": "method",
+          "sig": "void Deconstruct(out IntPtr Value)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(object obj)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(VdbMetaHandle other)"
+        },
+        {
+          "name": "GetHashCode",
+          "kind": "method",
+          "sig": "int GetHashCode()"
+        },
+        {
+          "name": "ToString",
+          "kind": "method",
+          "sig": "string ToString()"
+        },
+        {
+          "name": "op_Inequality",
+          "kind": "operator",
+          "sig": "static bool op_Inequality(VdbMetaHandle left, VdbMetaHandle right)"
+        },
+        {
+          "name": "op_Equality",
+          "kind": "operator",
+          "sig": "static bool op_Equality(VdbMetaHandle left, VdbMetaHandle right)"
+        },
+        {
+          "name": "Value",
+          "kind": "property",
+          "sig": "IntPtr Value { get; set; }"
+        }
+      ]
+    },
+    {
+      "name": "VectorField",
+      "fullName": "PicoGK.VectorField",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "IDisposable",
+        "IFieldWithMetadata"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "VectorField()"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "VectorField(Library libSet)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "VectorField(in VectorField oSource)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "VectorField(Voxels vox)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "VectorField(Voxels vox, Vector3 vecValue, float fSdThreshold = 0.5f)"
+        },
+        {
+          "name": "Dispose",
+          "kind": "method",
+          "sig": "void Dispose()"
+        },
+        {
+          "name": "RemoveValue",
+          "kind": "method",
+          "sig": "void RemoveValue(Vector3 vecPosition)"
+        },
+        {
+          "name": "SetValue",
+          "kind": "method",
+          "sig": "void SetValue(Vector3 vecPosition, Vector3 vecValue)"
+        },
+        {
+          "name": "TraverseActive",
+          "kind": "method",
+          "sig": "void TraverseActive(ITraverseVectorField xTraverse)"
+        },
+        {
+          "name": "_hBuildFromVoxels",
+          "kind": "method",
+          "sig": "static VectorFieldHandle _hBuildFromVoxels(LibHandle hLib, VoxHandle hVoxels, in Vector3 vecValue, float fSDThreshold)"
+        },
+        {
+          "name": "_hCreate",
+          "kind": "method",
+          "sig": "static VectorFieldHandle _hCreate(LibHandle hLib)"
+        },
+        {
+          "name": "_hCreateCopy",
+          "kind": "method",
+          "sig": "static VectorFieldHandle _hCreateCopy(LibHandle hLib, VectorFieldHandle hSource)"
+        },
+        {
+          "name": "_hCreateFromVoxels",
+          "kind": "method",
+          "sig": "static VectorFieldHandle _hCreateFromVoxels(LibHandle hLib, VoxHandle hVoxels)"
+        },
+        {
+          "name": "bGetValue",
+          "kind": "method",
+          "sig": "bool bGetValue(Vector3 vecPosition, out Vector3 vecValue)"
+        },
+        {
+          "name": "oMetaData",
+          "kind": "method",
+          "sig": "FieldMetadata oMetaData()"
+        },
+        {
+          "name": "lib",
+          "kind": "field",
+          "sig": "Library lib"
+        },
+        {
+          "name": "m_oMetadata",
+          "kind": "field",
+          "sig": "FieldMetadata m_oMetadata"
+        }
+      ]
+    },
+    {
+      "name": "VectorFieldHandle",
+      "fullName": "PicoGK.VectorFieldHandle",
+      "namespace": "PicoGK",
+      "kind": "struct",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "VectorFieldHandle(IntPtr Value)"
+        },
+        {
+          "name": "Deconstruct",
+          "kind": "method",
+          "sig": "void Deconstruct(out IntPtr Value)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(object obj)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(VectorFieldHandle other)"
+        },
+        {
+          "name": "GetHashCode",
+          "kind": "method",
+          "sig": "int GetHashCode()"
+        },
+        {
+          "name": "ToString",
+          "kind": "method",
+          "sig": "string ToString()"
+        },
+        {
+          "name": "op_Inequality",
+          "kind": "operator",
+          "sig": "static bool op_Inequality(VectorFieldHandle left, VectorFieldHandle right)"
+        },
+        {
+          "name": "op_Equality",
+          "kind": "operator",
+          "sig": "static bool op_Equality(VectorFieldHandle left, VectorFieldHandle right)"
+        },
+        {
+          "name": "Value",
+          "kind": "property",
+          "sig": "IntPtr Value { get; set; }"
+        }
+      ]
+    },
+    {
+      "name": "VectorFieldMerge",
+      "fullName": "PicoGK.VectorFieldMerge",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "ITraverseVectorField"
+      ],
+      "members": [
+        {
+          "name": "InformActiveValue",
+          "kind": "method",
+          "sig": "void InformActiveValue(in Vector3 vecPosition, in Vector3 vecValue)"
+        },
+        {
+          "name": "Merge",
+          "kind": "method",
+          "sig": "static void Merge(VectorField oSource, VectorField oTarget)"
+        }
+      ]
+    },
+    {
+      "name": "Viewer",
+      "fullName": "PicoGK.Viewer",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "IDisposable"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Viewer(string strTitle, Vector2 vecSize, ILog xLog)"
+        },
+        {
+          "name": "Add",
+          "kind": "method",
+          "sig": "void Add(in Voxels vox, int nGroupID = 0)"
+        },
+        {
+          "name": "Add",
+          "kind": "method",
+          "sig": "void Add(Mesh msh, int nGroupID = 0)"
+        },
+        {
+          "name": "Add",
+          "kind": "method",
+          "sig": "void Add(PolyLine oPoly, int nGroupID = 0)"
+        },
+        {
+          "name": "AddAnimation",
+          "kind": "method",
+          "sig": "void AddAnimation(Animation oAnim)"
+        },
+        {
+          "name": "AddArrow",
+          "kind": "method",
+          "sig": "void AddArrow(Vector3 vecPtFrom, Vector3 vecPtTo, ColorFloat clr, float fSizeMM = 1f, int nViewerGroup = 0)"
+        },
+        {
+          "name": "AddArrow",
+          "kind": "method",
+          "sig": "void AddArrow(Vector3 vecPtFrom, Vector3 vecPtTo)"
+        },
+        {
+          "name": "AddCross",
+          "kind": "method",
+          "sig": "void AddCross(Vector3 vecPt, ColorFloat clr, float fSizeMM = 1f, int nViewerGroup = 0)"
+        },
+        {
+          "name": "AddCross",
+          "kind": "method",
+          "sig": "void AddCross(Vector3 vecPt)"
+        },
+        {
+          "name": "AddKeyHandler",
+          "kind": "method",
+          "sig": "void AddKeyHandler(Viewer.IKeyHandler xKeyHandler)"
+        },
+        {
+          "name": "DisableOverhangWarning",
+          "kind": "method",
+          "sig": "void DisableOverhangWarning(int nGroupID)"
+        },
+        {
+          "name": "Dispose",
+          "kind": "method",
+          "sig": "void Dispose()"
+        },
+        {
+          "name": "EnableExperimental",
+          "kind": "method",
+          "sig": "void EnableExperimental(bool bEnable)"
+        },
+        {
+          "name": "EnableOverhangWarning",
+          "kind": "method",
+          "sig": "void EnableOverhangWarning(int nGroupID, Overhang uWarning, Overhang uError)"
+        },
+        {
+          "name": "EnableOverhangWarning",
+          "kind": "method",
+          "sig": "void EnableOverhangWarning(int nGroupID, int nWarningAngleDeg, int nErrorAngleDeg)"
+        },
+        {
+          "name": "LoadLightSetup",
+          "kind": "method",
+          "sig": "void LoadLightSetup(string strFilePath)"
+        },
+        {
+          "name": "LoadLightSetup",
+          "kind": "method",
+          "sig": "void LoadLightSetup(Stream oStream)"
+        },
+        {
+          "name": "PauseTimeLapse",
+          "kind": "method",
+          "sig": "void PauseTimeLapse()"
+        },
+        {
+          "name": "Remove",
+          "kind": "method",
+          "sig": "void Remove(Voxels vox)"
+        },
+        {
+          "name": "Remove",
+          "kind": "method",
+          "sig": "void Remove(Mesh msh)"
+        },
+        {
+          "name": "Remove",
+          "kind": "method",
+          "sig": "void Remove(PolyLine oPoly)"
+        },
+        {
+          "name": "RemoveAllAnimations",
+          "kind": "method",
+          "sig": "void RemoveAllAnimations()"
+        },
+        {
+          "name": "RemoveAllObjects",
+          "kind": "method",
+          "sig": "void RemoveAllObjects()"
+        },
+        {
+          "name": "RequestScreenShot",
+          "kind": "method",
+          "sig": "void RequestScreenShot(string strScreenShotPath)"
+        },
+        {
+          "name": "RequestUpdate",
+          "kind": "method",
+          "sig": "void RequestUpdate()"
+        },
+        {
+          "name": "ResumeTimeLapse",
+          "kind": "method",
+          "sig": "void ResumeTimeLapse()"
+        },
+        {
+          "name": "SetBackgroundColor",
+          "kind": "method",
+          "sig": "void SetBackgroundColor(ColorFloat clr)"
+        },
+        {
+          "name": "SetFov",
+          "kind": "method",
+          "sig": "void SetFov(float fAngle)"
+        },
+        {
+          "name": "SetGroupMaterial",
+          "kind": "method",
+          "sig": "void SetGroupMaterial(int nGroupID, ColorFloat clr, float fMetallic, float fRoughness)"
+        },
+        {
+          "name": "SetGroupMatrix",
+          "kind": "method",
+          "sig": "void SetGroupMatrix(int nGroupID, Matrix4x4 mat)"
+        },
+        {
+          "name": "SetGroupVisible",
+          "kind": "method",
+          "sig": "void SetGroupVisible(int nGroupID, bool bVisible)"
+        },
+        {
+          "name": "SetObjectMatrix",
+          "kind": "method",
+          "sig": "void SetObjectMatrix(Voxels vox, in Matrix4x4 mat)"
+        },
+        {
+          "name": "SetObjectMatrix",
+          "kind": "method",
+          "sig": "void SetObjectMatrix(Mesh msh, in Matrix4x4 mat)"
+        },
+        {
+          "name": "SetObjectMatrix",
+          "kind": "method",
+          "sig": "void SetObjectMatrix(PolyLine poly, in Matrix4x4 mat)"
+        },
+        {
+          "name": "StartTimeLapse",
+          "kind": "method",
+          "sig": "void StartTimeLapse(float fIntervalInMilliseconds, string strPath, string strFileName = \"frame_\", uint nStartFrame = 0, bool bPaused = false)"
+        },
+        {
+          "name": "StopTimeLapse",
+          "kind": "method",
+          "sig": "void StopTimeLapse()"
+        },
+        {
+          "name": "ZoomToFit",
+          "kind": "method",
+          "sig": "void ZoomToFit()"
+        },
+        {
+          "name": "_hCreate",
+          "kind": "method",
+          "sig": "static IntPtr _hCreate(string strWindowTitle, in Vector2 vecSize, Viewer.InfoCallback fnInfoCallback, Viewer.UpdateCallback fnUpdateCallback, Viewer.KeyPressedCallback fnKeyPressedCallback, Viewer.MouseMovedCallback fnMouseMoveCallback, Viewer.MouseButtonCallback fnMouseButtonCallback, Viewer.ScrollWheelCallback fnScrollWheelCallback, Viewer.WindowSizelCallback fnWindowSizeCallback)"
+        },
+        {
+          "name": "bIsIdle",
+          "kind": "method",
+          "sig": "bool bIsIdle()"
+        },
+        {
+          "name": "bPoll",
+          "kind": "method",
+          "sig": "bool bPoll()"
+        },
+        {
+          "name": "oBBox",
+          "kind": "method",
+          "sig": "BBox3 oBBox()"
+        },
+        {
+          "name": "oCreateSideBarLeft",
+          "kind": "method",
+          "sig": "Viewer.SideBar oCreateSideBarLeft(int nMin, int nMax, int nDef, ColorFloat clrNormal, ColorFloat clrHovered)"
+        },
+        {
+          "name": "oCreateSideBarRight",
+          "kind": "method",
+          "sig": "Viewer.SideBar oCreateSideBarRight(int nMin, int nMax, int nDef, ColorFloat clrNormal, ColorFloat clrHovered)"
+        },
+        {
+          "name": "qOrientation",
+          "kind": "property",
+          "sig": "Quaternion qOrientation { get; set; }"
+        },
+        {
+          "name": "qOrientationBack",
+          "kind": "field",
+          "sig": "Quaternion qOrientationBack"
+        },
+        {
+          "name": "qOrientationBottom",
+          "kind": "field",
+          "sig": "Quaternion qOrientationBottom"
+        },
+        {
+          "name": "qOrientationFront",
+          "kind": "field",
+          "sig": "Quaternion qOrientationFront"
+        },
+        {
+          "name": "qOrientationHome",
+          "kind": "field",
+          "sig": "Quaternion qOrientationHome"
+        },
+        {
+          "name": "qOrientationLeft",
+          "kind": "field",
+          "sig": "Quaternion qOrientationLeft"
+        },
+        {
+          "name": "qOrientationRight",
+          "kind": "field",
+          "sig": "Quaternion qOrientationRight"
+        },
+        {
+          "name": "qOrientationTop",
+          "kind": "field",
+          "sig": "Quaternion qOrientationTop"
+        }
+      ]
+    },
+    {
+      "name": "Viewer.AnimGroupMatrixRotate",
+      "fullName": "PicoGK.Viewer+AnimGroupMatrixRotate",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "Animation.IAction"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "AnimGroupMatrixRotate(Viewer oViewer, int nGroup, Matrix4x4 matInit, Vector3 vecAxis, float fDegrees)"
+        },
+        {
+          "name": "Do",
+          "kind": "method",
+          "sig": "void Do(float fFactor)"
+        }
+      ]
+    },
+    {
+      "name": "Viewer.AnimViewRotate",
+      "fullName": "PicoGK.Viewer+AnimViewRotate",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "Animation.IAction"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "AnimViewRotate(Viewer oViewer, Quaternion qFrom, Quaternion qTo)"
+        },
+        {
+          "name": "Do",
+          "kind": "method",
+          "sig": "void Do(float fFactor)"
+        }
+      ]
+    },
+    {
+      "name": "Viewer.CamPerspectiveArcball",
+      "fullName": "PicoGK.Viewer+CamPerspectiveArcball",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "baseType": "Viewer.Camera",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "CamPerspectiveArcball(float fFovVertical = 0.7853982f)"
+        },
+        {
+          "name": "LookAt",
+          "kind": "method",
+          "sig": "void LookAt(Vector3 vec)"
+        },
+        {
+          "name": "MouseDrag",
+          "kind": "method",
+          "sig": "void MouseDrag(Vector2 vecMouseRel, Viewer.Camera.EDragType eType)"
+        },
+        {
+          "name": "Scroll",
+          "kind": "method",
+          "sig": "void Scroll(Vector2 vecMouseRel)"
+        },
+        {
+          "name": "SetVerticalFov",
+          "kind": "method",
+          "sig": "void SetVerticalFov(float fFov)"
+        },
+        {
+          "name": "SetViewPort",
+          "kind": "method",
+          "sig": "void SetViewPort(Vector2 vecSizePx, float fSceneRadius)"
+        },
+        {
+          "name": "ZoomToFit",
+          "kind": "method",
+          "sig": "void ZoomToFit(BBox3 oBBox)"
+        },
+        {
+          "name": "matVP",
+          "kind": "property",
+          "sig": "Matrix4x4 matVP { get; }"
+        },
+        {
+          "name": "qOrientation",
+          "kind": "property",
+          "sig": "Quaternion qOrientation { get; set; }"
+        },
+        {
+          "name": "vecEye",
+          "kind": "property",
+          "sig": "Vector3 vecEye { get; }"
+        }
+      ]
+    },
+    {
+      "name": "Viewer.Camera",
+      "fullName": "PicoGK.Viewer+Camera",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": "LookAt",
+          "kind": "method",
+          "sig": "void LookAt(Vector3 vec)"
+        },
+        {
+          "name": "MouseDrag",
+          "kind": "method",
+          "sig": "void MouseDrag(Vector2 vecMouseRel, Viewer.Camera.EDragType eType)"
+        },
+        {
+          "name": "Scroll",
+          "kind": "method",
+          "sig": "void Scroll(Vector2 vecMouseRel)"
+        },
+        {
+          "name": "SetViewPort",
+          "kind": "method",
+          "sig": "void SetViewPort(Vector2 vecSize, float fSceneDepth)"
+        },
+        {
+          "name": "ZoomToFit",
+          "kind": "method",
+          "sig": "void ZoomToFit(BBox3 oBBox)"
+        },
+        {
+          "name": "matVP",
+          "kind": "property",
+          "sig": "Matrix4x4 matVP { get; }"
+        },
+        {
+          "name": "qOrientation",
+          "kind": "property",
+          "sig": "Quaternion qOrientation { get; set; }"
+        },
+        {
+          "name": "vecEye",
+          "kind": "property",
+          "sig": "Vector3 vecEye { get; }"
+        }
+      ]
+    },
+    {
+      "name": "Viewer.Camera.EDragType",
+      "fullName": "PicoGK.Viewer+Camera+EDragType",
+      "namespace": "PicoGK",
+      "kind": "enum",
+      "interfaces": [],
+      "enumValues": [
+        "Rotate",
+        "Spin",
+        "Pan"
+      ],
+      "members": [
+        {
+          "name": "Pan",
+          "kind": "field",
+          "sig": "const Viewer.Camera.EDragType Pan"
+        },
+        {
+          "name": "Rotate",
+          "kind": "field",
+          "sig": "const Viewer.Camera.EDragType Rotate"
+        },
+        {
+          "name": "Spin",
+          "kind": "field",
+          "sig": "const Viewer.Camera.EDragType Spin"
+        }
+      ]
+    },
+    {
+      "name": "Viewer.EKeys",
+      "fullName": "PicoGK.Viewer+EKeys",
+      "namespace": "PicoGK",
+      "kind": "enum",
+      "interfaces": [],
+      "enumValues": [
+        "Key_Space",
+        "Key_0",
+        "Key_1",
+        "Key_2",
+        "Key_3",
+        "Key_4",
+        "Key_5",
+        "Key_6",
+        "Key_7",
+        "Key_8",
+        "Key_9",
+        "Key_A",
+        "Key_B",
+        "Key_C",
+        "Key_D",
+        "Key_E",
+        "Key_F",
+        "Key_G",
+        "Key_H",
+        "Key_I",
+        "Key_J",
+        "Key_K",
+        "Key_L",
+        "Key_M",
+        "Key_N",
+        "Key_O",
+        "Key_P",
+        "Key_Q",
+        "Key_R",
+        "Key_S",
+        "Key_T",
+        "Key_U",
+        "Key_V",
+        "Key_W",
+        "Key_X",
+        "Key_Y",
+        "Key_Z",
+        "Key_ESC",
+        "Key_Enter",
+        "Key_Tab",
+        "Key_Backspace",
+        "Key_Insert",
+        "Key_Delete",
+        "Key_Right",
+        "Key_Left",
+        "Key_Down",
+        "Key_Up",
+        "Key_PgUp",
+        "Key_PgDn",
+        "Key_Home",
+        "Key_End",
+        "Key_F1",
+        "Key_F2",
+        "Key_F3",
+        "Key_F4",
+        "Key_F5",
+        "Key_F6",
+        "Key_F7",
+        "Key_F8",
+        "Key_F9",
+        "Key_F10",
+        "Key_F11",
+        "Key_F12"
+      ],
+      "members": [
+        {
+          "name": "Key_0",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_0"
+        },
+        {
+          "name": "Key_1",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_1"
+        },
+        {
+          "name": "Key_2",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_2"
+        },
+        {
+          "name": "Key_3",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_3"
+        },
+        {
+          "name": "Key_4",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_4"
+        },
+        {
+          "name": "Key_5",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_5"
+        },
+        {
+          "name": "Key_6",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_6"
+        },
+        {
+          "name": "Key_7",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_7"
+        },
+        {
+          "name": "Key_8",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_8"
+        },
+        {
+          "name": "Key_9",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_9"
+        },
+        {
+          "name": "Key_A",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_A"
+        },
+        {
+          "name": "Key_B",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_B"
+        },
+        {
+          "name": "Key_Backspace",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_Backspace"
+        },
+        {
+          "name": "Key_C",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_C"
+        },
+        {
+          "name": "Key_D",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_D"
+        },
+        {
+          "name": "Key_Delete",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_Delete"
+        },
+        {
+          "name": "Key_Down",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_Down"
+        },
+        {
+          "name": "Key_E",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_E"
+        },
+        {
+          "name": "Key_ESC",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_ESC"
+        },
+        {
+          "name": "Key_End",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_End"
+        },
+        {
+          "name": "Key_Enter",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_Enter"
+        },
+        {
+          "name": "Key_F",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_F"
+        },
+        {
+          "name": "Key_F1",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_F1"
+        },
+        {
+          "name": "Key_F10",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_F10"
+        },
+        {
+          "name": "Key_F11",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_F11"
+        },
+        {
+          "name": "Key_F12",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_F12"
+        },
+        {
+          "name": "Key_F2",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_F2"
+        },
+        {
+          "name": "Key_F3",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_F3"
+        },
+        {
+          "name": "Key_F4",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_F4"
+        },
+        {
+          "name": "Key_F5",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_F5"
+        },
+        {
+          "name": "Key_F6",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_F6"
+        },
+        {
+          "name": "Key_F7",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_F7"
+        },
+        {
+          "name": "Key_F8",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_F8"
+        },
+        {
+          "name": "Key_F9",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_F9"
+        },
+        {
+          "name": "Key_G",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_G"
+        },
+        {
+          "name": "Key_H",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_H"
+        },
+        {
+          "name": "Key_Home",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_Home"
+        },
+        {
+          "name": "Key_I",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_I"
+        },
+        {
+          "name": "Key_Insert",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_Insert"
+        },
+        {
+          "name": "Key_J",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_J"
+        },
+        {
+          "name": "Key_K",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_K"
+        },
+        {
+          "name": "Key_L",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_L"
+        },
+        {
+          "name": "Key_Left",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_Left"
+        },
+        {
+          "name": "Key_M",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_M"
+        },
+        {
+          "name": "Key_N",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_N"
+        },
+        {
+          "name": "Key_O",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_O"
+        },
+        {
+          "name": "Key_P",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_P"
+        },
+        {
+          "name": "Key_PgDn",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_PgDn"
+        },
+        {
+          "name": "Key_PgUp",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_PgUp"
+        },
+        {
+          "name": "Key_Q",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_Q"
+        },
+        {
+          "name": "Key_R",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_R"
+        },
+        {
+          "name": "Key_Right",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_Right"
+        },
+        {
+          "name": "Key_S",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_S"
+        },
+        {
+          "name": "Key_Space",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_Space"
+        },
+        {
+          "name": "Key_T",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_T"
+        },
+        {
+          "name": "Key_Tab",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_Tab"
+        },
+        {
+          "name": "Key_U",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_U"
+        },
+        {
+          "name": "Key_Up",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_Up"
+        },
+        {
+          "name": "Key_V",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_V"
+        },
+        {
+          "name": "Key_W",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_W"
+        },
+        {
+          "name": "Key_X",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_X"
+        },
+        {
+          "name": "Key_Y",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_Y"
+        },
+        {
+          "name": "Key_Z",
+          "kind": "field",
+          "sig": "const Viewer.EKeys Key_Z"
+        }
+      ]
+    },
+    {
+      "name": "Viewer.GpuTex",
+      "fullName": "PicoGK.Viewer+GpuTex",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "IDisposable"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "GpuTex(Viewer oSetViewer, ImageRgba32 img)"
+        },
+        {
+          "name": "Dispose",
+          "kind": "method",
+          "sig": "void Dispose()"
+        },
+        {
+          "name": "ReplaceWith",
+          "kind": "method",
+          "sig": "void ReplaceWith(ImageRgba32 img)"
+        }
+      ]
+    },
+    {
+      "name": "Viewer.IKeyHandler",
+      "fullName": "PicoGK.Viewer+IKeyHandler",
+      "namespace": "PicoGK",
+      "kind": "interface",
+      "interfaces": [],
+      "members": [
+        {
+          "name": "bHandleEvent",
+          "kind": "method",
+          "sig": "bool bHandleEvent(Viewer oViewer, Viewer.EKeys eKey, bool bPressed, bool bShift, bool bCtrl, bool bAlt, bool bCmd)"
+        }
+      ]
+    },
+    {
+      "name": "Viewer.IViewerAction",
+      "fullName": "PicoGK.Viewer+IViewerAction",
+      "namespace": "PicoGK",
+      "kind": "interface",
+      "interfaces": [],
+      "members": [
+        {
+          "name": "Do",
+          "kind": "method",
+          "sig": "void Do(Viewer oViewer)"
+        }
+      ]
+    },
+    {
+      "name": "Viewer.ImageQuad",
+      "fullName": "PicoGK.Viewer+ImageQuad",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "IDisposable"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ImageQuad(Viewer oSetViewer, ImageRgba32 img, ColorFloat clrDefault, float fAlpha, Matrix4x4 matDefault, bool bFlipX, bool bFlipY, bool bDoubleSided)"
+        },
+        {
+          "name": "Dispose",
+          "kind": "method",
+          "sig": "void Dispose()"
+        },
+        {
+          "name": "UpdateImage",
+          "kind": "method",
+          "sig": "void UpdateImage(ImageRgba32 img)"
+        },
+        {
+          "name": "UpdateMatrix",
+          "kind": "method",
+          "sig": "void UpdateMatrix(in Matrix4x4 mat)"
+        }
+      ]
+    },
+    {
+      "name": "Viewer.InfoCallback",
+      "fullName": "PicoGK.Viewer+InfoCallback",
+      "namespace": "PicoGK",
+      "kind": "delegate",
+      "baseType": "MulticastDelegate",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "InfoCallback(object object, IntPtr method)"
+        },
+        {
+          "name": "BeginInvoke",
+          "kind": "method",
+          "sig": "IAsyncResult BeginInvoke(string strMessage, bool bFatalError, AsyncCallback callback, object object)"
+        },
+        {
+          "name": "EndInvoke",
+          "kind": "method",
+          "sig": "void EndInvoke(IAsyncResult result)"
+        },
+        {
+          "name": "Invoke",
+          "kind": "method",
+          "sig": "void Invoke(string strMessage, bool bFatalError)"
+        }
+      ]
+    },
+    {
+      "name": "Viewer.KeyAction",
+      "fullName": "PicoGK.Viewer+KeyAction",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "KeyAction(Viewer.IViewerAction xAction, Viewer.EKeys eKey, bool bPressed = false, bool bShift = false, bool bCtrl = false, bool bAlt = false, bool bCmd = false)"
+        },
+        {
+          "name": "Do",
+          "kind": "method",
+          "sig": "void Do(Viewer oViewer)"
+        },
+        {
+          "name": "bKeyEquals",
+          "kind": "method",
+          "sig": "bool bKeyEquals(Viewer.EKeys eKey, bool bPressed, bool bShift, bool bCtrl, bool bAlt, bool bCmd)"
+        }
+      ]
+    },
+    {
+      "name": "Viewer.KeyHandler",
+      "fullName": "PicoGK.Viewer+KeyHandler",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "Viewer.IKeyHandler"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "KeyHandler()"
+        },
+        {
+          "name": "AddAction",
+          "kind": "method",
+          "sig": "void AddAction(Viewer.KeyAction oAction)"
+        },
+        {
+          "name": "bHandleEvent",
+          "kind": "method",
+          "sig": "bool bHandleEvent(Viewer oViewer, Viewer.EKeys eKey, bool bPressed, bool bShift, bool bCtrl, bool bAlt, bool bCmd)"
+        }
+      ]
+    },
+    {
+      "name": "Viewer.KeyPressedCallback",
+      "fullName": "PicoGK.Viewer+KeyPressedCallback",
+      "namespace": "PicoGK",
+      "kind": "delegate",
+      "baseType": "MulticastDelegate",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "KeyPressedCallback(object object, IntPtr method)"
+        },
+        {
+          "name": "BeginInvoke",
+          "kind": "method",
+          "sig": "IAsyncResult BeginInvoke(IntPtr hViewer, int iKey, int iScancode, int iAction, int iModifiers, AsyncCallback callback, object object)"
+        },
+        {
+          "name": "EndInvoke",
+          "kind": "method",
+          "sig": "void EndInvoke(IAsyncResult result)"
+        },
+        {
+          "name": "Invoke",
+          "kind": "method",
+          "sig": "void Invoke(IntPtr hViewer, int iKey, int iScancode, int iAction, int iModifiers)"
+        }
+      ]
+    },
+    {
+      "name": "Viewer.MouseButtonCallback",
+      "fullName": "PicoGK.Viewer+MouseButtonCallback",
+      "namespace": "PicoGK",
+      "kind": "delegate",
+      "baseType": "MulticastDelegate",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "MouseButtonCallback(object object, IntPtr method)"
+        },
+        {
+          "name": "BeginInvoke",
+          "kind": "method",
+          "sig": "IAsyncResult BeginInvoke(IntPtr hViewer, int iButton, int iAction, int iModifiers, in Vector2 vecMousePos, AsyncCallback callback, object object)"
+        },
+        {
+          "name": "EndInvoke",
+          "kind": "method",
+          "sig": "void EndInvoke(in Vector2 vecMousePos, IAsyncResult result)"
+        },
+        {
+          "name": "Invoke",
+          "kind": "method",
+          "sig": "void Invoke(IntPtr hViewer, int iButton, int iAction, int iModifiers, in Vector2 vecMousePos)"
+        }
+      ]
+    },
+    {
+      "name": "Viewer.MouseMovedCallback",
+      "fullName": "PicoGK.Viewer+MouseMovedCallback",
+      "namespace": "PicoGK",
+      "kind": "delegate",
+      "baseType": "MulticastDelegate",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "MouseMovedCallback(object object, IntPtr method)"
+        },
+        {
+          "name": "BeginInvoke",
+          "kind": "method",
+          "sig": "IAsyncResult BeginInvoke(IntPtr poViewer, in Vector2 vecMousePos, bool bShift, bool bCtrl, bool bAlt, bool bCmd, AsyncCallback callback, object object)"
+        },
+        {
+          "name": "EndInvoke",
+          "kind": "method",
+          "sig": "void EndInvoke(in Vector2 vecMousePos, IAsyncResult result)"
+        },
+        {
+          "name": "Invoke",
+          "kind": "method",
+          "sig": "void Invoke(IntPtr poViewer, in Vector2 vecMousePos, bool bShift, bool bCtrl, bool bAlt, bool bCmd)"
+        }
+      ]
+    },
+    {
+      "name": "Viewer.ScrollWheelCallback",
+      "fullName": "PicoGK.Viewer+ScrollWheelCallback",
+      "namespace": "PicoGK",
+      "kind": "delegate",
+      "baseType": "MulticastDelegate",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "ScrollWheelCallback(object object, IntPtr method)"
+        },
+        {
+          "name": "BeginInvoke",
+          "kind": "method",
+          "sig": "IAsyncResult BeginInvoke(IntPtr hViewer, in Vector2 vecScrollWheel, in Vector2 vecMousePos, bool bShift, bool bCtrl, bool bAlt, bool bCmd, AsyncCallback callback, object object)"
+        },
+        {
+          "name": "EndInvoke",
+          "kind": "method",
+          "sig": "void EndInvoke(in Vector2 vecScrollWheel, in Vector2 vecMousePos, IAsyncResult result)"
+        },
+        {
+          "name": "Invoke",
+          "kind": "method",
+          "sig": "void Invoke(IntPtr hViewer, in Vector2 vecScrollWheel, in Vector2 vecMousePos, bool bShift, bool bCtrl, bool bAlt, bool bCmd)"
+        }
+      ]
+    },
+    {
+      "name": "Viewer.SideBar",
+      "fullName": "PicoGK.Viewer+SideBar",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "IDisposable"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "SideBar(Viewer oSetViewer, bool bLeft, int nMin, int nMax, int nDef, ColorFloat clrNormal, ColorFloat clrHovered)"
+        },
+        {
+          "name": "Dispose",
+          "kind": "method",
+          "sig": "void Dispose()"
+        }
+      ]
+    },
+    {
+      "name": "Viewer.UpdateCallback",
+      "fullName": "PicoGK.Viewer+UpdateCallback",
+      "namespace": "PicoGK",
+      "kind": "delegate",
+      "baseType": "MulticastDelegate",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "UpdateCallback(object object, IntPtr method)"
+        },
+        {
+          "name": "BeginInvoke",
+          "kind": "method",
+          "sig": "IAsyncResult BeginInvoke(IntPtr hViewer, in Vector2 vecViewport, ref ColorFloat clrBackground, ref Matrix4x4 matVP, ref Vector3 vecEye, AsyncCallback callback, object object)"
+        },
+        {
+          "name": "EndInvoke",
+          "kind": "method",
+          "sig": "void EndInvoke(in Vector2 vecViewport, ref ColorFloat clrBackground, ref Matrix4x4 matVP, ref Vector3 vecEye, IAsyncResult result)"
+        },
+        {
+          "name": "Invoke",
+          "kind": "method",
+          "sig": "void Invoke(IntPtr hViewer, in Vector2 vecViewport, ref ColorFloat clrBackground, ref Matrix4x4 matVP, ref Vector3 vecEye)"
+        }
+      ]
+    },
+    {
+      "name": "Viewer.WindowSizelCallback",
+      "fullName": "PicoGK.Viewer+WindowSizelCallback",
+      "namespace": "PicoGK",
+      "kind": "delegate",
+      "baseType": "MulticastDelegate",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "WindowSizelCallback(object object, IntPtr method)"
+        },
+        {
+          "name": "BeginInvoke",
+          "kind": "method",
+          "sig": "IAsyncResult BeginInvoke(IntPtr hViewer, in Vector2 vecWindowSize, AsyncCallback callback, object object)"
+        },
+        {
+          "name": "EndInvoke",
+          "kind": "method",
+          "sig": "void EndInvoke(in Vector2 vecWindowSize, IAsyncResult result)"
+        },
+        {
+          "name": "Invoke",
+          "kind": "method",
+          "sig": "void Invoke(IntPtr hViewer, in Vector2 vecWindowSize)"
+        }
+      ]
+    },
+    {
+      "name": "VoxCutViz",
+      "fullName": "PicoGK.VoxCutViz",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "IDisposable"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "VoxCutViz(Viewer oViewer, Voxels vox, int nViewerGroup = 0, Voxels.ESliceAxis eAxis = Voxels.ESliceAxis.Z)"
+        },
+        {
+          "name": "Cut",
+          "kind": "method",
+          "sig": "void Cut(float fNormalizedPos1 = 0f, float fNormalizedPos2 = 0f)"
+        },
+        {
+          "name": "Cut",
+          "kind": "method",
+          "sig": "void Cut(int nSlice1, int nSlice2)"
+        },
+        {
+          "name": "Dispose",
+          "kind": "method",
+          "sig": "void Dispose()"
+        },
+        {
+          "name": "nSliceCount",
+          "kind": "property",
+          "sig": "int nSliceCount { get; }"
+        }
+      ]
+    },
+    {
+      "name": "VoxHandle",
+      "fullName": "PicoGK.VoxHandle",
+      "namespace": "PicoGK",
+      "kind": "struct",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "VoxHandle(long Value)"
+        },
+        {
+          "name": "Deconstruct",
+          "kind": "method",
+          "sig": "void Deconstruct(out long Value)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(object obj)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(VoxHandle other)"
+        },
+        {
+          "name": "GetHashCode",
+          "kind": "method",
+          "sig": "int GetHashCode()"
+        },
+        {
+          "name": "ToString",
+          "kind": "method",
+          "sig": "string ToString()"
+        },
+        {
+          "name": "op_Inequality",
+          "kind": "operator",
+          "sig": "static bool op_Inequality(VoxHandle left, VoxHandle right)"
+        },
+        {
+          "name": "op_Equality",
+          "kind": "operator",
+          "sig": "static bool op_Equality(VoxHandle left, VoxHandle right)"
+        },
+        {
+          "name": "Value",
+          "kind": "property",
+          "sig": "long Value { get; set; }"
+        }
+      ]
+    },
+    {
+      "name": "Voxels",
+      "fullName": "PicoGK.Voxels",
+      "namespace": "PicoGK",
+      "kind": "class",
+      "interfaces": [
+        "IDisposable",
+        "IFieldWithMetadata"
+      ],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Voxels()"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Voxels(in IImplicit xImplicit, in BBox3 oBounds)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Voxels(in IBoundedImplicit xImplicit)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Voxels(Library libSet)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Voxels(in Voxels voxSource)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Voxels(in ScalarField oSource)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Voxels(Library libSet, in IImplicit xImplicit, in BBox3 oBounds)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Voxels(Library libSet, in IBoundedImplicit xImplicit)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Voxels(in Mesh msh)"
+        },
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Voxels(in Lattice lat)"
+        },
+        {
+          "name": "BoolAdd",
+          "kind": "method",
+          "sig": "void BoolAdd(in Voxels voxOperand)"
+        },
+        {
+          "name": "BoolAddAll",
+          "kind": "method",
+          "sig": "void BoolAddAll(in IEnumerable<Voxels> avoxList)"
+        },
+        {
+          "name": "BoolIntersect",
+          "kind": "method",
+          "sig": "void BoolIntersect(in Voxels voxOperand)"
+        },
+        {
+          "name": "BoolSubtract",
+          "kind": "method",
+          "sig": "void BoolSubtract(in Voxels voxOperand)"
+        },
+        {
+          "name": "BoolSubtractAll",
+          "kind": "method",
+          "sig": "void BoolSubtractAll(in IEnumerable<Voxels> avoxList)"
+        },
+        {
+          "name": "CalculateProperties",
+          "kind": "method",
+          "sig": "void CalculateProperties(out float fVolumeCubicMM, out BBox3 oBBox)"
+        },
+        {
+          "name": "Dispose",
+          "kind": "method",
+          "sig": "void Dispose()"
+        },
+        {
+          "name": "DoubleOffset",
+          "kind": "method",
+          "sig": "void DoubleOffset(float fDist1MM, float fDist2MM)"
+        },
+        {
+          "name": "Fillet",
+          "kind": "method",
+          "sig": "void Fillet(float fRoundingMM)"
+        },
+        {
+          "name": "GetInterpolatedVoxelSlice",
+          "kind": "method",
+          "sig": "void GetInterpolatedVoxelSlice(in float fZSlice, ref ImageGrayScale img, Voxels.ESliceMode eMode = Voxels.ESliceMode.SignedDistance)"
+        },
+        {
+          "name": "GetVoxelDimensions",
+          "kind": "method",
+          "sig": "void GetVoxelDimensions(out int nXOrigin, out int nYOrigin, out int nZOrigin, out int nXSize, out int nYSize, out int nZSize)"
+        },
+        {
+          "name": "GetVoxelDimensions",
+          "kind": "method",
+          "sig": "void GetVoxelDimensions(out int nXSize, out int nYSize, out int nZSize)"
+        },
+        {
+          "name": "GetVoxelSlice",
+          "kind": "method",
+          "sig": "void GetVoxelSlice(in int nSlice, ref ImageGrayScale img, Voxels.ESliceMode eMode = Voxels.ESliceMode.SignedDistance, Voxels.ESliceAxis eAxis = Voxels.ESliceAxis.Z)"
+        },
+        {
+          "name": "IntersectImplicit",
+          "kind": "method",
+          "sig": "void IntersectImplicit(in IImplicit xImp)"
+        },
+        {
+          "name": "Offset",
+          "kind": "method",
+          "sig": "void Offset(float fDistMM)"
+        },
+        {
+          "name": "OverOffset",
+          "kind": "method",
+          "sig": "void OverOffset(float fFirstOffsetMM, float fFinalSurfaceDistInMM = 0f)"
+        },
+        {
+          "name": "ProjectZSlice",
+          "kind": "method",
+          "sig": "void ProjectZSlice(float fStartZMM, float fEndZMM)"
+        },
+        {
+          "name": "RenderImplicit",
+          "kind": "method",
+          "sig": "void RenderImplicit(in IImplicit xImp, in BBox3 oBounds)"
+        },
+        {
+          "name": "RenderLattice",
+          "kind": "method",
+          "sig": "void RenderLattice(in Lattice lat)"
+        },
+        {
+          "name": "RenderMesh",
+          "kind": "method",
+          "sig": "void RenderMesh(in Mesh msh)"
+        },
+        {
+          "name": "SaveToCliFile",
+          "kind": "method",
+          "sig": "void SaveToCliFile(string strFileName, float fLayerHeight = 0f, CliIo.EFormat eFormat = CliIo.EFormat.FirstLayerWithContent, bool bUseAbsXYOrigin = false, IProgress xProgress = null)"
+        },
+        {
+          "name": "SaveToVdbFile",
+          "kind": "method",
+          "sig": "void SaveToVdbFile(string strFileName)"
+        },
+        {
+          "name": "Smoothen",
+          "kind": "method",
+          "sig": "void Smoothen(float fDistMM)"
+        },
+        {
+          "name": "Trim",
+          "kind": "method",
+          "sig": "void Trim(BBox3 oBox)"
+        },
+        {
+          "name": "TripleOffset",
+          "kind": "method",
+          "sig": "void TripleOffset(float fDistMM)"
+        },
+        {
+          "name": "bClosestPointOnSurface",
+          "kind": "method",
+          "sig": "bool bClosestPointOnSurface(in Vector3 vecSearch, out Vector3 vecSurfacePoint)"
+        },
+        {
+          "name": "bIsEmpty",
+          "kind": "method",
+          "sig": "bool bIsEmpty()"
+        },
+        {
+          "name": "bIsEqual",
+          "kind": "method",
+          "sig": "bool bIsEqual(in Voxels voxOther)"
+        },
+        {
+          "name": "bIsInside",
+          "kind": "method",
+          "sig": "bool bIsInside(Vector3 vecTestPoint)"
+        },
+        {
+          "name": "bRayCastToSurface",
+          "kind": "method",
+          "sig": "bool bRayCastToSurface(in Vector3 vecSearch, in Vector3 vecDirection, out Vector3 vecSurfacePoint)"
+        },
+        {
+          "name": "imgAllocateSlice",
+          "kind": "method",
+          "sig": "ImageGrayScale imgAllocateSlice(out int nSliceCount, Voxels.ESliceAxis eAxis = Voxels.ESliceAxis.Z)"
+        },
+        {
+          "name": "mshAsMesh",
+          "kind": "method",
+          "sig": "Mesh mshAsMesh()"
+        },
+        {
+          "name": "nMemUsage",
+          "kind": "method",
+          "sig": "long nMemUsage()"
+        },
+        {
+          "name": "nSliceCount",
+          "kind": "method",
+          "sig": "int nSliceCount()"
+        },
+        {
+          "name": "oCalculateBoundingBox",
+          "kind": "method",
+          "sig": "BBox3 oCalculateBoundingBox()"
+        },
+        {
+          "name": "oMetaData",
+          "kind": "method",
+          "sig": "FieldMetadata oMetaData()"
+        },
+        {
+          "name": "oVectorize",
+          "kind": "method",
+          "sig": "PolySliceStack oVectorize(float fLayerHeight = 0f, bool bUseAbsXYOrigin = false, IProgress xProgress = null)"
+        },
+        {
+          "name": "vecClosestPointOnSurface",
+          "kind": "method",
+          "sig": "Vector3 vecClosestPointOnSurface(in Vector3 vecSearch)"
+        },
+        {
+          "name": "vecRayCastToSurface",
+          "kind": "method",
+          "sig": "Vector3 vecRayCastToSurface(in Vector3 vecSearch, in Vector3 vecDirection)"
+        },
+        {
+          "name": "vecSurfaceNormal",
+          "kind": "method",
+          "sig": "Vector3 vecSurfaceNormal(in Vector3 vecSurfacePoint)"
+        },
+        {
+          "name": "vecZSliceOrigin",
+          "kind": "method",
+          "sig": "Vector3 vecZSliceOrigin(int nZSlice = 0)"
+        },
+        {
+          "name": "voxBoolAdd",
+          "kind": "method",
+          "sig": "Voxels voxBoolAdd(in Voxels voxOperand)"
+        },
+        {
+          "name": "voxBoolAddAll",
+          "kind": "method",
+          "sig": "Voxels voxBoolAddAll(in IEnumerable<Voxels> avoxList)"
+        },
+        {
+          "name": "voxBoolIntersect",
+          "kind": "method",
+          "sig": "Voxels voxBoolIntersect(in Voxels voxOperand)"
+        },
+        {
+          "name": "voxBoolSubtract",
+          "kind": "method",
+          "sig": "Voxels voxBoolSubtract(in Voxels voxOperand)"
+        },
+        {
+          "name": "voxBoolSubtractAll",
+          "kind": "method",
+          "sig": "Voxels voxBoolSubtractAll(in IEnumerable<Voxels> avoxList)"
+        },
+        {
+          "name": "voxCombine",
+          "kind": "method",
+          "sig": "static Voxels voxCombine(in Voxels vox1, in Voxels vox2)"
+        },
+        {
+          "name": "voxCombineAll",
+          "kind": "method",
+          "sig": "static Voxels voxCombineAll(in IEnumerable<Voxels> avoxList)"
+        },
+        {
+          "name": "voxCombineAll",
+          "kind": "method",
+          "sig": "static Voxels voxCombineAll(Library libSet, in IEnumerable<Voxels> avoxList)"
+        },
+        {
+          "name": "voxDoubleOffset",
+          "kind": "method",
+          "sig": "Voxels voxDoubleOffset(float fDist1MM, float fDist2MM)"
+        },
+        {
+          "name": "voxDuplicate",
+          "kind": "method",
+          "sig": "Voxels voxDuplicate()"
+        },
+        {
+          "name": "voxFillet",
+          "kind": "method",
+          "sig": "Voxels voxFillet(float fRoundingMM)"
+        },
+        {
+          "name": "voxFromVdbFile",
+          "kind": "method",
+          "sig": "static Voxels voxFromVdbFile(string strFileName)"
+        },
+        {
+          "name": "voxFromVdbFile",
+          "kind": "method",
+          "sig": "static Voxels voxFromVdbFile(Library libSet, string strFileName)"
+        },
+        {
+          "name": "voxIntersectImplicit",
+          "kind": "method",
+          "sig": "Voxels voxIntersectImplicit(in IImplicit xImp)"
+        },
+        {
+          "name": "voxLatticeBeam",
+          "kind": "method",
+          "sig": "static Voxels voxLatticeBeam(Vector3 vec1, float fRadius1, Vector3 vec2, float fRadius2)"
+        },
+        {
+          "name": "voxLatticeBeam",
+          "kind": "method",
+          "sig": "static Voxels voxLatticeBeam(Library libSet, Vector3 vec1, float fRadius1, Vector3 vec2, float fRadius2)"
+        },
+        {
+          "name": "voxMeshShell",
+          "kind": "method",
+          "sig": "static Voxels voxMeshShell(Mesh msh, float fRadius)"
+        },
+        {
+          "name": "voxMeshShell",
+          "kind": "method",
+          "sig": "static Voxels voxMeshShell(Library libSet, Mesh msh, float fRadius)"
+        },
+        {
+          "name": "voxOffset",
+          "kind": "method",
+          "sig": "Voxels voxOffset(float fDistMM)"
+        },
+        {
+          "name": "voxOverOffset",
+          "kind": "method",
+          "sig": "Voxels voxOverOffset(float fFirstOffsetMM, float fFinalSurfaceDistInMM = 0f)"
+        },
+        {
+          "name": "voxProjectZSlice",
+          "kind": "method",
+          "sig": "Voxels voxProjectZSlice(float fStartZMM, float fEndZMM)"
+        },
+        {
+          "name": "voxShell",
+          "kind": "method",
+          "sig": "Voxels voxShell(float fOffset)"
+        },
+        {
+          "name": "voxShell",
+          "kind": "method",
+          "sig": "Voxels voxShell(float fNegOffsetMM, float fPosOffsetMM, float fSmoothInnerMM = 0f)"
+        },
+        {
+          "name": "voxSmoothen",
+          "kind": "method",
+          "sig": "Voxels voxSmoothen(float fDistMM)"
+        },
+        {
+          "name": "voxSphere",
+          "kind": "method",
+          "sig": "static Voxels voxSphere(Vector3 vecCenter, float fRadius)"
+        },
+        {
+          "name": "voxSphere",
+          "kind": "method",
+          "sig": "static Voxels voxSphere(Library libSet, Vector3 vecCenter, float fRadius)"
+        },
+        {
+          "name": "voxTrim",
+          "kind": "method",
+          "sig": "Voxels voxTrim(BBox3 oBox)"
+        },
+        {
+          "name": "voxTripleOffset",
+          "kind": "method",
+          "sig": "Voxels voxTripleOffset(float fDistMM)"
+        },
+        {
+          "name": "op_Addition",
+          "kind": "operator",
+          "sig": "static Voxels op_Addition(Voxels voxA, Voxels voxB)"
+        },
+        {
+          "name": "op_Subtraction",
+          "kind": "operator",
+          "sig": "static Voxels op_Subtraction(Voxels voxA, Voxels voxB)"
+        },
+        {
+          "name": "op_BitwiseAnd",
+          "kind": "operator",
+          "sig": "static Voxels op_BitwiseAnd(Voxels voxA, Voxels voxB)"
+        },
+        {
+          "name": "fVoxelSize",
+          "kind": "property",
+          "sig": "float fVoxelSize { get; }"
+        },
+        {
+          "name": "lib",
+          "kind": "field",
+          "sig": "Library lib"
+        },
+        {
+          "name": "m_oMetadata",
+          "kind": "field",
+          "sig": "FieldMetadata m_oMetadata"
+        }
+      ]
+    },
+    {
+      "name": "Voxels.ESliceAxis",
+      "fullName": "PicoGK.Voxels+ESliceAxis",
+      "namespace": "PicoGK",
+      "kind": "enum",
+      "interfaces": [],
+      "enumValues": [
+        "X",
+        "Y",
+        "Z"
+      ],
+      "members": [
+        {
+          "name": "X",
+          "kind": "field",
+          "sig": "const Voxels.ESliceAxis X"
+        },
+        {
+          "name": "Y",
+          "kind": "field",
+          "sig": "const Voxels.ESliceAxis Y"
+        },
+        {
+          "name": "Z",
+          "kind": "field",
+          "sig": "const Voxels.ESliceAxis Z"
+        }
+      ]
+    },
+    {
+      "name": "Voxels.ESliceMode",
+      "fullName": "PicoGK.Voxels+ESliceMode",
+      "namespace": "PicoGK",
+      "kind": "enum",
+      "interfaces": [],
+      "enumValues": [
+        "SignedDistance",
+        "BlackWhite",
+        "Antialiased"
+      ],
+      "members": [
+        {
+          "name": "Antialiased",
+          "kind": "field",
+          "sig": "const Voxels.ESliceMode Antialiased"
+        },
+        {
+          "name": "BlackWhite",
+          "kind": "field",
+          "sig": "const Voxels.ESliceMode BlackWhite"
+        },
+        {
+          "name": "SignedDistance",
+          "kind": "field",
+          "sig": "const Voxels.ESliceMode SignedDistance"
+        }
+      ]
+    },
+    {
+      "name": "BladeSpec",
+      "fullName": "PicoForge.Kit.BladeSpec",
+      "namespace": "PicoForge.Kit",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "BladeSpec(float fHubR, float fTipR, int nSections, Func<float,float> fChordAt, Func<float,float> fBetaDegAt, Func<float,string> sNacaAt, float fRootExtendMM = 1.5f)"
+        },
+        {
+          "name": "<Clone>$",
+          "kind": "method",
+          "sig": "BladeSpec <Clone>$()"
+        },
+        {
+          "name": "Deconstruct",
+          "kind": "method",
+          "sig": "void Deconstruct(out float fHubR, out float fTipR, out int nSections, out Func<float,float> fChordAt, out Func<float,float> fBetaDegAt, out Func<float,string> sNacaAt, out float fRootExtendMM)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(object obj)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(BladeSpec other)"
+        },
+        {
+          "name": "GetHashCode",
+          "kind": "method",
+          "sig": "int GetHashCode()"
+        },
+        {
+          "name": "ToString",
+          "kind": "method",
+          "sig": "string ToString()"
+        },
+        {
+          "name": "op_Inequality",
+          "kind": "operator",
+          "sig": "static bool op_Inequality(BladeSpec left, BladeSpec right)"
+        },
+        {
+          "name": "op_Equality",
+          "kind": "operator",
+          "sig": "static bool op_Equality(BladeSpec left, BladeSpec right)"
+        },
+        {
+          "name": "fBetaDegAt",
+          "kind": "property",
+          "sig": "Func<float,float> fBetaDegAt { get; set; }"
+        },
+        {
+          "name": "fChordAt",
+          "kind": "property",
+          "sig": "Func<float,float> fChordAt { get; set; }"
+        },
+        {
+          "name": "fHubR",
+          "kind": "property",
+          "sig": "float fHubR { get; set; }"
+        },
+        {
+          "name": "fRootExtendMM",
+          "kind": "property",
+          "sig": "float fRootExtendMM { get; set; }"
+        },
+        {
+          "name": "fTipR",
+          "kind": "property",
+          "sig": "float fTipR { get; set; }"
+        },
+        {
+          "name": "nSections",
+          "kind": "property",
+          "sig": "int nSections { get; set; }"
+        },
+        {
+          "name": "sNacaAt",
+          "kind": "property",
+          "sig": "Func<float,string> sNacaAt { get; set; }"
+        }
+      ]
+    },
+    {
+      "name": "Ctx",
+      "fullName": "PicoForge.Kit.Ctx",
+      "namespace": "PicoForge.Kit",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Ctx(float voxelMm, IReadOnlyDictionary<string,double> parameters, Action<string> log, Action<float> progress, Material material = null, float timeLimitS = 120f, string runId = null)"
+        },
+        {
+          "name": "Log",
+          "kind": "method",
+          "sig": "void Log(string s)"
+        },
+        {
+          "name": "P",
+          "kind": "method",
+          "sig": "float P(string name)"
+        },
+        {
+          "name": "Pi",
+          "kind": "method",
+          "sig": "int Pi(string name)"
+        },
+        {
+          "name": "Progress",
+          "kind": "method",
+          "sig": "void Progress(float f01)"
+        },
+        {
+          "name": "Rng",
+          "kind": "property",
+          "sig": "Rng Rng { get; }"
+        },
+        {
+          "name": "fTimeLimitS",
+          "kind": "property",
+          "sig": "float fTimeLimitS { get; }"
+        },
+        {
+          "name": "fVoxelMM",
+          "kind": "property",
+          "sig": "float fVoxelMM { get; }"
+        },
+        {
+          "name": "oMat",
+          "kind": "property",
+          "sig": "Material oMat { get; }"
+        },
+        {
+          "name": "oParams",
+          "kind": "property",
+          "sig": "Params oParams { get; }"
+        }
+      ]
+    },
+    {
+      "name": "GeomStats",
+      "fullName": "PicoForge.Kit.GeomStats",
+      "namespace": "PicoForge.Kit",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "GeomStats()"
+        },
+        {
+          "name": "AreaCm2",
+          "kind": "property",
+          "sig": "double AreaCm2 { get; set; }"
+        },
+        {
+          "name": "BboxMax",
+          "kind": "property",
+          "sig": "IReadOnlyList<double> BboxMax { get; set; }"
+        },
+        {
+          "name": "BboxMin",
+          "kind": "property",
+          "sig": "IReadOnlyList<double> BboxMin { get; set; }"
+        },
+        {
+          "name": "MinWallProbeMm",
+          "kind": "property",
+          "sig": "double? MinWallProbeMm { get; set; }"
+        },
+        {
+          "name": "NonManifoldEdges",
+          "kind": "property",
+          "sig": "int NonManifoldEdges { get; set; }"
+        },
+        {
+          "name": "OpenEdges",
+          "kind": "property",
+          "sig": "int OpenEdges { get; set; }"
+        },
+        {
+          "name": "Triangles",
+          "kind": "property",
+          "sig": "int Triangles { get; set; }"
+        },
+        {
+          "name": "VolumeCm3",
+          "kind": "property",
+          "sig": "double VolumeCm3 { get; set; }"
+        },
+        {
+          "name": "VoxelSizeMm",
+          "kind": "property",
+          "sig": "double VoxelSizeMm { get; set; }"
+        },
+        {
+          "name": "Watertight",
+          "kind": "property",
+          "sig": "bool Watertight { get; set; }"
+        }
+      ]
+    },
+    {
+      "name": "Kit",
+      "fullName": "PicoForge.Kit.Kit",
+      "namespace": "PicoForge.Kit",
+      "kind": "static class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": "FilletClose",
+          "kind": "method",
+          "sig": "static Voxels FilletClose(Voxels v, float fR)"
+        },
+        {
+          "name": "RoundOpen",
+          "kind": "method",
+          "sig": "static Voxels RoundOpen(Voxels v, float fR)"
+        },
+        {
+          "name": "Shell",
+          "kind": "method",
+          "sig": "static Voxels Shell(Voxels v, float fWallMM)"
+        },
+        {
+          "name": "aCircle",
+          "kind": "method",
+          "sig": "static IReadOnlyList<Vector2> aCircle(float fR, int n = 64)"
+        },
+        {
+          "name": "aNaca4",
+          "kind": "method",
+          "sig": "static IReadOnlyList<Vector2> aNaca4(string sCode, float fChord, int n = 61, bool bBluntTE = true)"
+        },
+        {
+          "name": "aRoundedRect",
+          "kind": "method",
+          "sig": "static IReadOnlyList<Vector2> aRoundedRect(float fW, float fH, float fCornerR, int nPerCorner = 8)"
+        },
+        {
+          "name": "impGyroid",
+          "kind": "method",
+          "sig": "static IImplicit impGyroid(float fCellMM, float fWallMM)"
+        },
+        {
+          "name": "mshAxialBlade",
+          "kind": "method",
+          "sig": "static Mesh mshAxialBlade(BladeSpec s)"
+        },
+        {
+          "name": "mshLoft",
+          "kind": "method",
+          "sig": "static Mesh mshLoft(IReadOnlyList<IReadOnlyList<Vector3>> aRings, bool bCapEnds = true)"
+        },
+        {
+          "name": "mshTransform",
+          "kind": "method",
+          "sig": "static Mesh mshTransform(Mesh m, Matrix4x4 mat)"
+        },
+        {
+          "name": "oStats",
+          "kind": "method",
+          "sig": "static GeomStats oStats(Ctx c, Voxels v)"
+        },
+        {
+          "name": "voxAxialRotor",
+          "kind": "method",
+          "sig": "static Voxels voxAxialRotor(Ctx c, BladeSpec s, int nBlades, float fHubR, float fHubZ0, float fHubZ1, float fBoreR = 0f, float fFilletR = 0f)"
+        },
+        {
+          "name": "voxBox",
+          "kind": "method",
+          "sig": "static Voxels voxBox(Ctx c, Vector3 vMin, Vector3 vMax)"
+        },
+        {
+          "name": "voxBoxCentered",
+          "kind": "method",
+          "sig": "static Voxels voxBoxCentered(Ctx c, Vector3 vCenter, Vector3 vSize)"
+        },
+        {
+          "name": "voxCapsule",
+          "kind": "method",
+          "sig": "static Voxels voxCapsule(Ctx c, Vector3 vA, Vector3 vB, float fR)"
+        },
+        {
+          "name": "voxCone",
+          "kind": "method",
+          "sig": "static Voxels voxCone(Ctx c, Vector3 vBase, Vector3 vTip, float fRBase, float fRTip)"
+        },
+        {
+          "name": "voxCylinder",
+          "kind": "method",
+          "sig": "static Voxels voxCylinder(Ctx c, Vector3 vA, Vector3 vB, float fR)"
+        },
+        {
+          "name": "voxExtrudeZ",
+          "kind": "method",
+          "sig": "static Voxels voxExtrudeZ(Ctx c, IReadOnlyList<Vector2> aPolyXY, float fZ0, float fZ1)"
+        },
+        {
+          "name": "voxFromImplicit",
+          "kind": "method",
+          "sig": "static Voxels voxFromImplicit(Ctx c, IImplicit i, BBox3 bounds)"
+        },
+        {
+          "name": "voxLinearPattern",
+          "kind": "method",
+          "sig": "static Voxels voxLinearPattern(Ctx c, Mesh mOne, Vector3 vStep, int nCount)"
+        },
+        {
+          "name": "voxPolarPatternZ",
+          "kind": "method",
+          "sig": "static Voxels voxPolarPatternZ(Ctx c, Mesh mOne, int nCount)"
+        },
+        {
+          "name": "voxRevolve",
+          "kind": "method",
+          "sig": "static Voxels voxRevolve(Ctx c, IReadOnlyList<Vector2> aProfileRZ, float fDeg = 360f)"
+        },
+        {
+          "name": "voxSphere",
+          "kind": "method",
+          "sig": "static Voxels voxSphere(Ctx c, Vector3 vCenter, float fR)"
+        },
+        {
+          "name": "voxSweepCircle",
+          "kind": "method",
+          "sig": "static Voxels voxSweepCircle(Ctx c, IReadOnlyList<Vector3> aPath, float fR)"
+        },
+        {
+          "name": "voxTube",
+          "kind": "method",
+          "sig": "static Voxels voxTube(Ctx c, Vector3 vA, Vector3 vB, float fROuter, float fWall)"
+        }
+      ]
+    },
+    {
+      "name": "Material",
+      "fullName": "PicoForge.Kit.Material",
+      "namespace": "PicoForge.Kit",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Material(string Name, float DensityGcm3, float YieldMPa, float EGPa, float MinWallMM, float MaxTempC)"
+        },
+        {
+          "name": "<Clone>$",
+          "kind": "method",
+          "sig": "Material <Clone>$()"
+        },
+        {
+          "name": "Deconstruct",
+          "kind": "method",
+          "sig": "void Deconstruct(out string Name, out float DensityGcm3, out float YieldMPa, out float EGPa, out float MinWallMM, out float MaxTempC)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(object obj)"
+        },
+        {
+          "name": "Equals",
+          "kind": "method",
+          "sig": "bool Equals(Material other)"
+        },
+        {
+          "name": "FromName",
+          "kind": "method",
+          "sig": "static Material FromName(string name)"
+        },
+        {
+          "name": "GetHashCode",
+          "kind": "method",
+          "sig": "int GetHashCode()"
+        },
+        {
+          "name": "ToString",
+          "kind": "method",
+          "sig": "string ToString()"
+        },
+        {
+          "name": "op_Inequality",
+          "kind": "operator",
+          "sig": "static bool op_Inequality(Material left, Material right)"
+        },
+        {
+          "name": "op_Equality",
+          "kind": "operator",
+          "sig": "static bool op_Equality(Material left, Material right)"
+        },
+        {
+          "name": "DensityGcm3",
+          "kind": "property",
+          "sig": "float DensityGcm3 { get; set; }"
+        },
+        {
+          "name": "EGPa",
+          "kind": "property",
+          "sig": "float EGPa { get; set; }"
+        },
+        {
+          "name": "MaxTempC",
+          "kind": "property",
+          "sig": "float MaxTempC { get; set; }"
+        },
+        {
+          "name": "MinWallMM",
+          "kind": "property",
+          "sig": "float MinWallMM { get; set; }"
+        },
+        {
+          "name": "Name",
+          "kind": "property",
+          "sig": "string Name { get; set; }"
+        },
+        {
+          "name": "YieldMPa",
+          "kind": "property",
+          "sig": "float YieldMPa { get; set; }"
+        },
+        {
+          "name": "Abs",
+          "kind": "field",
+          "sig": "static Material Abs"
+        },
+        {
+          "name": "Al6061",
+          "kind": "field",
+          "sig": "static Material Al6061"
+        },
+        {
+          "name": "Pa12",
+          "kind": "field",
+          "sig": "static Material Pa12"
+        },
+        {
+          "name": "Petg",
+          "kind": "field",
+          "sig": "static Material Petg"
+        },
+        {
+          "name": "Pla",
+          "kind": "field",
+          "sig": "static Material Pla"
+        },
+        {
+          "name": "Resin",
+          "kind": "field",
+          "sig": "static Material Resin"
+        },
+        {
+          "name": "Ss316L",
+          "kind": "field",
+          "sig": "static Material Ss316L"
+        }
+      ]
+    },
+    {
+      "name": "Params",
+      "fullName": "PicoForge.Kit.Params",
+      "namespace": "PicoForge.Kit",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Params(IReadOnlyDictionary<string,double> raw)"
+        },
+        {
+          "name": "Has",
+          "kind": "method",
+          "sig": "bool Has(string name)"
+        },
+        {
+          "name": "f",
+          "kind": "method",
+          "sig": "float f(string name)"
+        },
+        {
+          "name": "n",
+          "kind": "method",
+          "sig": "int n(string name)"
+        },
+        {
+          "name": "Names",
+          "kind": "property",
+          "sig": "IReadOnlyCollection<string> Names { get; }"
+        }
+      ]
+    },
+    {
+      "name": "Rng",
+      "fullName": "PicoForge.Kit.Rng",
+      "namespace": "PicoForge.Kit",
+      "kind": "class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": ".ctor",
+          "kind": "ctor",
+          "sig": "Rng(string seed)"
+        },
+        {
+          "name": "NextFloat",
+          "kind": "method",
+          "sig": "float NextFloat()"
+        },
+        {
+          "name": "NextFloat",
+          "kind": "method",
+          "sig": "float NextFloat(float min, float max)"
+        },
+        {
+          "name": "NextInt",
+          "kind": "method",
+          "sig": "int NextInt(int min, int max)"
+        }
+      ]
+    },
+    {
+      "name": "Stats",
+      "fullName": "PicoForge.Kit.Stats",
+      "namespace": "PicoForge.Kit",
+      "kind": "static class",
+      "interfaces": [],
+      "members": [
+        {
+          "name": "MinWallProbe",
+          "kind": "method",
+          "sig": "static double MinWallProbe(Voxels v, float baseVolMm3, BBox3 bbox, float voxelMm)"
+        },
+        {
+          "name": "Of",
+          "kind": "method",
+          "sig": "static GeomStats Of(Ctx c, Voxels v, bool bProbeMinWall = true)"
+        },
+        {
+          "name": "OfMesh",
+          "kind": "method",
+          "sig": "static GeomStats OfMesh(Mesh m)"
+        },
+        {
+          "name": "VolumeMm3",
+          "kind": "method",
+          "sig": "static double VolumeMm3(Voxels v)"
+        }
+      ]
+    }
+  ],
+  "bannedNamespaces": [
+    "System.IO",
+    "System.Net",
+    "System.Reflection.Emit",
+    "System.Diagnostics",
+    "System.Threading",
+    "System.Runtime.InteropServices",
+    "System.Environment",
+    "System.AppDomain"
+  ]
+}

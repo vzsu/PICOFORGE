@@ -1,36 +1,36 @@
-// ForgeEngine/SymbolTable.cs — Loads picogk_api.json and provides fuzzy matching
+// ForgeEngine/SymbolTable.cs — Loads picogk_api.json (DumpApi output) and provides fuzzy matching
 // LLM_HARNESS §4.3 — unknown symbols get "did you mean?" suggestions
 
+using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace ForgeEngine;
 
-public sealed record ApiSymbol(string TypeName, string MemberName, string Kind, string Sig);
+internal sealed record ApiSymbol(string TypeName, string MemberName, string Kind, string Sig);
 
-public sealed class SymbolTable
+internal sealed class SymbolTable
 {
     private readonly IReadOnlyList<ApiSymbol> _symbols;
-    private readonly string _hash;
 
-    public string Hash => _hash;
+    public string Hash { get; }
+    public string PicoGKVersion { get; }
 
-    private SymbolTable(IReadOnlyList<ApiSymbol> symbols, string hash)
+    private SymbolTable(IReadOnlyList<ApiSymbol> symbols, string hash, string picogkVersion)
     {
         _symbols = symbols;
-        _hash = hash;
+        Hash = hash;
+        PicoGKVersion = picogkVersion;
     }
 
     public static SymbolTable Load(string jsonPath)
     {
-        if (!File.Exists(jsonPath))
-            return new SymbolTable([], "empty");
+        if (!File.Exists(jsonPath)) return new SymbolTable([], "empty", "unknown");
 
-        var json = File.ReadAllText(jsonPath);
-        var hash = Convert.ToHexStringLower(
-            System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(json)));
-
-        var doc = JsonDocument.Parse(json);
+        var bytes = File.ReadAllBytes(jsonPath);
+        var hash = Convert.ToHexStringLower(SHA256.HashData(bytes));
+        using var doc = JsonDocument.Parse(bytes);
         var symbols = new List<ApiSymbol>();
+        var version = doc.RootElement.TryGetProperty("picogkVersion", out var v) ? v.GetString() ?? "unknown" : "unknown";
 
         if (doc.RootElement.TryGetProperty("types", out var types))
         {
@@ -44,42 +44,45 @@ public sealed class SymbolTable
                         typeName,
                         member.GetProperty("name").GetString() ?? "",
                         member.GetProperty("kind").GetString() ?? "",
-                        member.GetProperty("sig").GetString() ?? ""
-                    ));
+                        member.GetProperty("sig").GetString() ?? ""));
                 }
             }
         }
-
-        return new SymbolTable(symbols, hash);
+        return new SymbolTable(symbols, hash, version);
     }
 
-    /// <summary>Fuzzy match: find top-3 suggestions for an unknown identifier.</summary>
+    public int Count => _symbols.Count;
+
+    /// <summary>Fuzzy match: top-3 suggestions for an unknown identifier.</summary>
     public IReadOnlyList<string> Suggest(string unknown)
     {
+        ArgumentNullException.ThrowIfNull(unknown);
+        var u = unknown.ToUpperInvariant();
         return _symbols
-            .Select(s => (sym: s, dist: LevenshteinDistance(unknown.ToLower(), s.MemberName.ToLower())))
+            .Select(s => (sym: s, dist: Levenshtein(u, s.MemberName.ToUpperInvariant())))
             .Where(x => x.dist <= 4)
             .OrderBy(x => x.dist)
-            .Take(3)
             .Select(x => $"{x.sym.TypeName}.{x.sym.MemberName}")
+            .Distinct(StringComparer.Ordinal)
+            .Take(3)
             .ToArray();
     }
 
     public bool IsKnown(string memberName)
         => _symbols.Any(s => string.Equals(s.MemberName, memberName, StringComparison.Ordinal));
 
-    private static int LevenshteinDistance(string a, string b)
+    private static int Levenshtein(string a, string b)
     {
-        if (a.Length == 0) return b.Length;
-        if (b.Length == 0) return a.Length;
-        var d = new int[a.Length + 1, b.Length + 1];
-        for (int i = 0; i <= a.Length; i++) d[i, 0] = i;
-        for (int j = 0; j <= b.Length; j++) d[0, j] = j;
+        var prev = new int[b.Length + 1];
+        var cur = new int[b.Length + 1];
+        for (int j = 0; j <= b.Length; j++) prev[j] = j;
         for (int i = 1; i <= a.Length; i++)
+        {
+            cur[0] = i;
             for (int j = 1; j <= b.Length; j++)
-                d[i, j] = Math.Min(
-                    Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1),
-                    d[i - 1, j - 1] + (a[i - 1] == b[j - 1] ? 0 : 1));
-        return d[a.Length, b.Length];
+                cur[j] = Math.Min(Math.Min(prev[j] + 1, cur[j - 1] + 1), prev[j - 1] + (a[i - 1] == b[j - 1] ? 0 : 1));
+            (prev, cur) = (cur, prev);
+        }
+        return prev[b.Length];
     }
 }

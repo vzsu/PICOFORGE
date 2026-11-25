@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Managed-only host — NO PicoGK reference here (SYS_DESIGN §4.1) -->
+    <!-- Managed-only host — NO PicoGK reference here (docs/04 §2). PicoGK.dll and forge-sandbox.dll are read
+         as Roslyn metadata references from the sandbox folder at runtime, never loaded. -->
     <OutputType>Exe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -14,9 +15,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Roslyn for in-memory compilation (Compiler.cs, Analyzers.cs) -->
+    <!-- Roslyn for in-memory compilation (DesignCompiler.cs, Analyzers.cs). System.Text.Json ships with net9.0. -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.*" />
-    <!-- JSON framing for ndjson RPC (Rpc.cs) -->
-    <PackageReference Include="System.Text.Json" Version="9.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ForgeEngine.Tests" />
+    <None Include="..\picogk_api.json" Link="picogk_api.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
