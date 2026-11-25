@@ -7,6 +7,7 @@ import Anthropic from "npm:@anthropic-ai/sdk@^0.54.0";
 import { makeLogger } from "../log.ts";
 import { err, ok, Result } from "../domain/result.ts";
 import { getConfig } from "../config.ts";
+import { isMockModel, mockFanStream } from "./mock/fanModel.ts";
 
 const log = makeLogger("harness.anthropic");
 
@@ -129,6 +130,14 @@ export async function createMessageStream(
   },
   callbacks?: StreamCallbacks,
 ): Promise<Result<TurnResult, Error>> {
+  // docs/11 §5: PICOFORGE_MODEL=mock replays a scripted fan run with token timing (no network, no key).
+  if (isMockModel()) {
+    try {
+      return ok(await mockFanStream({ messages, signal }, callbacks));
+    } catch (e) {
+      return err(e instanceof Error ? e : new Error(String(e)));
+    }
+  }
   // Enforce budget cap — never exceed this regardless of caller setting
   const cappedMaxTokens = Math.min(maxTokens, TOKEN_BUDGET_CAP, modelMaxTokens(model));
   const client = getClient();

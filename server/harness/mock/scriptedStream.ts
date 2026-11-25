@@ -51,7 +51,10 @@ async function emitDeltas(
     emit(body);
     return tokens;
   }
-  const charsPerTick = Math.max(1, Math.round((tokensPerSecond * CHARS_PER_TOKEN * TICK_MS) / 1000));
+  const charsPerTick = Math.max(
+    1,
+    Math.round((tokensPerSecond * CHARS_PER_TOKEN * TICK_MS) / 1000),
+  );
   for (let i = 0; i < body.length; i += charsPerTick) {
     emit(body.slice(i, i + charsPerTick));
     await sleep(TICK_MS, signal);

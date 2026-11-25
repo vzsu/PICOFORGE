@@ -11,8 +11,7 @@ import { runPicoGKTool } from "../tools/runPicoGK.ts";
 import { driveRun } from "../orchestrator.ts";
 import type { EngineApi } from "../../engine/client.ts";
 
-const FAN_PROMPT =
-  "Design a 120 mm fan impeller with 7 backward-curved blades, 25 mm hub, PLA.";
+const FAN_PROMPT = "Design a 120 mm fan impeller with 7 backward-curved blades, 25 mm hub, PLA.";
 
 function withMockEnv<T>(tps: string, fn: () => Promise<T>): Promise<T> {
   const prevModel = Deno.env.get("PICOFORGE_MODEL");

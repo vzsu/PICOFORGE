@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import type { AnthropicMessage, StreamCallbacks, TurnResult } from "../anthropic.ts";
-import { streamScriptedTurn, type ScriptedTurn } from "./scriptedStream.ts";
+import { type ScriptedTurn, streamScriptedTurn } from "./scriptedStream.ts";
 
 /** Env switch read by anthropic.ts. */
 export function isMockModel(): boolean {
@@ -131,7 +131,10 @@ export function fanBrief(spec: FanSpec) {
     envelope_mm: { x: spec.diameterMm, y: spec.diameterMm, z: 40 },
     voxel_size_mm: VOXEL_MM,
     material: spec.material,
-    assumptions: ["Free-vortex blade twist, NACA 4409 sections", "Axial inflow, no inlet guide vanes"],
+    assumptions: [
+      "Free-vortex blade twist, NACA 4409 sections",
+      "Axial inflow, no inlet guide vanes",
+    ],
     risks: ["Thin trailing edge near the tip prints best with 0.4 mm nozzle"],
   };
 }
@@ -264,7 +267,9 @@ export function fanTurn(messages: AnthropicMessage[]): ScriptedTurn {
     const dz = r1(s.bboxMax[2] - s.bboxMin[2]);
     return {
       text: `Built and validated: ${r1(s.volumeCm3)} cm³, ${dx} × ${dy} × ${dz} mm, ` +
-        `${s.watertight ? "watertight" : "not watertight"}, ${s.triangles.toLocaleString("en-US")} ` +
+        `${s.watertight ? "watertight" : "not watertight"}, ${
+          s.triangles.toLocaleString("en-US")
+        } ` +
         "triangles.",
     };
   }

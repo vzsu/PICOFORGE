@@ -163,6 +163,7 @@ export const runPicoGKTool: ToolModule<Input> = {
           codeId,
           runId: ctx.runId,
           params: briefParams(ctx.brief),
+          ...(ctx.brief ? { voxelMm: ctx.brief.voxel_size_mm } : {}),
           exports: ["stl"],
           outDir: runFolder(ctx),
         }),

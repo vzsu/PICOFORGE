@@ -157,6 +157,8 @@ export interface EngineRunParams {
   runId?: string;
   /** Evaluated brief parameters; the part code reads them via `ctx.P(name)` (08 §3). */
   params?: Record<string, number>;
+  /** Voxel size from the accepted brief (`voxel_size_mm`); the engine defaults to 0.5 mm. */
+  voxelMm?: number;
   limits?: { timeoutS?: number; maxRssMiB?: number; maxCells?: number };
   exports?: string[];
   outDir: string;
