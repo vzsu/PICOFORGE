@@ -4,6 +4,11 @@ import react from "@vitejs/plugin-react";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  // Pre-bundle the viewport deps up front so the first dev load is not interrupted by
+  // Vite's dependency re-optimisation reload (it killed the bake worker on a cold start).
+  optimizeDeps: {
+    include: ["three", "camera-controls", "react", "react-dom", "react-dom/client"],
+  },
   server: {
     port: 5173,
     proxy: {

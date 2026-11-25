@@ -1,0 +1,9 @@
+{
+  "name": "picoforge-e2e",
+  "private": true,
+  "description": "Repo-root dev tooling: Playwright for e2e/ (deno tasks e2e, e2e:visual, ui:check). The app's own deps live in app/package.json.",
+  "type": "module",
+  "devDependencies": {
+    "@playwright/test": "1.61.1"
+  }
+}
