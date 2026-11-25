@@ -90,7 +90,7 @@ Current Claude models tie thinking blocks to the conversation that produced them
 | L0 lint | `CONTRACT_VIOLATION`, `BANNED_API`, `UNKNOWN_SYMBOL`, `BRIEF_USER_REGION` | Rule, line, column, did-you-mean |
 | L1 compile | `COMPILE_ERROR` | First 12 diagnostics |
 | L2 build | `RUNTIME_ERROR`, `TIMEOUT`, `OOM`, `SANDBOX_CRASH` | Exception, top 5 frames, last 30 log lines, resource hint |
-| L3 geometry | `EMPTY_GEOMETRY`, `NOT_WATERTIGHT`, `ENVELOPE_EXCEEDED`, `BELOW_MIN_WALL`, `BRIEF_MISMATCH`, `PIN_VIOLATED` | Measured numbers vs required |
+| L3 geometry | `EMPTY_GEOMETRY`, `NOT_WATERTIGHT`, `ENVELOPE_EXCEEDED`, `BELOW_MIN_WALL`, `BRIEF_MISMATCH`, `PIN_VIOLATED`, `TRIANGLE_COUNT` | Measured numbers vs required (`server/harness/validate.ts`) |
 
 Repair budgets per brief: compile 3, runtime 2, geometry 2. Repairs are per part where possible (only the failing `define_part` is re-sent). Budget exhausted → the model is told to stop and call `ask_user` with two concrete simplifications. Every attempt is a `code_versions` row linked by `parent_id`.
 

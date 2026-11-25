@@ -4,7 +4,7 @@
 //   HARNESS-GOLD-params    accepted brief parameters reach the engine build call as {name: number}
 //   HARNESS-GOLD-geometry  invalid geometry (L3) → repair message with measured numbers (04 §7 F4)
 
-import { assertEquals } from "jsr:@std/assert@^1.0.0";
+import { assertEquals, assertStringIncludes } from "jsr:@std/assert@^1.0.0";
 import { driveRun, type StreamFn } from "../orchestrator.ts";
 import { MockModel } from "./mockModel.ts";
 import type { EngineApi, EngineRunParams, EngineStats } from "../../engine/client.ts";
@@ -99,6 +99,76 @@ Deno.test("HARNESS-GOLD-params: engine build receives the accepted brief's param
   assertEquals(runCalls.length, 1);
   assertEquals(runCalls[0].params, { diameter: 80, blade_count: 5, hub_d: 22.5 });
   assertEquals(geometry.length, 1);
+});
+
+/** Text of every tool_result the model received, in order. */
+function toolResultTexts(mock: MockModel): string[] {
+  const last = mock.calls[mock.calls.length - 1];
+  const out: string[] = [];
+  for (const m of last?.messages ?? []) {
+    if (typeof m !== "object" || m === null || !("content" in m)) continue;
+    const content = m.content;
+    if (!Array.isArray(content)) continue;
+    for (const block of content) {
+      if (block?.type !== "tool_result" || !Array.isArray(block.content)) continue;
+      for (const c of block.content) {
+        if (c?.type === "text" && typeof c.text === "string") out.push(c.text);
+      }
+    }
+  }
+  return out;
+}
+
+Deno.test("HARNESS-GOLD-geometry: invalid geometry → repair message with measured numbers", async () => {
+  // First build: wall 0.42 mm (PETG + 0.5 mm voxels needs 1.5) and z 61 mm (> 50 × 1.1 = 55).
+  const thin: EngineStats = {
+    ...GOOD_STATS,
+    bboxMax: [40, 40, 61],
+    minWallProbeMm: 0.42,
+  };
+  const { engine, runCalls } = fakeEngine([thin, GOOD_STATS]);
+  const mock = new MockModel([
+    { tools: [{ id: "t1", name: "submit_design_brief", input: FAN_BRIEF }] },
+    { tools: [{ id: "t2", name: "run_picogk", input: { code: VALID_CODE, notes: "initial" } }] },
+    { tools: [{ id: "t3", name: "run_picogk", input: { code: VALID_CODE, notes: "thicker" } }] },
+    { text: "Fixed the wall." },
+  ]);
+
+  const { result, geometry } = await drive(mock, engine);
+
+  assertEquals(result.state, "done");
+  assertEquals(runCalls.length, 2);
+  // Only the second (valid) build is announced as geometry.ready
+  assertEquals(geometry.length, 1);
+
+  const repair = toolResultTexts(mock)[1];
+  assertStringIncludes(repair, "REPAIR CONTEXT (attempt 1/2 for ENVELOPE_EXCEEDED)");
+  assertStringIncludes(repair, "BELOW_MIN_WALL");
+  assertStringIncludes(repair, "0.42 mm");
+  assertStringIncludes(repair, "1.5 mm");
+  assertStringIncludes(repair, "z 61 mm > 55 mm (+6 mm)");
+});
+
+Deno.test("HARNESS-GOLD-geometry: geometry budget exhausted → stop-building instruction", async () => {
+  const empty: EngineStats = { ...GOOD_STATS, volumeCm3: 0 };
+  const { engine } = fakeEngine([empty]);
+  const run = (id: string) => ({
+    tools: [{ id, name: "run_picogk", input: { code: VALID_CODE, notes: id } }],
+  });
+  const mock = new MockModel([
+    { tools: [{ id: "t1", name: "submit_design_brief", input: FAN_BRIEF }] },
+    run("t2"),
+    run("t3"),
+    run("t4"),
+    { text: "Stopping." },
+  ]);
+
+  const { geometry } = await drive(mock, engine);
+
+  assertEquals(geometry.length, 0);
+  const texts = toolResultTexts(mock);
+  assertStringIncludes(texts[1], "EMPTY_GEOMETRY");
+  assertStringIncludes(texts[3], "Stop building");
 });
 
 Deno.test("HARNESS-GOLD-params: no accepted brief → engine gets empty params", async () => {

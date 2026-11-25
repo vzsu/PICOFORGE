@@ -138,6 +138,10 @@ Each row has a detector, a containment boundary, a recovery and a user-visible r
 | F12 | Bad or expired API key | — | Focus key field in settings | Inline prompt |
 | F13 | Stale revision from an agent | Command rejected | Agent retries with current value | Nothing (agent-side) |
 | F14 | Preview stage fails | Preview only, run continues | Skip to next stage | Stage label skips |
+| F15 | Engine reply fails its schema, or an inspect/export call fails | Reply discarded, nothing applied | Typed tool error to the agent; repeated → treat as F5 | "Inspect/export failed" sentence + retry |
+| F16 | Agent tool misuse (tool out of order, tool budget spent) | Tool not executed | Typed tool error; budget spent → `ask_user` | Nothing, or the ask_user card |
+
+Code → row mapping lives in `server/domain/failures.ts` (test `FAIL-MAP-01`).
 
 ## 8. Security
 

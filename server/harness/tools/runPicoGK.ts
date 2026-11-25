@@ -16,6 +16,7 @@ import {
   engineRunResultSchema,
   unwrapEngineReply,
 } from "../../engine/client.ts";
+import { validateGeometry } from "../validate.ts";
 
 /**
  * Evaluated brief parameters as `{name: number}` for `engine.run` (08 §3: C# reads `ctx.P(name)`;
@@ -184,8 +185,16 @@ export const runPicoGKTool: ToolModule<Input> = {
         });
       }
 
-      // L3: Geometry checks — done inside Runner.cs; stats carry the result
-      // Store artifact id for later tools
+      // L3: geometry checks against the accepted brief (F4: repair with measured numbers)
+      const geometry = validateGeometry(stats, ctx.brief);
+      if (!geometry.ok) {
+        return ok({
+          ok: false,
+          error: { code: geometry.error.code, failures: geometry.error.failures, stats },
+        });
+      }
+
+      // Only geometry that clears L0–L3 becomes the artifact later tools work on
       ctx.lastArtifactId = ctx.runId;
 
       return ok({
@@ -194,7 +203,7 @@ export const runPicoGKTool: ToolModule<Input> = {
         notes,
         stats,
         logTail: built.data.log ?? [],
-        warnings: [],
+        warnings: geometry.value.warnings,
       });
     } catch (e) {
       return err(e instanceof Error ? e : new Error(String(e)));
