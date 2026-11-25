@@ -4,7 +4,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { makeLogger } from "../log.ts";
-import { broadcast, handleWsUpgrade, resolveCapture, wsHub } from "./ws.ts";
+import { broadcast, handleWsUpgrade, resolveCapture } from "./ws.ts";
 import { serveFile } from "./staticFiles.ts";
 import { serveStatic } from "npm:hono@^4/deno";
 import {
@@ -21,7 +21,7 @@ import { artifactGet, runCreate, runUpdateState } from "../db/repo/runs.ts";
 import { settingsGet, SettingsSchema, settingsSet } from "../db/repo/settings.ts";
 import { clearBaseUrl, getConfig, writeApiKey, writeBaseUrl } from "../config.ts";
 import { AVAILABLE_MODELS } from "../harness/anthropic.ts";
-import { driveRun } from "../harness/orchestrator.ts";
+import { runChat } from "./chatRun.ts";
 import type { EngineSupervisor } from "../engine/supervisor.ts";
 import type { ServerEvent } from "../domain/events.ts";
 import { getBootToken } from "../config.ts";
@@ -376,89 +376,22 @@ public class Design {
             }),
           }));
 
-          try {
-            runUpdateState(run.id, "understanding");
-            broadcast(conversationId, {
-              type: "run.status",
-              runId: run.id,
-              state: "understanding",
-              attempt: 1,
-            } as Omit<ServerEvent, "seq">);
-
-            const result = await driveRun({
-              runId: run.id,
-              projectId,
-              conversationId,
-              userMessage: ev.text!,
-              history,
+          // B-003: the run gets the engine and data dir; frames are schema-typed (chatRun.ts)
+          await runChat(
+            {
+              emit: (frame) => broadcast(conversationId, frame),
+              ...(supervisor?.client ? { engine: supervisor.client } : {}),
+              dataDir: getConfig().DATA_DIR,
               signal: controller.signal,
-              ctx: { wsHub },
-              callbacks: {
-                onStateChange(rId, state) {
-                  runUpdateState(rId, state);
-                  broadcast(
-                    conversationId,
-                    { type: "run.status", runId: rId, state, attempt: 1 } as Omit<
-                      ServerEvent,
-                      "seq"
-                    >,
-                  );
-                },
-                onTextDelta(rId, delta) {
-                  broadcast(conversationId, {
-                    type: "chat.delta",
-                    messageId: rId,
-                    textDelta: delta,
-                  } as Omit<ServerEvent, "seq">);
-                },
-                onGeometryReady(rId, artifactId, stats) {
-                  broadcast(conversationId, {
-                    type: "geometry.ready",
-                    runId: rId,
-                    info: {
-                      artifactId,
-                      url: `/files/projects/${projectId}/artifacts/${artifactId}`,
-                      format: "stl",
-                      stats: stats as Record<string, unknown>,
-                    },
-                  } as Omit<ServerEvent, "seq">);
-                },
-                onError(rId, code, detail) {
-                  runUpdateState(rId, "failed", { errorCode: code, errorDetail: String(detail) });
-                  broadcast(
-                    conversationId,
-                    { type: "run.status", runId: rId, state: "failed", attempt: 1 } as Omit<
-                      ServerEvent,
-                      "seq"
-                    >,
-                  );
-                },
-              },
-            });
-
-            // 4. Create assistant message if done
-            if (result.state === "done") {
-              // We'll broadcast chat.done to let UI finalize
-              broadcast(
-                conversationId,
-                {
-                  type: "chat.done",
-                  messageId: run.id,
-                  usage: { inputTokens: 0, outputTokens: 0 },
-                } as Omit<ServerEvent, "seq">,
-              );
-            }
-          } catch (e) {
-            log.error("driveRun unhandled error", { runId: run.id, error: String(e) });
-            runUpdateState(run.id, "failed", { errorCode: "INTERNAL", errorDetail: String(e) });
-            broadcast(
-              conversationId,
-              { type: "run.status", runId: run.id, state: "failed", attempt: 1 } as Omit<
-                ServerEvent,
-                "seq"
-              >,
-            );
-          }
+              onState: (rId, state, failure) =>
+                runUpdateState(
+                  rId,
+                  state,
+                  failure ? { errorCode: failure.code, errorDetail: failure.detail } : undefined,
+                ),
+            },
+            { runId: run.id, projectId, conversationId, text: ev.text!, history },
+          );
         }, 0);
       }
     });

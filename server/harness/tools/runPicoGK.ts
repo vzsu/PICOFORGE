@@ -203,6 +203,7 @@ export const runPicoGKTool: ToolModule<Input> = {
         artifactId: ctx.runId,
         notes,
         stats,
+        files: built.data.files ?? {},
         logTail: built.data.log ?? [],
         warnings: geometry.value.warnings,
       });

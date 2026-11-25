@@ -29,7 +29,12 @@ const log = makeLogger("harness.orchestrator");
 const askUserResultSchema = z.object({ __askUser: z.literal(true) }).passthrough();
 
 const buildResultSchema = z.discriminatedUnion("ok", [
-  z.object({ ok: z.literal(true), artifactId: z.string(), stats: z.unknown() }).passthrough(),
+  z.object({
+    ok: z.literal(true),
+    artifactId: z.string(),
+    stats: z.unknown(),
+    files: z.record(z.string().nullable()).optional(),
+  }).passthrough(),
   z.object({ ok: z.literal(false), error: engineErrorSchema }).passthrough(),
 ]);
 
@@ -63,7 +68,15 @@ export type RunState =
 export interface OrchestratorCallbacks {
   onStateChange?: (runId: string, state: RunState, detail?: unknown) => void;
   onTextDelta?: (runId: string, delta: string) => void;
-  onGeometryReady?: (runId: string, artifactId: string, stats: unknown) => void;
+  /** `files`: engine output paths by format (absolute, inside the run folder). */
+  onGeometryReady?: (
+    runId: string,
+    artifactId: string,
+    stats: unknown,
+    files?: Record<string, string | null>,
+  ) => void;
+  /** An accepted design brief (the validated submit_design_brief input), for the brief card. */
+  onBrief?: (runId: string, brief: unknown) => void;
   onError?: (runId: string, code: string, detail: unknown) => void;
 }
 
@@ -244,6 +257,11 @@ export async function driveRun(
       const result = await tool.execute(call.input, runCtx);
       let resultText: string;
 
+      // submitDesignBrief stores the accepted brief on runCtx; surface it for the brief card
+      if (call.name === "submit_design_brief" && result.ok && runCtx.brief) {
+        callbacks?.onBrief?.(runId, call.input);
+      }
+
       if (!result.ok) {
         resultText = JSON.stringify({ error: result.error.message });
       } else {
@@ -283,7 +301,12 @@ export async function driveRun(
         } else if (build?.success && build.data.ok) {
           // Success (cleared L0–L3) — reset repair counters, emit geometry ready
           for (const key of Object.keys(repairAttempts)) delete repairAttempts[key];
-          callbacks?.onGeometryReady?.(runId, build.data.artifactId, build.data.stats);
+          callbacks?.onGeometryReady?.(
+            runId,
+            build.data.artifactId,
+            build.data.stats,
+            build.data.files,
+          );
           resultText = JSON.stringify(value);
         } else {
           resultText = JSON.stringify(value);
