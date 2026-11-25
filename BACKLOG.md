@@ -18,10 +18,15 @@ Format: `- [ ] P<phase> · <item> · tests: <IDs> · spec: docs/NN §x`. Top unb
 - [ ] P0 · [blocked: needs human approval, costs money] Live smoke: fan prompt → watertight STL with a real model, ≤ 1 repair · tests: smoke:live
 
 - [x] P0+ · (✓ 2026-11-25, 3/3 e2e) Mock-up main screen per docs/02 + image prompt 1 (human request) · tests: UI-VIS-mock-main
-- [ ] P0 · [in progress: fullstack-agent 2026-11-25] App end to end with mock model + real engine (deno task start → fan prompt → mesh in viewport) · tests: UI-FLOW-fan-mock
-- [ ] P0 · [in progress: hardening-agent 2026-11-25] B-002 real app typecheck in `check`; min-wall probe perf (74–91 % of build); Windows job-object limits · tests: ENG-MEM-01
+- [x] P0 · (✓ 2026-11-25, lead) App end to end with mock model + real engine (deno task start → fan prompt → mesh in viewport) · tests: UI-FLOW-fan-mock, CHAT-RUN-01/02, HARNESS-MOCK-01..05, STATIC-ROOT-01, DB-RUNSTATE-01, MIGRATE-0002-01
+- [x] P0 · (✓ 2026-11-25) B-002 real app typecheck in `check` (DEV-TASKS-02)
+- [x] P0 · (✓ 2026-11-25) min-wall probe by EDT: fan 19.4 → 6.1 s (ENG-MINWALL-01..03, -perf)
+- [ ] P0 · Windows job-object memory/process limits for the sandbox (host polls RSS every 250 ms today) · tests: ENG-MEM-01 · spec: docs/04 §8
+- [ ] P2 · Fan param rebuild 6.1 s vs < 3 s (est.) budget: `Stats.OfMesh` edge dictionary + double `mshAsMesh` now dominate stats (gyroid 7.9 s) · spec: docs/04 §9
+- [ ] P3 · First shape preview ≤ 10 s: today mesh visible at 17.9 s (mock, SwiftShader) · tests: PERF-TTFP-02
+- [ ] P2 · Smoother thin-blade edges (serrated tips at 0.5 mm voxels) — investigate engine smoothing/voxel size for blades
 - [ ] P0 · FAIL-F15/F16 drills for new failure rows · spec: docs/04 §7
-- [ ] P0 · Remove remaining `as` casts (anthropic.ts, prompts/context.ts, askUser.ts, captureViewport.ts, db repos) · spec: CLAUDE.md #2
+- [ ] P0 · Remove remaining `as` casts (~125: db repos via zod row schemas, router/ws frame casts, anthropic.ts, prompts) · spec: CLAUDE.md #2
 - [ ] P0 · SPEC-GAP: settle `engine.build` vs `engine.run`; add `engine.convert` to docs/04 §5
 
 ## P1 · Contracts
