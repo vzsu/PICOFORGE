@@ -24,6 +24,23 @@ Deno.test("DEV-TASKS-01: CLAUDE.md tasks exist in deno.json", async () => {
   assertEquals(missing, []);
 });
 
+// DEV-TASKS-02 (B-002): `deno task check` covers the app typecheck (docs/11 §6), and the app's
+// typecheck script checks a real project. `tsc --noEmit` on the references-only tsconfig.json
+// checks nothing and always exits 0.
+Deno.test("DEV-TASKS-02: check runs a real app typecheck", async () => {
+  const deno = JSON.parse(await Deno.readTextFile(new URL("deno.json", root)));
+  const app = JSON.parse(await Deno.readTextFile(new URL("app/package.json", root)));
+  const check: string = deno.tasks.check;
+  assert(check.includes("deno task typecheck:app"), `check does not run typecheck:app: ${check}`);
+  const task: string = deno.tasks["typecheck:app"] ?? "";
+  assert(task.includes("npm run typecheck"), `typecheck:app must run the app script: ${task}`);
+  const script: string = app.scripts.typecheck;
+  assert(
+    /tsc (-b|--build)\b|tsc .*-p tsconfig\.app\.json/.test(script),
+    `app typecheck must build the references or name tsconfig.app.json: ${script}`,
+  );
+});
+
 const lines = [
   { ts: "2026-11-25T10:00:00.000Z", lvl: "info", area: "engine", msg: "a", runId: "R1" },
   { ts: "2026-11-25T10:30:00.000Z", lvl: "error", area: "http", msg: "b", errId: "E-1" },

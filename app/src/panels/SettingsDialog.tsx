@@ -3,10 +3,29 @@
 // Fetches available models from /api/models, saves key to keystore via PUT.
 
 import { useEffect, useRef, useState } from "react";
-import { apiFetch } from "../api.ts";
+import { apiFetch, isRecord, readJson } from "../api.ts";
 import "./SettingsDialog.css";
 
 interface ModelInfo { id: string; label: string; maxTokens: number; }
+
+function isModelInfo(v: unknown): v is ModelInfo {
+  return isRecord(v) && typeof v.id === "string" && typeof v.label === "string" &&
+    typeof v.maxTokens === "number";
+}
+
+/** Keeps only the known settings fields whose value has the right type. */
+function pickSettings(v: unknown): Partial<Settings> {
+  if (!isRecord(v)) return {};
+  const out: Partial<Settings> = {};
+  if (typeof v.model === "string") out.model = v.model;
+  if (typeof v.maxOutputTokens === "number") out.maxOutputTokens = v.maxOutputTokens;
+  if (typeof v.maxRepairAttempts === "number") out.maxRepairAttempts = v.maxRepairAttempts;
+  if (typeof v.voxelCellCapWarn === "number") out.voxelCellCapWarn = v.voxelCellCapWarn;
+  if (typeof v.voxelCellCapHard === "number") out.voxelCellCapHard = v.voxelCellCapHard;
+  if (typeof v.runTimeoutS === "number") out.runTimeoutS = v.runTimeoutS;
+  if (typeof v.telemetry === "boolean") out.telemetry = v.telemetry;
+  return out;
+}
 
 interface Settings {
   model: string;
@@ -56,15 +75,21 @@ export function SettingsDialog({ open, onClose, initialSettings }: Props) {
   useEffect(() => {
     if (!open) return;
     apiFetch("/api/models")
-      .then((r) => r.json())
-      .then((j: { models?: ModelInfo[] }) => { if (j.models?.length) setModels(j.models); })
+      .then(readJson)
+      .then((j) => {
+        const list = isRecord(j) && Array.isArray(j.models) ? j.models.filter(isModelInfo) : [];
+        if (list.length) setModels(list);
+      })
       .catch(() => {/* use fallback */});
     // Also load current settings + provider info
     apiFetch("/api/settings")
-      .then((r) => r.json())
-      .then((j: { settings?: Partial<Settings>; provider?: { hasApiKey?: boolean; apiBaseUrl?: string } }) => {
-        if (j.settings) setSettings((s) => ({ ...s, ...j.settings }));
-        if (j.provider?.apiBaseUrl) setBaseUrlInput(j.provider.apiBaseUrl);
+      .then(readJson)
+      .then((j) => {
+        if (!isRecord(j)) return;
+        const loaded = pickSettings(j.settings);
+        setSettings((s) => ({ ...s, ...loaded }));
+        const baseUrl = isRecord(j.provider) ? j.provider.apiBaseUrl : undefined;
+        if (typeof baseUrl === "string" && baseUrl) setBaseUrlInput(baseUrl);
       })
       .catch(() => {});
   }, [open]);
