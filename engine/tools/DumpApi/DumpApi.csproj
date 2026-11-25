@@ -1,7 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- DumpApi: reflection walker over PicoGK.dll + Kit.dll → picogk_api.json -->
-    <!-- Runs during deno task setup; output drives Roslyn analyzer + LLM prompt API card -->
+    <!-- DumpApi: reflection walker over PicoGK.dll (+ optional forge-sandbox.dll for PicoForge.Kit) → picogk_api.json -->
+    <!-- Output drives Roslyn analyzer + LLM prompt API card -->
+    <!-- DECISION (devlog 2026-11-25): references the PicoGK package directly instead of ForgeSandbox so the
+         API truth can be generated before (and independently of) the sandbox compiling. Kit is reflected
+         from the forge-sandbox.dll path given as the second argument. -->
     <OutputType>Exe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -12,7 +15,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Needs ForgeSandbox to access PicoGK.dll and Kit.dll via reflection -->
-    <ProjectReference Include="..\..\ForgeSandbox\ForgeSandbox.csproj" />
+    <PackageReference Include="PicoGK" Version="2.2.*" />
   </ItemGroup>
 </Project>
