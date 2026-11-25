@@ -26,43 +26,107 @@ interface PfMetrics {
 }
 declare global {
   interface Window {
-    __pf?: { metrics: () => PfMetrics; orbitBy: (a: number, p?: number) => void; resetFrameStats: () => void };
+    __pf?: {
+      metrics: () => PfMetrics;
+      orbitBy: (a: number, p?: number) => void;
+      resetFrameStats: () => void;
+    };
   }
 }
 
 const SWIFT = process.env.PF_SWIFTSHADER === "1";
 const GPU = process.env.PF_GPU === "1";
-const OUT = SWIFT ? "reports/ui/mock-main-swiftshader" : GPU ? "reports/ui/mock-main-gpu" : "reports/ui/mock-main";
+const OUT = SWIFT
+  ? "reports/ui/mock-main-swiftshader"
+  : GPU
+  ? "reports/ui/mock-main-gpu"
+  : "reports/ui/mock-main";
 const ACCENT = "215, 25, 33"; // --accent #D71921
 
 const REQUIRED_TESTIDS = [
-  "main-screen", "explorer", "chat", "viewport", "statusbar",
-  "rail-projects", "rail-designs", "rail-runs", "rail-agents", "rail-settings",
-  "tree-project-oneshotfly", "tree-designs", "tree-design-v1.1", "tree-runs", "tree-project-spacerockets",
-  "part-row-head", "part-eye-head", "part-row-jacket", "part-eye-jacket", "part-row-bores", "part-eye-bores",
-  "chat-tab-chat", "chat-tab-compute", "chat-tab-logs", "chat-tab-analytics",
-  "msg-user", "msg-assistant", "brief-card", "brief-row-mass", "brief-row-coolant",
-  "status-line", "status-step", "status-elapsed", "status-bar", "status-done",
-  "composer", "mode-low", "mode-std", "mode-deep", "mode-raman", "stop",
-  "split-handle", "viewport-canvas",
-  "tool-select", "tool-move", "tool-rotate", "tool-section", "tool-measure", "tool-capture",
-  "view-cube", "viewcube-front", "viewcube-top", "viewcube-right", "axis-triad",
-  "readout", "dro-volume", "dro-mass", "dro-check", "preview-stage",
-  "save-indicator", "tier-chip", "agents-chip",
+  "main-screen",
+  "explorer",
+  "chat",
+  "viewport",
+  "statusbar",
+  "rail-projects",
+  "rail-designs",
+  "rail-runs",
+  "rail-agents",
+  "rail-settings",
+  "tree-project-oneshotfly",
+  "tree-designs",
+  "tree-design-v1.1",
+  "tree-runs",
+  "tree-project-spacerockets",
+  "part-row-head",
+  "part-eye-head",
+  "part-row-jacket",
+  "part-eye-jacket",
+  "part-row-bores",
+  "part-eye-bores",
+  "chat-tab-chat",
+  "chat-tab-compute",
+  "chat-tab-logs",
+  "chat-tab-analytics",
+  "msg-user",
+  "msg-assistant",
+  "brief-card",
+  "brief-row-mass",
+  "brief-row-coolant",
+  "status-line",
+  "status-step",
+  "status-elapsed",
+  "status-bar",
+  "status-done",
+  "composer",
+  "mode-low",
+  "mode-std",
+  "mode-deep",
+  "mode-raman",
+  "stop",
+  "split-handle",
+  "viewport-canvas",
+  "tool-select",
+  "tool-move",
+  "tool-rotate",
+  "tool-section",
+  "tool-measure",
+  "tool-capture",
+  "view-cube",
+  "viewcube-front",
+  "viewcube-top",
+  "viewcube-right",
+  "axis-triad",
+  "readout",
+  "dro-volume",
+  "dro-mass",
+  "dro-check",
+  "preview-stage",
+  "save-indicator",
+  "tier-chip",
+  "agents-chip",
 ];
 
 test.describe("UI-VIS-mock-main", () => {
   test("UI-VIS-mock-main main screen renders like the image prompt", async ({ page }) => {
     const consoleErrors: string[] = [];
-    page.on("console", (m) => { if (m.type() === "error") consoleErrors.push(m.text()); });
+    page.on("console", (m) => {
+      if (m.type() === "error") consoleErrors.push(m.text());
+    });
     page.on("pageerror", (e) => consoleErrors.push(String(e)));
 
     const t0 = Date.now();
     await page.goto("/");
     await page.evaluate(() => document.fonts.ready.then(() => undefined));
-    await expect(page.getByTestId("viewport")).toHaveAttribute("data-viewport-mode", /converged|error/, { timeout: 60_000 });
+    await expect(page.getByTestId("viewport")).toHaveAttribute(
+      "data-viewport-mode",
+      /converged|error/,
+      { timeout: 60_000 },
+    );
     const early = await page.evaluate(() => window.__pf?.metrics() ?? null);
-    expect(early?.errorCode ?? null, `viewport error; console: ${consoleErrors.join(" | ")}`).toBeNull();
+    expect(early?.errorCode ?? null, `viewport error; console: ${consoleErrors.join(" | ")}`)
+      .toBeNull();
     await expect(page.getByTestId("viewport")).toHaveAttribute("data-viewport-ready", "true");
     const readyMs = Date.now() - t0;
 
@@ -110,8 +174,18 @@ test.describe("UI-VIS-mock-main", () => {
       const live: string[] = [];
       for (const el of Array.from(document.querySelectorAll<HTMLElement>("body *"))) {
         const cs = getComputedStyle(el);
-        const paints = [cs.color, cs.backgroundColor, cs.borderTopColor, cs.borderBottomColor, cs.borderLeftColor,
-          cs.borderRightColor, cs.boxShadow, cs.outlineColor, cs.fill, cs.stroke];
+        const paints = [
+          cs.color,
+          cs.backgroundColor,
+          cs.borderTopColor,
+          cs.borderBottomColor,
+          cs.borderLeftColor,
+          cs.borderRightColor,
+          cs.boxShadow,
+          cs.outlineColor,
+          cs.fill,
+          cs.stroke,
+        ];
         if (cs.visibility === "hidden" || cs.display === "none") continue;
         const usesAccent = paints.some((p) => p.includes(accent));
         if (!usesAccent) continue;
@@ -126,8 +200,10 @@ test.describe("UI-VIS-mock-main", () => {
 
     // Live animations run (and are the only accent motion).
     const anim = await page.evaluate(() => ({
-      dot: getComputedStyle(document.querySelector(".pf-status-dot") ?? document.body).animationName,
-      shimmer: getComputedStyle(document.querySelector(".pf-shimmer") ?? document.body).animationName,
+      dot:
+        getComputedStyle(document.querySelector(".pf-status-dot") ?? document.body).animationName,
+      shimmer:
+        getComputedStyle(document.querySelector(".pf-shimmer") ?? document.body).animationName,
     }));
     expect(anim).toEqual({ dot: "pf-pulse", shimmer: "pf-shimmer" });
 
@@ -241,9 +317,12 @@ test.describe("UI-VIS-mock-main", () => {
     await page.goto("/");
     await page.evaluate(() => document.fonts.ready.then(() => undefined));
     const anim = await page.evaluate(() => ({
-      dot: getComputedStyle(document.querySelector(".pf-status-dot") ?? document.body).animationName,
-      shimmer: getComputedStyle(document.querySelector(".pf-shimmer") ?? document.body).animationName,
-      dotOpacity: getComputedStyle(document.querySelector(".pf-status-dot") ?? document.body).opacity,
+      dot:
+        getComputedStyle(document.querySelector(".pf-status-dot") ?? document.body).animationName,
+      shimmer:
+        getComputedStyle(document.querySelector(".pf-shimmer") ?? document.body).animationName,
+      dotOpacity:
+        getComputedStyle(document.querySelector(".pf-status-dot") ?? document.body).opacity,
     }));
     expect(anim).toEqual({ dot: "none", shimmer: "none", dotOpacity: "1" });
   });

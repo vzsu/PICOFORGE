@@ -6,6 +6,7 @@ import { Explorer } from "./Explorer.tsx";
 import { ChatColumn } from "./ChatColumn.tsx";
 import { ViewportPanel } from "./ViewportPanel.tsx";
 import { statusBar } from "../../mock/mainScreen.ts";
+import { useMainView } from "./view.ts";
 import "./mainScreen.css";
 
 const RAIL: ReadonlyArray<{ id: string; icon: IconName; label: string }> = [
@@ -22,6 +23,7 @@ const layoutFor = (w: number): Layout => (w < 760 ? "tabs" : w < 1100 ? "overlay
 const CHAT_MIN = 0.22, CHAT_MAX = 0.5, CHAT_DEFAULT = 0.3;
 
 export function MainScreen() {
+  const view = useMainView();
   const [layout, setLayout] = useState<Layout>(() => layoutFor(window.innerWidth));
   const [explorerOpen, setExplorerOpen] = useState(true);
   const [overlayOpen, setOverlayOpen] = useState(false);
@@ -105,7 +107,7 @@ export function MainScreen() {
           </button>
         </nav>
 
-        {layout !== "tabs" && <div className="pf-explorer-slot">{showExplorerColumn && <Explorer />}</div>}
+        {layout !== "tabs" && <div className="pf-explorer-slot">{showExplorerColumn && <Explorer live={view.explorer} />}</div>}
 
         {layout === "tabs"
           ? (
@@ -125,14 +127,14 @@ export function MainScreen() {
                 ))}
               </div>
               <div className="pf-tabbed-body">
-                <div className="pf-tabbed-pane" hidden={pane !== "chat"}><ChatColumn /></div>
-                <div className="pf-tabbed-pane" hidden={pane !== "viewport"}><ViewportPanel /></div>
+                <div className="pf-tabbed-pane" hidden={pane !== "chat"}><ChatColumn view={view} /></div>
+                <div className="pf-tabbed-pane" hidden={pane !== "viewport"}><ViewportPanel live={view.live} stlUrl={view.stlUrl} readout={view.readout} /></div>
               </div>
             </div>
           )
           : (
             <>
-              <ChatColumn />
+              <ChatColumn view={view} />
               <div className="pf-viewport-slot">
                 <div
                   className="pf-split"
@@ -149,7 +151,7 @@ export function MainScreen() {
                   onDoubleClick={() => setChatFrac(CHAT_DEFAULT)}
                   onKeyDown={onHandleKey}
                 />
-                <ViewportPanel />
+                <ViewportPanel live={view.live} stlUrl={view.stlUrl} readout={view.readout} />
               </div>
             </>
           )}
@@ -157,16 +159,16 @@ export function MainScreen() {
 
       {layout !== "wide" && overlayOpen && (
         <div className="pf-overlay" data-testid="explorer-overlay" onClick={() => setOverlayOpen(false)}>
-          <div onClick={(e) => e.stopPropagation()}><Explorer overlay /></div>
+          <div onClick={(e) => e.stopPropagation()}><Explorer overlay live={view.explorer} /></div>
         </div>
       )}
 
       <footer className="pf-statusbar" data-testid="statusbar">
-        <span className="readout pf-sb-text" data-testid="save-indicator">{statusBar.saved}</span>
+        <span className="readout pf-sb-text" data-testid="save-indicator">{view.live ? (view.connection === "ready" ? "Connected" : view.connection === "connecting" ? "Connecting…" : "Offline · retrying") : statusBar.saved}</span>
         <span className="readout pf-sb-text">
           <span data-testid="tier-chip">{statusBar.tier}</span>
           {" · "}
-          <span data-testid="engine-chip">ENGINE <span className="pf-ok">●</span></span>
+          <span data-testid="engine-chip" data-engine={view.engineOk ? "ok" : "down"}>ENGINE <span className={view.engineOk ? "pf-ok" : "pf-fail"}>●</span></span>
           {" · "}
           <span data-testid="agents-chip">AGENTS {statusBar.agents}</span>
         </span>

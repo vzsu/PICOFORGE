@@ -321,3 +321,29 @@ Deno.test("EXPLAIN: code_version hash probe uses index", async () => {
   // ix_code_hash should be used
   assertEquals(detail.includes("ix_code_hash"), true);
 });
+
+// DB-RUNSTATE-01 (B-005): every RunStateSchema value persists. 0001's CHECK only allowed the old
+// pipeline states, so the first orchestrator state ("understanding") crashed every server run.
+Deno.test("DB-RUNSTATE-01 every orchestrator run state persists; run steps survive migration 0002", async () => {
+  await setupDb();
+  const p = projectCreate("RunState Test");
+  const c = conversationCreate(p.id, "states");
+  const run = runCreate(c.id, "mock");
+  const step = runStepCreate(run.id, "llm", "LLM call", {});
+  for (
+    const s of [
+      "understanding",
+      "briefing",
+      "building",
+      "inspecting",
+      "awaiting_user",
+      "done",
+    ] as const
+  ) {
+    runUpdateState(run.id, s);
+    assertEquals(runGet(run.id)?.state, s);
+  }
+  assertEquals(runStepList(run.id).map((x) => x.id), [step.id]);
+  const fk = getDb().prepare("PRAGMA foreign_key_check").all();
+  assertEquals(fk, []);
+});

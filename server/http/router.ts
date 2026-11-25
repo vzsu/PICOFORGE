@@ -28,6 +28,9 @@ import { getBootToken } from "../config.ts";
 
 const log = makeLogger("http");
 
+/** Built UI, relative to the repo root (must equal app/vite.config.ts build.outDir; STATIC-ROOT-01). */
+export const STATIC_ROOT = "./server/public";
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function errRes(code: string, message: string) {
@@ -403,7 +406,7 @@ public class Design {
 
   // ── Frontend App ──────────────────────────────────────────────────────────
 
-  app.get("/*", serveStatic({ root: "./app/dist" }));
+  app.get("/*", serveStatic({ root: STATIC_ROOT }));
 
   // ── 404 fallback ──────────────────────────────────────────────────────────
 

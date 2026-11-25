@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon, type IconName } from "./Icons.tsx";
 import { StudioEngine, type RenderMode, type StudioMetrics, type StudioView } from "../../viewport/StudioEngine.ts";
-import { readout } from "../../mock/mainScreen.ts";
+import type { ReadoutView } from "./view.ts";
 
 const TOOLS: ReadonlyArray<{ id: string; icon: IconName; label: string }> = [
   { id: "select", icon: "select", label: "Select" },
@@ -43,7 +43,14 @@ function cubeTransform(e: readonly number[]): string {
   return `matrix3d(${m.map((v) => v.toFixed(5)).join(",")})`;
 }
 
-export function ViewportPanel() {
+interface ViewportProps {
+  /** Live mode: the engine STL to show (null until the first validated build). */
+  stlUrl?: string | null;
+  readout: ReadoutView | null;
+  live?: boolean;
+}
+
+export function ViewportPanel({ stlUrl = null, readout, live = false }: ViewportProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cubeRef = useRef<HTMLDivElement>(null);
   const triadRef = useRef<SVGSVGElement>(null);
@@ -79,7 +86,7 @@ export function ViewportPanel() {
         setAccum(engine.getMetrics().accumFrames);
         if (m === "converged") setReady(true);
       },
-    });
+    }, { initial: live ? "empty" : "head" });
     engineRef.current = engine;
     const ro = new ResizeObserver(() => engine.resize());
     ro.observe(canvas);
@@ -100,12 +107,35 @@ export function ViewportPanel() {
       engineRef.current = null;
       if (window.__pf) delete window.__pf;
     };
+    // `live` is fixed for the page's lifetime (isLiveMode reads the URL once).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Live mode: fetch and bake each new validated STL (the engine keeps T0 render-on-demand rules).
+  useEffect(() => {
+    const engine = engineRef.current;
+    if (!live || !stlUrl || !engine) return;
+    let cancelled = false;
+    setReady(false);
+    void fetch(stlUrl)
+      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((buf) => {
+        if (!cancelled) engine.loadStl(buf);
+      })
+      .catch(() => {
+        if (!cancelled) setMode("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [live, stlUrl]);
 
   const view = (v: StudioView) => engineRef.current?.setView(v);
   const stageLine = mode === "error"
     ? "IMAGE MODE · WEBGL UNAVAILABLE"
-    : `${readout.stage} · T0 · ${mode === "converged" ? "8/8" : `${accum}/8`}`;
+    : readout
+    ? `${readout.stage} · T0 · ${mode === "converged" ? "8/8" : `${accum}/8`}`
+    : "WAITING FOR FIRST BUILD · T0";
 
   return (
     <section
@@ -157,16 +187,24 @@ export function ViewportPanel() {
       </svg>
 
       <div className="pf-readout" data-testid="readout">
-        <div className="pf-readout-main">
-          <span className="pf-ro-label">VOL</span>
-          <span className="pf-ro-num" data-testid="dro-volume">{readout.volumeCm3.toFixed(1)}</span>
-          <span className="pf-ro-unit">cm³</span>
-          <span className="pf-ro-sep">·</span>
-          <span className="pf-ro-label">MASS</span>
-          <span className="pf-ro-num" data-testid="dro-mass">{readout.massKg.toFixed(2)}</span>
-          <span className="pf-ro-unit">kg</span>
-          <span className="pf-ro-check" data-testid="dro-check" aria-label="validated">✓</span>
-        </div>
+        {readout && (
+          <div className="pf-readout-main">
+            <span className="pf-ro-label">VOL</span>
+            <span className="pf-ro-num" data-testid="dro-volume">{readout.volumeCm3.toFixed(1)}</span>
+            <span className="pf-ro-unit">cm³</span>
+            {readout.massKg !== null && (
+              <>
+                <span className="pf-ro-sep">·</span>
+                <span className="pf-ro-label">MASS</span>
+                <span className="pf-ro-num" data-testid="dro-mass">
+                  {readout.massKg < 1 ? readout.massKg.toFixed(3) : readout.massKg.toFixed(2)}
+                </span>
+                <span className="pf-ro-unit">kg</span>
+              </>
+            )}
+            {readout.valid && <span className="pf-ro-check" data-testid="dro-check" aria-label="validated">✓</span>}
+          </div>
+        )}
         <div className="pf-ro-stage micro-label" data-testid="preview-stage">{stageLine}</div>
       </div>
     </section>

@@ -74,6 +74,13 @@ export interface StudioCallbacks {
   /** Camera world matrix (column-major 4×4) after each interactive frame, for HUD overlays. */
   onCamera?: (rot: readonly number[]) => void;
   onMode?: (mode: RenderMode) => void;
+  /** A part finished loading (procedural head or an engine STL). */
+  onPart?: (info: { volumeCm3: number; triangles: number; bakeMs: number }) => void;
+}
+
+export interface StudioOptions {
+  /** "head": the procedural mock part (mock-up mode). "empty": wait for loadStl (live mode). */
+  initial?: "head" | "empty";
 }
 
 const T0 = {
@@ -115,10 +122,12 @@ export class StudioEngine {
   private readonly controls: CameraControls;
   private readonly pmrem: PMREMGenerator;
   private readonly disposables: Array<{ dispose: () => void }> = [];
-  private readonly worker: Worker;
+  private worker: Worker | null = null;
   private readonly t0 = performance.now();
 
   private part: Mesh | null = null;
+  private floor: Mesh | null = null;
+  private partDisposables: Array<{ dispose: () => void }> = [];
   private partSphere = new Sphere(new Vector3(0, 26, 0), 130);
   private mode: RenderMode = "loading";
   private raf: number | null = null;
@@ -144,7 +153,7 @@ export class StudioEngine {
     interactiveFrames: 0, frameMsP50: null, frameMsP95: null, volumeCm3: null, errorCode: null,
   };
 
-  constructor(canvas: HTMLCanvasElement, cb: StudioCallbacks = {}) {
+  constructor(canvas: HTMLCanvasElement, cb: StudioCallbacks = {}, opts: StudioOptions = {}) {
     this.canvas = canvas;
     this.cb = cb;
     this.renderer = new WebGLRenderer({
@@ -195,12 +204,32 @@ export class StudioEngine {
     this.resize();
 
     // Build + bake the part off the main thread.
-    this.worker = new Worker(new URL("./studio/headWorker.ts", import.meta.url), { type: "module" });
-    this.worker.onmessage = (e: MessageEvent<unknown>) => this.onBuilt(e.data);
-    this.worker.onerror = () => this.fail("BUILD_WORKER");
-    this.worker.postMessage({ voxelMm: T0.voxelMm });
+    if ((opts.initial ?? "head") === "head") {
+      const w = new Worker(new URL("./studio/headWorker.ts", import.meta.url), { type: "module" });
+      this.attachWorker(w);
+      w.postMessage({ voxelMm: T0.voxelMm });
+    }
 
     canvas.addEventListener("webglcontextlost", this.onContextLost);
+  }
+
+  /** Bake and show an engine STL (binary, Z-up, mm). Replaces the current part. */
+  loadStl(stl: ArrayBuffer): void {
+    if (this.disposed) return;
+    const w = new Worker(new URL("./studio/stlWorker.ts", import.meta.url), { type: "module" });
+    this.attachWorker(w);
+    w.postMessage({ stl }, [stl]);
+  }
+
+  private attachWorker(w: Worker): void {
+    this.worker?.terminate();
+    this.worker = w;
+    w.onmessage = (e: MessageEvent<unknown>) => {
+      this.onBuilt(e.data);
+      w.terminate(); // one bake per worker; frees its heap on T0
+      if (this.worker === w) this.worker = null;
+    };
+    w.onerror = () => this.fail("BUILD_WORKER");
   }
 
   // ─── Public API ──────────────────────────────────────────────────────────────
@@ -261,10 +290,11 @@ export class StudioEngine {
   dispose(): void {
     this.disposed = true;
     if (this.raf !== null) cancelAnimationFrame(this.raf);
-    this.worker.terminate();
+    this.worker?.terminate();
     this.canvas.removeEventListener("webglcontextlost", this.onContextLost);
     this.controls.dispose();
     this.part?.geometry.dispose();
+    for (const d of this.partDisposables) d.dispose();
     for (const d of this.disposables) d.dispose();
     this.accRT?.dispose();
     this.frameRT?.dispose();
@@ -287,6 +317,12 @@ export class StudioEngine {
   private onBuilt(data: unknown): void {
     if (this.disposed) return;
     if (!isHeadBuild(data)) { this.fail("LOAD_PARSE"); return; }
+    // Replace any previous part (live mode loads one mesh per validated build).
+    if (this.part) { this.scene.remove(this.part); this.part.geometry.dispose(); this.part = null; }
+    if (this.floor) { this.scene.remove(this.floor); this.floor = null; }
+    for (const d of this.partDisposables) d.dispose();
+    this.partDisposables = [];
+    if (this.mode === "error") { this.metrics.errorCode = null; this.setMode("loading"); }
     const geom = new BufferGeometry();
     geom.setAttribute("position", new BufferAttribute(data.positions, 3));
     geom.setAttribute("normal", new BufferAttribute(data.normals, 3));
@@ -298,7 +334,7 @@ export class StudioEngine {
 
     const brush = makeBrushTexture();
     const { material } = makeAluminium(brush);
-    this.disposables.push(brush, material);
+    this.partDisposables.push(brush, material);
     this.part = new Mesh(geom, material);
     this.scene.add(this.part);
 
@@ -318,7 +354,8 @@ export class StudioEngine {
     const floor = new Mesh(floorGeom, floorMat);
     floor.renderOrder = -1;
     this.scene.add(floor);
-    this.disposables.push(shadowTex, floorMat, floorGeom);
+    this.floor = floor;
+    this.partDisposables.push(shadowTex, floorMat, floorGeom);
 
     this.camera.near = diag * 0.02;
     this.camera.far = diag * 40;
@@ -330,6 +367,7 @@ export class StudioEngine {
     this.metrics.vertices = data.positions.length / 3;
     this.metrics.volumeCm3 = data.volumeCm3;
     this.setView("home", false);
+    this.cb.onPart?.({ volumeCm3: data.volumeCm3, triangles: this.metrics.triangles, bakeMs: data.totalMs });
   }
 
   private fail(code: string): void {

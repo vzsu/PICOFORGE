@@ -119,7 +119,7 @@ export function headSdf(px: number, py: number, pz: number, band: number): numbe
 
 // ─── Grid ───────────────────────────────────────────────────────────────────────
 
-interface Grid {
+export interface Grid {
   nx: number; ny: number; nz: number;
   h: number;
   x0: number; y0: number; z0: number;
@@ -260,7 +260,7 @@ function exactNormals(positions: Float32Array): Float32Array {
 }
 
 /** Where the SDF normal disagrees with the mesh (area-weighted face normals), trust the mesh. */
-function fixNormals(positions: Float32Array, normals: Float32Array, indices: Uint32Array): number {
+export function fixNormals(positions: Float32Array, normals: Float32Array, indices: Uint32Array): number {
   const fn = new Float32Array(positions.length);
   for (let t = 0; t < indices.length; t += 3) {
     const a = 3 * indices[t], b = 3 * indices[t + 1], c = 3 * indices[t + 2];
@@ -298,7 +298,7 @@ function hammersleyDirs(count: number): Float64Array {
   return out;
 }
 
-function bakeAo(g: Grid, positions: Float32Array, normals: Float32Array, indices: Uint32Array, diag: number): Float32Array {
+export function bakeAo(g: Grid, positions: Float32Array, normals: Float32Array, indices: Uint32Array, diag: number): Float32Array {
   const RAYS = 16;
   const dirs = hammersleyDirs(RAYS);
   const D = diag * 0.25;
@@ -361,7 +361,7 @@ function bakeAo(g: Grid, positions: Float32Array, normals: Float32Array, indices
   return out;
 }
 
-function bakeCurvature(positions: Float32Array, normals: Float32Array, indices: Uint32Array): Float32Array {
+export function bakeCurvature(positions: Float32Array, normals: Float32Array, indices: Uint32Array): Float32Array {
   const vc = positions.length / 3;
   const acc = new Float32Array(vc), cnt = new Uint16Array(vc);
   const edge = (i: number, j: number) => {
@@ -411,7 +411,7 @@ function boxBlur(src: Float32Array, w: number, h: number, r: number): Float32Arr
   return out;
 }
 
-function bakeContactShadow(g: Grid) {
+export function bakeContactShadow(g: Grid) {
   const margin = 60; // mm around the part
   const cell = 2; // mm per texel
   const minX = g.x0 - margin, minZ = g.z0 - margin;

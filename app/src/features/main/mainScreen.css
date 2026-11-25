@@ -339,6 +339,23 @@ button { background: none; border: 0; cursor: pointer; }
   place-items: center;
 }
 .pf-stop-square { width: 10px; height: 10px; border-radius: 2px; background: var(--ink); }
+/* Send: neutral when idle; the accent is reserved for live state (docs/02 §2). */
+.pf-send {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--raised);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  font: 500 15px/1 var(--font-mono);
+}
+.pf-send:disabled { color: var(--ink-3); background: var(--card); border: 1px solid var(--line); }
+/* Done: the dot turns --ok and stops pulsing (docs/02 §4). Failed: accent, no pulse. */
+.pf-status-dot.is-ok { background: var(--ok); box-shadow: none; animation: none; }
+.pf-status-dot.is-still { animation: none; box-shadow: none; }
+.pf-empty { padding: 10px 12px; color: var(--ink-3); font-size: 14px; }
 
 /* ─── Viewport ─────────────────────────────────────────────────────────────── */
 .pf-viewport-slot { position: relative; height: 100%; }

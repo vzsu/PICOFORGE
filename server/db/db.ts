@@ -58,15 +58,37 @@ function applyPragmas(db: DatabaseSync): void {
   db.exec("PRAGMA cache_size = -20000;");
 }
 
-/** Run a migration SQL file inside a transaction */
-function applyMigration(db: DatabaseSync, name: string, sql: string): void {
+/** The part of a SQLite handle a migration needs (node:sqlite and jsr:@db/sqlite both fit). */
+export interface MigrationDb {
+  exec(sql: string): void;
+  prepare(sql: string): {
+    get(...args: Array<string | number>): unknown;
+    all(...args: Array<string | number>): unknown[];
+    run(...args: Array<string | number>): unknown;
+  };
+}
+
+/**
+ * Run a migration SQL file inside a transaction. Table rebuilds (SQLite's 12-step ALTER) start
+ * with `-- pf:foreign-keys-off`: foreign keys go off outside the transaction (the pragma is a
+ * no-op inside one), `PRAGMA foreign_key_check` must come back empty, then they go back on.
+ */
+export function applyMigrationFile(db: MigrationDb, name: string, sql: string): void {
   const already = db
     .prepare("SELECT 1 FROM migrations WHERE name = ?")
     .get(name);
   if (already) return;
+  const fkOff = sql.startsWith("-- pf:foreign-keys-off");
+  if (fkOff) db.exec("PRAGMA foreign_keys = OFF;");
   db.exec("BEGIN;");
   try {
     db.exec(sql);
+    if (fkOff) {
+      const broken = db.prepare("PRAGMA foreign_key_check").all();
+      if (broken.length > 0) {
+        throw new Error(`Migration ${name} broke ${broken.length} foreign key(s)`);
+      }
+    }
     db.prepare("INSERT INTO migrations(name, applied_at) VALUES (?,?)").run(
       name,
       Date.now(),
@@ -76,6 +98,8 @@ function applyMigration(db: DatabaseSync, name: string, sql: string): void {
   } catch (e) {
     db.exec("ROLLBACK;");
     throw e;
+  } finally {
+    if (fkOff) db.exec("PRAGMA foreign_keys = ON;");
   }
 }
 
@@ -108,7 +132,7 @@ export async function openDb(dataDir: string): Promise<DatabaseSync> {
 
   for (const name of entries) {
     const sql = await Deno.readTextFile(join(migrationsDir, name));
-    applyMigration(db, name, sql);
+    applyMigrationFile(db, name, sql);
   }
 
   // Verify FTS5 is available
