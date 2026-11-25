@@ -32,7 +32,8 @@ Format: `- [ ] P<phase> · <item> · tests: <IDs> · spec: docs/NN §x`. Top unb
 - [ ] P0 · SPEC-GAP: settle `engine.build` vs `engine.run`; add `engine.convert` to docs/04 §5
 
 - [ ] P4 · Port or delete the pre-P0 amber UI (chat/, panels/, state/chatStore.ts, viewport/ViewportEngine.ts, ViewportPane.tsx, GpuProbe.ts); it still has `as` casts · spec: docs/02, CLAUDE.md #2
-- [ ] P0 · Wire `deno task bench` to real benches (engine baselines today come from ForgeEngine.Tests with FORGE_BENCH_OUT) · spec: docs/11 §6
+- [x] P0 · (✓ BENCH-CMP-01, BENCH-MED-01) Wire `deno task bench` to real benches, median of 3 · spec: docs/11 §6
+- [ ] P5 · UI perf benches (PERF-T0-*, PERF-TTFP-*) into `deno task bench` · spec: docs/11 §3
 
 ## P1 · Contracts
 - [ ] P1 · Command and event schemas in `server/domain/`; generated client types · tests: protocol round-trips
