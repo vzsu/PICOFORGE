@@ -133,6 +133,39 @@ export async function clearBaseUrl(): Promise<boolean> {
   }
 }
 
+// ─── MCP token (docs/14 §2, §11) ─────────────────────────────────────────────
+
+let _mcpToken: string | null = null;
+
+/**
+ * The token MCP clients send as `X-PicoForge-Token`. Unlike the boot token it persists in
+ * `<dataDir>/secret.env` (PICOFORGE_MCP_TOKEN), so a client registered once keeps working across
+ * restarts. Created on first use. Never logged.
+ */
+export async function ensureMcpToken(dataDir: string): Promise<string> {
+  if (_mcpToken) return _mcpToken;
+  const fromEnv = Deno.env.get("PICOFORGE_MCP_TOKEN");
+  if (fromEnv) return (_mcpToken = fromEnv);
+  const secretPath = join(dataDir, "secret.env");
+  let existing = "";
+  try {
+    existing = await Deno.readTextFile(secretPath);
+  } catch { /* first run */ }
+  const found = existing.match(/^PICOFORGE_MCP_TOKEN=(\S+)\s*$/m)?.[1];
+  if (found) return (_mcpToken = found);
+  const token = Array.from(
+    crypto.getRandomValues(new Uint8Array(24)),
+    (b) => b.toString(16).padStart(2, "0"),
+  ).join("");
+  await Deno.mkdir(dataDir, { recursive: true });
+  await Deno.writeTextFile(
+    secretPath,
+    `${existing.trim()}\nPICOFORGE_MCP_TOKEN=${token}\n`.trimStart(),
+  );
+  log.info("MCP token created in secret.env"); // never the value
+  return (_mcpToken = token);
+}
+
 /** Repo root: two levels up from this file (server/config.ts). */
 const REPO_ROOT = join(import.meta.dirname ?? ".", "..");
 

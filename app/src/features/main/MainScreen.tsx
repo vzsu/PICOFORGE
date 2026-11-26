@@ -170,7 +170,7 @@ export function MainScreen() {
           {" · "}
           <span data-testid="engine-chip" data-engine={view.engineOk ? "ok" : "down"}>ENGINE <span className={view.engineOk ? "pf-ok" : "pf-fail"}>●</span></span>
           {" · "}
-          <span data-testid="agents-chip">AGENTS {statusBar.agents}</span>
+          <span data-testid="agents-chip">AGENTS {view.agents}</span>
         </span>
       </footer>
     </div>

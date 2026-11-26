@@ -352,6 +352,11 @@ export class StudioEngine {
 
   // ─── Public API ──────────────────────────────────────────────────────────────
 
+  /** A part is being baked off the main thread. */
+  get busy(): boolean {
+    return this.worker !== null;
+  }
+
   setView(v: StudioView, tween = true): void {
     // Aim a little below the part centre so it sits above the bottom readout pill.
     const c = this.partSphere.center.clone();
@@ -370,6 +375,33 @@ export class StudioEngine {
       c.x, c.y, c.z, smooth,
     );
     this.input();
+  }
+
+  /**
+   * PNG (base64, no data: prefix) of the part from a canonical view, for an agent's capture_viewport
+   * (docs/14 §3). The user's camera is restored before returning: agents never move it (docs/14 §1).
+   * Null when no part is loaded.
+   */
+  capture(view: "iso" | "front" | "top" | "right" | "current", maxPx = 768): string | null {
+    if (this.disposed || !this.part) return null;
+    const pos = this.controls.getPosition(new Vector3());
+    const target = this.controls.getTarget(new Vector3());
+    if (view !== "current") this.setView(view === "iso" ? "home" : view, false);
+    this.controls.update(0);
+    this.camera.clearViewOffset();
+    this.renderer.setRenderTarget(null);
+    this.renderer.render(this.scene, this.camera);
+    // read back in the same task, before the browser composites and clears the drawing buffer
+    const src = this.renderer.domElement;
+    const k = Math.min(1, maxPx / Math.max(src.width, src.height));
+    const out = document.createElement("canvas");
+    out.width = Math.max(1, Math.round(src.width * k));
+    out.height = Math.max(1, Math.round(src.height * k));
+    out.getContext("2d")?.drawImage(src, 0, 0, out.width, out.height);
+    void this.controls.setLookAt(pos.x, pos.y, pos.z, target.x, target.y, target.z, false);
+    this.controls.update(0);
+    this.input(); // redraw the user's own view
+    return out.toDataURL("image/png").replace(/^data:image\/png;base64,/, "");
   }
 
   resize(): void {

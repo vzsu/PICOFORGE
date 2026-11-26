@@ -174,7 +174,18 @@ export const MessageCreatedEvent = withSeq({
     role: z.string(),
     content: z.string(),
     createdAt: z.number(),
+    /** Who wrote it when not the human at this window: "mcp:<client>" (docs/14 §10). */
+    origin: z.string().optional(),
   }),
+});
+
+/** An MCP agent opened another project: the open window switches to it (docs/14 §10). */
+export const SessionFocusEvent = withSeq({
+  type: z.literal("session.focus"),
+  projectId: z.string(),
+  projectName: z.string(),
+  conversationId: z.string(),
+  origin: z.string(),
 });
 
 export const ServerEventSchema = z.discriminatedUnion("type", [
@@ -192,6 +203,7 @@ export const ServerEventSchema = z.discriminatedUnion("type", [
   AskUserEvent,
   ErrorEvent,
   PongEvent,
+  SessionFocusEvent,
 ]);
 
 export type ServerEvent = z.infer<typeof ServerEventSchema>;

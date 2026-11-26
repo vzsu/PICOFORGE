@@ -5,9 +5,9 @@
     "server:dev": "deno run --watch --env-file=.env --allow-net --allow-read --allow-write --allow-run=dotnet,forge-engine --allow-env server/main.ts",
     "app:dev": "cd app && npm run dev",
     "check": "deno fmt --check && deno lint && deno task typecheck && deno task typecheck:app && deno task test",
-    "typecheck": "deno check server/main.ts server/harness/orchestrator.ts server/http/router.ts server/http/ws.ts scripts/setup.ts scripts/doctor.ts scripts/logs.ts scripts/ui_check.ts scripts/smoke_live.ts scripts/secret_scan.ts server/http/chatRun.ts scripts/smoke_mock.ts scripts/bench.ts scripts/gen_protocol.ts",
+    "typecheck": "deno check server/main.ts server/harness/orchestrator.ts server/http/router.ts server/http/ws.ts scripts/setup.ts scripts/doctor.ts scripts/logs.ts scripts/ui_check.ts scripts/smoke_live.ts scripts/secret_scan.ts server/http/chatRun.ts scripts/smoke_mock.ts scripts/bench.ts scripts/gen_protocol.ts server/mcp/server.ts scripts/mcp_connect.ts scripts/guide_check.ts",
     "typecheck:app": "cd app && npm run typecheck",
-    "test": "deno test --allow-read --allow-write --allow-net=127.0.0.1 --allow-env --allow-run server/harness/tests/ server/db/tests/ server/tests/ server/domain/tests/ server/http/tests/ server/engine/tests/ scripts/tests/",
+    "test": "deno test --allow-read --allow-write --allow-net=127.0.0.1 --allow-env --allow-run server/harness/tests/ server/db/tests/ server/tests/ server/domain/tests/ server/http/tests/ server/engine/tests/ server/mcp/tests/ scripts/tests/",
     "doctor": "deno run --allow-read --allow-env --allow-run --allow-sys scripts/doctor.ts",
     "start": "cd app && npm run build && cd .. && deno run --allow-net --allow-read --allow-write --allow-run --allow-env server/main.ts",
     "check:engine": "dotnet build engine/PicoForge.sln -warnaserror -m:1 && dotnet test engine/PicoForge.sln --no-build",
@@ -15,6 +15,8 @@
     "ui:check": "deno run --allow-run --allow-read --allow-env scripts/ui_check.ts",
     "logs:tail": "deno run --allow-read --allow-env scripts/logs.ts tail",
     "logs:query": "deno run --allow-read --allow-env scripts/logs.ts query",
+    "mcp:connect": "deno run --allow-read --allow-write --allow-env scripts/mcp_connect.ts",
+    "guide:check": "deno run --allow-read --allow-write --allow-env --allow-run --allow-net=127.0.0.1 scripts/guide_check.ts",
     "gen:protocol": "deno run --allow-read --allow-write scripts/gen_protocol.ts",
     "smoke:mock": "deno run --allow-read --allow-write --allow-env --allow-run --allow-net=127.0.0.1 scripts/smoke_mock.ts scripts/bench.ts scripts/gen_protocol.ts",
     "smoke:live": "deno run --allow-env --allow-run --allow-read scripts/smoke_live.ts",
@@ -60,6 +62,7 @@
     "hono/": "npm:hono@^4/",
     "zod": "npm:zod@^3",
     "ulid": "npm:ulid@^2",
-    "@anthropic-ai/sdk": "npm:@anthropic-ai/sdk@^1.14.0"
+    "@anthropic-ai/sdk": "npm:@anthropic-ai/sdk@^1.14.0",
+    "@modelcontextprotocol/sdk/": "npm:/@modelcontextprotocol/sdk@1.32.2/"
   }
 }

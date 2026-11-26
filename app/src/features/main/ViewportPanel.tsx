@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { Icon, type IconName } from "./Icons.tsx";
 import { type RenderMode, type RenderStyle, StudioEngine, type StudioMetrics, type StudioView } from "../../viewport/StudioEngine.ts";
 import type { ReadoutView } from "./view.ts";
+import { type CaptureView, liveSession } from "../../live/session.ts";
 
 const TOOLS: ReadonlyArray<{ id: string; icon: IconName; label: string }> = [
   { id: "select", icon: "select", label: "Select" },
@@ -56,6 +57,8 @@ export function ViewportPanel({ stlUrl = null, readout, live = false }: Viewport
   const cubeRef = useRef<HTMLDivElement>(null);
   const triadRef = useRef<SVGSVGElement>(null);
   const engineRef = useRef<StudioEngine | null>(null);
+  /** True while a new STL is being fetched (before the engine starts baking it). */
+  const fetchingRef = useRef(false);
   const [mode, setMode] = useState<RenderMode>("loading");
   const [ready, setReady] = useState(false);
   const [tool, setTool] = useState("select");
@@ -112,7 +115,24 @@ export function ViewportPanel({ stlUrl = null, readout, live = false }: Viewport
       sampleCentre: () => engine.sampleCentre(),
     };
 
+    // An agent's capture_viewport (docs/14 §3): wait for the newest part to finish baking, then
+    // photograph it without moving the user's camera.
+    const unregister = live
+      ? liveSession.setCapture(async (v: CaptureView) => {
+        const until = Date.now() + 9_000;
+        while (Date.now() < until) {
+          if (!fetchingRef.current && !engine.busy) {
+            const png = engine.capture(v);
+            if (png) return png;
+          }
+          await new Promise((r) => setTimeout(r, 100));
+        }
+        return null;
+      })
+      : null;
+
     return () => {
+      unregister?.();
       ro.disconnect();
       engine.dispose();
       engineRef.current = null;
@@ -128,6 +148,7 @@ export function ViewportPanel({ stlUrl = null, readout, live = false }: Viewport
     if (!live || !stlUrl || !engine) return;
     let cancelled = false;
     setReady(false);
+    fetchingRef.current = true;
     void fetch(stlUrl)
       .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((buf) => {
@@ -135,6 +156,9 @@ export function ViewportPanel({ stlUrl = null, readout, live = false }: Viewport
       })
       .catch(() => {
         if (!cancelled) setMode("error");
+      })
+      .finally(() => {
+        fetchingRef.current = false;
       });
     return () => {
       cancelled = true;

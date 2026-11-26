@@ -68,6 +68,13 @@ export function broadcast(
   }
 }
 
+/** Broadcast to every conversation that has an open window (session.focus: follow the agent). */
+export function broadcastAll(event: ServerFrame): void {
+  for (const [conversationId, state] of convMap) {
+    if (state.sessions.size > 0) broadcast(conversationId, event);
+  }
+}
+
 /** Send one event directly to a single session (e.g. hello on connect) */
 export function sendToSession(session: Session, frame: string, type: string): void {
   if (session.socket.readyState !== WebSocket.OPEN) return;

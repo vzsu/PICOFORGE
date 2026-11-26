@@ -4,7 +4,8 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { makeLogger } from "../log.ts";
-import { broadcast, handleWsUpgrade, resolveCapture, wsHub } from "./ws.ts";
+import { broadcast, broadcastAll, handleWsUpgrade, resolveCapture, wsHub } from "./ws.ts";
+import { handleMcpRequest } from "../mcp/server.ts";
 import { serveFile } from "./staticFiles.ts";
 import { serveStatic } from "npm:hono@^4/deno";
 import {
@@ -19,7 +20,7 @@ import { conversationCreate, conversationGet, conversationList } from "../db/rep
 import { messageCreate, messageList } from "../db/repo/messages.ts";
 import { artifactGet, runCreate, runUpdateState } from "../db/repo/runs.ts";
 import { settingsGet, SettingsPatchSchema, settingsSet } from "../db/repo/settings.ts";
-import { clearBaseUrl, getConfig, writeApiKey, writeBaseUrl } from "../config.ts";
+import { clearBaseUrl, ensureMcpToken, getConfig, writeApiKey, writeBaseUrl } from "../config.ts";
 import { AVAILABLE_MODELS, testApiKey } from "../harness/anthropic.ts";
 import { historyFromMessages, runChat } from "./chatRun.ts";
 import { resolveRunSettings } from "./runSettings.ts";
@@ -377,6 +378,25 @@ public class Design {
           );
         }, 0);
       }
+    });
+  });
+
+  // ── MCP (docs/14): agents drive the studio; the open window shows their work live ──────────
+
+  app.all("/mcp", async (c) => {
+    const cfg = getConfig();
+    const token = c.req.header("X-PicoForge-Token") ??
+      c.req.header("Authorization")?.replace(/^Bearer\s+/i, "");
+    if (!token || (token !== await ensureMcpToken(cfg.DATA_DIR) && token !== getBootToken())) {
+      log.warn("MCP request rejected: bad or missing token");
+      return c.json(errRes("UNAUTHORIZED", "Send X-PicoForge-Token (deno task mcp:connect)"), 401);
+    }
+    return await handleMcpRequest(c.req.raw, {
+      ...(supervisor?.client ? { engine: supervisor.client } : {}),
+      hub: wsHub,
+      dataDir: cfg.DATA_DIR,
+      emit: broadcast,
+      emitAll: broadcastAll,
     });
   });
 

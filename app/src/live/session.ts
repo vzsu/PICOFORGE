@@ -24,6 +24,8 @@ export interface LiveMessage {
   role: "user" | "assistant";
   text: string;
   time: string;
+  /** "mcp:<client>" when an agent wrote it (docs/14 §10); absent for this window's own turns. */
+  origin?: string;
 }
 
 export interface LiveBriefRow {
@@ -65,6 +67,9 @@ export interface LiveState {
   run: LiveRun | null;
   geometry: LiveGeometry | null;
   error: { code: string; message: string } | null;
+  /** Agents seen in this session (origins of MCP messages and focus events). */
+  agents: string[];
+  projectName: string | null;
 }
 
 const INITIAL: LiveState = {
@@ -75,6 +80,8 @@ const INITIAL: LiveState = {
   run: null,
   geometry: null,
   error: null,
+  agents: [],
+  projectName: null,
 };
 
 /** g/cm³; mass shown only for known materials (an estimate never poses as a measurement). */
@@ -171,6 +178,38 @@ export function reduce(s: LiveState, ev: WsEvent, now = Date.now()): LiveState {
         error: prev ? s.error : null,
       };
     }
+    case "message.created": {
+      const m = ev.message;
+      const role = m.role === "user" || m.role === "assistant" ? m.role : null;
+      if (!role || s.messages.some((x) => x.id === m.id)) return s;
+      const agents = m.origin && !s.agents.includes(m.origin) ? [...s.agents, m.origin] : s.agents;
+      if (role === "user" && !m.origin) {
+        // the server echo of this window's own message: the local copy takes the stored id
+        const i = s.messages.findIndex((x) => x.id.startsWith("u-") && x.text === m.content);
+        if (i >= 0) {
+          const msgs = s.messages.slice();
+          msgs[i] = { ...msgs[i], id: m.id };
+          return { ...s, messages: msgs };
+        }
+      }
+      return {
+        ...s,
+        agents,
+        messages: [...s.messages, {
+          id: m.id,
+          role,
+          text: m.content,
+          time: clock(m.createdAt),
+          ...(m.origin ? { origin: m.origin } : {}),
+        }],
+        // an agent's new request starts a new design on screen
+        ...(role === "user" && m.origin ? { brief: null, geometry: null, error: null } : {}),
+      };
+    }
+    case "session.focus": {
+      const agents = s.agents.includes(ev.origin) ? s.agents : [...s.agents, ev.origin];
+      return { ...s, agents, projectName: ev.projectName };
+    }
     case "chat.delta": {
       const id = str(ev.messageId), d = str(ev.textDelta);
       if (!id || d === null) return s;
@@ -219,6 +258,33 @@ function breakAssistant(msgs: LiveMessage[], runId: string): LiveMessage[] {
   return out;
 }
 
+/** Stored messages (GET /api/conversations/:id/messages) → chat lines and the latest brief. */
+export function fromHistory(body: unknown): { messages: LiveMessage[]; brief: LiveBrief | null } {
+  const messages: LiveMessage[] = [];
+  let brief: LiveBrief | null = null;
+  const list = isRecord(body) && Array.isArray(body.messages) ? body.messages : [];
+  for (const m of list) {
+    if (!isRecord(m) || !Array.isArray(m.content)) continue;
+    const id = str(m.id), role = m.role === "user" || m.role === "assistant" ? m.role : null;
+    if (!id || !role) continue;
+    const lines: string[] = [];
+    for (const b of m.content) {
+      if (!isRecord(b)) continue;
+      if (b.t === "text" && typeof b.text === "string") lines.push(b.text);
+      if (b.t === "error" && typeof b.msg === "string") lines.push(`⚠ ${b.msg}`);
+      if (b.t === "brief") brief = parseBrief({ kind: "brief", brief: b.brief }) ?? brief;
+    }
+    if (lines.length) {
+      messages.push({ id, role, text: lines.join("\n\n"), time: clock(num(m.createdAt) ?? Date.now()) });
+    }
+  }
+  return { messages, brief };
+}
+
+/** Views an agent may ask for (ViewportCaptureRequestEvent.view). */
+export type CaptureView = "iso" | "front" | "top" | "right" | "current";
+type CaptureFn = (view: CaptureView) => Promise<string | null>;
+
 // ─── Store ──────────────────────────────────────────────────────────────────
 
 type Listener = () => void;
@@ -227,7 +293,31 @@ class LiveSession {
   private state: LiveState = INITIAL;
   private readonly listeners = new Set<Listener>();
   private ws: WsClient | null = null;
+  private convId: string | null = null;
   private started = false;
+  private captureFn: CaptureFn | null = null;
+
+  /** The viewport registers how to photograph the part (capture_viewport). Returns unregister. */
+  setCapture(fn: CaptureFn): () => void {
+    this.captureFn = fn;
+    return () => {
+      if (this.captureFn === fn) this.captureFn = null;
+    };
+  }
+
+  private async answerCapture(requestId: string, view: CaptureView): Promise<void> {
+    let png: string | null = null;
+    try {
+      png = (await this.captureFn?.(view)) ?? null;
+    } catch {
+      png = null;
+    }
+    this.ws?.send({
+      type: "viewport.capture.result",
+      requestId,
+      ...(png ? { pngBase64: png } : { error: "no part in the viewport" }),
+    });
+  }
 
   subscribe = (l: Listener) => {
     this.listeners.add(l);
@@ -249,14 +339,37 @@ class LiveSession {
       const health = await readJson(await apiFetch("/api/health"));
       const eng = isRecord(health) && isRecord(health.engine) ? str(health.engine.status) : null;
       this.set({ ...this.state, engine: eng === "ok" ? "ok" : eng ? "down" : "unknown" });
-      const convId = await this.conversation();
-      this.ws = new WsClient(convId);
-      this.ws.onStatus((up) => this.set({ ...this.state, connection: up ? "ready" : "offline" }));
-      this.ws.on((ev) => this.set(reduce(this.state, ev)));
-      this.ws.connect();
+      await this.attach(await this.conversation());
     } catch (e) {
       this.set({ ...this.state, connection: "error", error: { code: "BOOT", message: String(e) } });
     }
+  }
+
+  /** Load a conversation's history and stream its frames. */
+  private async attach(convId: string): Promise<void> {
+    this.ws?.destroy();
+    this.convId = convId;
+    try {
+      const h = fromHistory(await readJson(await apiFetch(`/api/conversations/${convId}/messages`)));
+      this.set({ ...this.state, messages: h.messages, brief: h.brief });
+    } catch {
+      // history is a convenience; the live stream still works
+    }
+    this.ws = new WsClient(convId);
+    this.ws.onStatus((up) => this.set({ ...this.state, connection: up ? "ready" : "offline" }));
+    this.ws.on((ev) => {
+      if (ev.type === "viewport.capture.request") {
+        void this.answerCapture(ev.requestId, ev.view);
+        return;
+      }
+      this.set(reduce(this.state, ev));
+      // An MCP agent opened another project: follow it (docs/14 §10)
+      if (ev.type === "session.focus" && ev.conversationId !== this.convId) {
+        this.set({ ...this.state, messages: [], brief: null, geometry: null, run: null, error: null, connection: "connecting" });
+        void this.attach(ev.conversationId);
+      }
+    });
+    this.ws.connect();
   }
 
   /** First project + conversation, created on first launch. */

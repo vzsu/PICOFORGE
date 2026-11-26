@@ -17,7 +17,7 @@ const jsonSchema = {
   },
 };
 
-const CAPTURE_TIMEOUT_MS = 5_000;
+const CAPTURE_TIMEOUT_MS = 10_000; // the window may still be baking a just-built part
 
 export const captureViewportTool: ToolModule<Input> = {
   name: "capture_viewport",

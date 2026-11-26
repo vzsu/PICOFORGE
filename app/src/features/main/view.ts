@@ -11,6 +11,8 @@ export interface ChatMsgView {
   role: "user" | "assistant";
   text: string;
   time: string;
+  /** "mcp:<client>" for an agent's message: shown as a mono chip (docs/14 §10). */
+  origin?: string;
 }
 
 export interface BriefRowView {
@@ -62,6 +64,8 @@ export interface MainView {
   readout: ReadoutView | null;
   stlUrl: string | null;
   engineOk: boolean;
+  /** Connected agents: the status-bar chip. */
+  agents: string;
   connection: LiveState["connection"] | "mock";
   send: (text: string, mode?: Mode) => void;
   stop: () => void;
@@ -96,6 +100,7 @@ const MOCK_VIEW: MainView = {
   readout: { ...mock.readout },
   stlUrl: null,
   engineOk: true,
+  agents: String(mock.statusBar.agents),
   connection: "mock",
   send: () => {},
   stop: () => {},
@@ -164,6 +169,7 @@ export function liveView(s: LiveState, now: number): MainView {
     readout: g ? { volumeCm3: g.volumeCm3, massKg: g.massKg, valid: g.watertight, stage: "VALIDATED" } : null,
     stlUrl: g?.url ?? null,
     engineOk: s.engine === "ok",
+    agents: String(s.agents.length),
     connection: s.connection,
     send: (t, m) => liveSession.send(t, m),
     stop: () => liveSession.cancel(),

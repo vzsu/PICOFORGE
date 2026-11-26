@@ -54,5 +54,20 @@ Format: `- [ ] P<phase> · <item> · tests: <IDs> · spec: docs/NN §x`. Top unb
 - [ ] P3 · Recipe-first draft and part streaming · tests: PERF-TTFP-03
 - [ ] P3 · Reveal transition, no-flash guarantee · tests: PREVIEW-NOFLASH-01
 
+## P6 · MCP (pulled forward on the human's request, 2026-11-26)
+- [x] P6 · (✓ 2026-11-26) Streamable HTTP `/mcp`, stateless; tools open_project, post_message, search_docs, submit_design_brief, run_picogk, inspect_geometry, capture_viewport, export_artifact, get_run; limits and typed errors (docs/14 §4, §9) · tests: MCP-01..06, MCP-HTTP-01..03
+- [x] P6 · (✓ 2026-11-26) One-file agent guide `PICOFORGE_AGENT_GUIDE.md` as `picoforge://guide` + `forge_engineer`; examples built for real · tests: GUIDE-01/02, `deno task guide:check`
+- [x] P6 · (✓ 2026-11-26) Live view: session.focus, origin chips, AGENTS n, chat history on open, capture from the new viewport · tests: UI-FLOW-mcp-live
+- [ ] P6 · stdio transport (`picoforged --mcp` attaching to the running app) · spec: docs/14 §2
+- [ ] P6 · variantId / get_scene / set_param / fork_variant / define_part / assemble (needs P1 command bus + P2 parts) · spec: docs/14 §3
+- [ ] P6 · Agent state survives restarts (brief + counters in DB, per brief) · spec: docs/14 §2
+- [ ] P6 · `agent_clients` table, Settings → MCP connections (token reveal/rotate, revoke) · spec: docs/14 §10, docs/02 §6
+- [ ] P6 · Message origin stored in the DB (chips survive reload) · spec: docs/14 §10
+- [ ] P6 · MCP Apps inline viewport (`ui://picoforge/viewport`) · spec: docs/14 §7
+- [ ] P6 · Acceptance with a second client (Codex or Cursor) · spec: docs/14 §12
+
+## Settings UI
+- [ ] P4 · Settings overlay "Models and keys" in the new main screen (write-only key + Test, model, effort per mode, fast toggle); server side done (RUN-SETTINGS-*) · spec: docs/02 §6
+
 ## Later phases
-P4 UI shell · P5 low-end rendering · P6 MCP · P7 modes and analysis · P8 capture · P9 packaging — expand when P3 is green.
+P4 UI shell · P5 low-end rendering · P7 modes and analysis · P8 capture · P9 packaging — expand when P3 is green.

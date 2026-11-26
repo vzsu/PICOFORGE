@@ -117,14 +117,18 @@ export function ChatColumn({ view }: { view: MainView }) {
         {view.messages.map((m) =>
           m.role === "user"
             ? (
-              <div key={m.id} className="pf-user" data-testid="msg-user">
+              <div key={m.id} className="pf-user" data-testid="msg-user" data-origin={m.origin}>
+                {m.origin && <div className="pf-origin readout" data-testid="msg-origin">via {m.origin.replace(/^mcp:/, "")}</div>}
                 <div className="pf-bubble">{m.text}</div>
                 <div className="pf-time readout">{m.time}</div>
               </div>
             )
             : (
-              <div key={m.id} className="pf-assistant" data-testid="msg-assistant">
-                <div className="pf-assistant-label micro-label"><DotGlyph /> PICOFORGE</div>
+              <div key={m.id} className="pf-assistant" data-testid="msg-assistant" data-origin={m.origin}>
+                <div className="pf-assistant-label micro-label">
+                  <DotGlyph /> {m.origin ? m.origin.replace(/^mcp:/, "").toUpperCase() : "PICOFORGE"}
+                  {m.origin && <span className="pf-origin readout" data-testid="msg-origin">MCP</span>}
+                </div>
                 {m.text.split("\n\n").filter(Boolean).map((p, i) => <p key={i} className="pf-prose">{p}</p>)}
               </div>
             )
