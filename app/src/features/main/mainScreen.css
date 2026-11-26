@@ -486,6 +486,8 @@ button.pf-face:hover { background: var(--raised); color: var(--ink); }
 .pf-style:hover { color: var(--ink-2); }
 .pf-style.is-on { background: var(--raised); color: var(--ink); }
 .pf-style:focus-visible { outline: 2px solid var(--ink-3); outline-offset: 1px; }
+/* Narrow layouts: the centred readout needs the bottom edge; park the switch under the view cube. */
+.is-tabs .pf-styles, .is-overlay .pf-styles { bottom: auto; top: 128px; }
 
 .pf-readout {
   position: absolute;
