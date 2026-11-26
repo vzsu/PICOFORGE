@@ -19,6 +19,8 @@ import {
   Vector3,
   ClampToEdgeWrapping,
   NormalBlending,
+  AdditiveBlending,
+  DoubleSide,
 } from "three";
 
 /** Deterministic PRNG (mulberry32). */
@@ -254,6 +256,109 @@ export function makeShadowTexture(data: Uint8Array<ArrayBuffer>, w: number, h: n
   tex.minFilter = LinearFilter;
   tex.needsUpdate = true;
   return tex;
+}
+
+// ─── Mock-up render styles (learned from the reference images, not a solver) ──────────────────
+
+/**
+ * Data colormap for scalar fields (velocity, stress). Same five stops as the --cmap-0…--cmap-4
+ * tokens in tokens.css (docs/02 §2 "Data colours"); the legend uses those, the mesh uses this.
+ */
+export const CMAP_STOPS: ReadonlyArray<readonly [number, number, number]> = [
+  [0x10, 0x30, 0xff], // 0.00 blue
+  [0x00, 0xb8, 0xff], // 0.25 cyan
+  [0x20, 0xe0, 0x60], // 0.50 green
+  [0xff, 0xe0, 0x20], // 0.75 yellow
+  [0xff, 0x20, 0x10], // 1.00 red
+];
+
+/** Colormap lookup, sRGB 0..1 per channel. */
+export function cmap(v: number): [number, number, number] {
+  const t = Math.min(1, Math.max(0, v)) * (CMAP_STOPS.length - 1);
+  const i = Math.min(CMAP_STOPS.length - 2, Math.floor(t));
+  const f = t - i, a = CMAP_STOPS[i], b = CMAP_STOPS[i + 1];
+  const ch = (c: number) => (a[c] + (b[c] - a[c]) * f) / 255;
+  return [ch(0), ch(1), ch(2)];
+}
+
+const XRAY_VERT = /* glsl */ `
+attribute float aCurv;
+varying vec3 vN; varying vec3 vV; varying float vCurv;
+void main() {
+  vec4 mv = modelViewMatrix * vec4( position, 1.0 );
+  vN = normalize( normalMatrix * normal ); vV = mv.xyz; vCurv = aCurv;
+  gl_Position = projectionMatrix * mv;
+}`;
+
+/**
+ * Loading look (reference: LOADING_POINTCLOUD_UI.png): translucent x-ray. Faces almost vanish,
+ * silhouettes glow by fresnel and machined creases glow by baked curvature; additive, no depth
+ * write, both sides, so inner webs and ports show through.
+ */
+export function makeXrayMaterial(): ShaderMaterial {
+  return new ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    side: DoubleSide,
+    blending: AdditiveBlending,
+    toneMapped: false,
+    vertexShader: XRAY_VERT,
+    fragmentShader: /* glsl */ `
+      varying vec3 vN; varying vec3 vV; varying float vCurv;
+      void main() {
+        float f = pow( 1.0 - abs( dot( normalize( vN ), normalize( -vV ) ) ), 2.2 );
+        float e = smoothstep( 0.12, 0.55, abs( vCurv ) );
+        float a = 0.006 + 0.035 * f + 0.13 * e;
+        gl_FragColor = vec4( vec3( 0.80, 0.83, 0.86 ) * a, 1.0 );
+        #include <colorspace_fragment>
+      }`,
+  });
+}
+
+/** Surface point dust for the loading look: round soft sprites, additive, fixed pixel size. */
+export function makePointDustMaterial(pixelRatio: number): ShaderMaterial {
+  return new ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: AdditiveBlending,
+    toneMapped: false,
+    uniforms: { uSize: { value: 1.35 * pixelRatio } },
+    vertexShader: /* glsl */ `
+      uniform float uSize;
+      void main() { vec4 mv = modelViewMatrix * vec4( position, 1.0 ); gl_PointSize = uSize; gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: /* glsl */ `
+      void main() {
+        float d = length( gl_PointCoord - 0.5 );
+        float a = smoothstep( 0.5, 0.15, d ) * 0.17;
+        gl_FragColor = vec4( vec3( 0.86, 0.88, 0.90 ) * a, 1.0 );
+        #include <colorspace_fragment>
+      }`,
+  });
+}
+
+/**
+ * Analysis look (reference: CFD_SCREEN_UI.png): the scalar field as vertex colours on a still
+ * metallic, shaded surface. Keeps baked AO and the convex-edge highlight so the part reads as
+ * machined metal; no ACES, which would wash out the colormap.
+ */
+export function makeFieldMaterial(): MeshStandardMaterial {
+  const material = new MeshStandardMaterial({ vertexColors: true, metalness: 0.45, roughness: 0.3 });
+  material.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", "#include <common>\nattribute float aAo;\nattribute float aCurv;\nvarying float vAo;\nvarying float vCurv;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvAo = aAo; vCurv = aCurv;");
+    shader.fragmentShader = shader.fragmentShader
+      .replace("#include <common>", "#include <common>\nvarying float vAo;\nvarying float vCurv;")
+      .replace(
+        "#include <aomap_fragment>",
+        "#include <aomap_fragment>\nfloat occ = mix( 1.0, vAo, 0.8 );\nreflectedLight.indirectDiffuse *= occ;\nreflectedLight.indirectSpecular *= occ;",
+      )
+      .replace(
+        "#include <emissivemap_fragment>",
+        "#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3( 0.10 ) * max( clamp( vCurv, -1.0, 1.0 ), 0.0 );",
+      );
+  };
+  return material;
 }
 
 /** Blend one jittered frame into the accumulation target: acc = mix(acc, frame, 1/k). */

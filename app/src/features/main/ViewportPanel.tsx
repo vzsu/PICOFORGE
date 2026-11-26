@@ -4,7 +4,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Icon, type IconName } from "./Icons.tsx";
-import { StudioEngine, type RenderMode, type StudioMetrics, type StudioView } from "../../viewport/StudioEngine.ts";
+import { type RenderMode, type RenderStyle, StudioEngine, type StudioMetrics, type StudioView } from "../../viewport/StudioEngine.ts";
 import type { ReadoutView } from "./view.ts";
 
 const TOOLS: ReadonlyArray<{ id: string; icon: IconName; label: string }> = [
@@ -21,6 +21,7 @@ interface PfHooks {
   orbitBy: (azimuthRad: number, polarRad?: number) => void;
   resetFrameStats: () => void;
   setView: (v: StudioView) => void;
+  sampleCentre: () => { chroma: number; luminance: number; pixels: number };
 }
 
 declare global {
@@ -59,6 +60,15 @@ export function ViewportPanel({ stlUrl = null, readout, live = false }: Viewport
   const [ready, setReady] = useState(false);
   const [tool, setTool] = useState("select");
   const [accum, setAccum] = useState(0);
+  // Mock-up only: render looks learned from the reference images (loading point cloud, CFD view).
+  const [style, setStyle] = useState<RenderStyle>("studio");
+
+  const chooseStyle = (s: RenderStyle) => {
+    if (s === style) return;
+    setReady(false); // re-converges in the new look before data-viewport-ready flips back
+    setStyle(s);
+    engineRef.current?.setRenderStyle(s);
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -99,6 +109,7 @@ export function ViewportPanel({ stlUrl = null, readout, live = false }: Viewport
       orbitBy: (a, p) => engine.orbitBy(a, p),
       resetFrameStats: () => engine.resetFrameStats(),
       setView: (v) => engine.setView(v),
+      sampleCentre: () => engine.sampleCentre(),
     };
 
     return () => {
@@ -131,10 +142,11 @@ export function ViewportPanel({ stlUrl = null, readout, live = false }: Viewport
   }, [live, stlUrl]);
 
   const view = (v: StudioView) => engineRef.current?.setView(v);
+  const stage = style === "points" ? "VALIDATING" : style === "cfd" ? "SIMULATION COMPLETE" : readout?.stage;
   const stageLine = mode === "error"
     ? "IMAGE MODE · WEBGL UNAVAILABLE"
     : readout
-    ? `${readout.stage} · T0 · ${mode === "converged" ? "8/8" : `${accum}/8`}`
+    ? `${stage} · T0 · ${mode === "converged" ? "8/8" : `${accum}/8`}`
     : "WAITING FOR FIRST BUILD · T0";
 
   return (
@@ -143,6 +155,7 @@ export function ViewportPanel({ stlUrl = null, readout, live = false }: Viewport
       data-testid="viewport"
       data-viewport-ready={ready ? "true" : "false"}
       data-viewport-mode={mode}
+      data-render-style={style}
       aria-label="3D viewport"
     >
       <canvas ref={canvasRef} className="pf-canvas" data-testid="viewport-canvas" />
@@ -207,6 +220,37 @@ export function ViewportPanel({ stlUrl = null, readout, live = false }: Viewport
         )}
         <div className="pf-ro-stage micro-label" data-testid="preview-stage">{stageLine}</div>
       </div>
+
+      {style === "cfd" && (
+        <div className="pf-legend" data-testid="cfd-legend" aria-label="Velocity magnitude legend">
+          <div className="pf-legend-title">Velocity Magnitude<br />(m/s)</div>
+          <div className="pf-legend-body">
+            <div className="pf-legend-bar" aria-hidden="true" />
+            <ol className="pf-legend-ticks readout">
+              {["60.0", "48.0", "36.0", "24.0", "12.0", "0.0"].map((t) => <li key={t}>{t}</li>)}
+            </ol>
+          </div>
+        </div>
+      )}
+
+      {!live && (
+        <div className="pf-styles" role="radiogroup" aria-label="Render style (mock-up)">
+          {([["studio", "Studio"], ["points", "Loading"], ["cfd", "CFD"]] as const).map(([s, label]) => (
+            <button
+              key={s}
+              type="button"
+              role="radio"
+              aria-checked={style === s}
+              className={`pf-style${style === s ? " is-on" : ""}`}
+              data-testid={`render-style-${s}`}
+              title={s === "studio" ? "Studio render" : s === "points" ? "Loading look (mock)" : "CFD analysis look (mock)"}
+              onClick={() => chooseStyle(s)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

@@ -51,6 +51,8 @@ Implemented as CSS variables in `app/src/styles/tokens.css` and mapped into Tail
   --warn:      #FFD60A;
   /* axes (gizmo, triad) */
   --axis-x: #FF453A; --axis-y: #32D74B; --axis-z: #0A84FF;
+  /* data colours: scalar-field colormap low → high; analysis views only, never chrome */
+  --cmap-0: #1030FF; --cmap-1: #00B8FF; --cmap-2: #20E060; --cmap-3: #FFE020; --cmap-4: #FF2010;
   /* type */
   --font-sans: "Geist", system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, monospace;
@@ -120,6 +122,8 @@ Hierarchy from quietest to loudest: micro-labels → timestamps → assistant pr
 - Axis triad bottom-left in the axis colours.
 - Readout pill bottom-centre in Doto numerals: `VOL 412.7 cm³ · MASS 2.38 kg · ✓`. A second line shows preview stage (`GHOST`, `DRAFT`, `VALIDATED`), tier and accumulation progress.
 - Transform gizmo on the selected part (see 08). Agent annotations appear as a small accent ring with a label, never moving the user's camera unless *Follow agent* is on.
+
+**Viewport looks.** Three looks share one baked mesh (docs/10). *Studio*: machined aluminium (default). *Loading*: translucent x-ray where silhouettes and machined creases glow, with surface point dust (T0 budget 30k points), and readout `VALIDATING`. *Analysis*: a scalar field (e.g. velocity magnitude) as the `--cmap-*` colormap on the still-shaded metal, a vertical legend top-left (title in sans, ticks in mono), and readout `SIMULATION COMPLETE`. Until P3 (preview) and P7 (analysis) produce real data, Loading and Analysis exist only in the mock-up, behind a `Studio · Loading · CFD` switch bottom-right. Live mode never shows a synthetic field. Reference images: `IMAGES_OFui/LOADING_POINTCLOUD_UI.png`, `CFD_SCREEN_UI.png`.
 
 Viewport keys: `F` frame, `O` ortho/perspective, `1–6` standard views, `W` move, `E` rotate, `R` scale, `S` section, `M` measure, `H` hide, `Alt + H` show all, `Space` turntable, `Esc` deselect (or stop if nothing is selected and a run is live).
 

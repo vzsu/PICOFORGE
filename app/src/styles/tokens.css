@@ -69,6 +69,9 @@
   --warn:      #FFD60A;
   /* axes (gizmo, triad) */
   --axis-x: #FF453A; --axis-y: #32D74B; --axis-z: #0A84FF;
+  /* data colours: scalar-field colormap, low → high (legend + mesh, viewport/studio/materials.ts
+     CMAP_STOPS). Only inside analysis views; never UI chrome (docs/02 §2). */
+  --cmap-0: #1030FF; --cmap-1: #00B8FF; --cmap-2: #20E060; --cmap-3: #FFE020; --cmap-4: #FF2010;
   /* type */
   --font-sans: "Geist", system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, monospace;

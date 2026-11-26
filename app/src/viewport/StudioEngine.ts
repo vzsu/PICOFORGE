@@ -11,6 +11,9 @@ import {
   BufferAttribute,
   BufferGeometry,
   CircleGeometry,
+  Color,
+  type MeshStandardMaterial,
+  Points,
   HalfFloatType,
   Matrix4,
   Mesh,
@@ -35,14 +38,19 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import CameraControls from "camera-controls";
 import type { HeadBuild } from "./studio/proceduralHead.ts";
 import {
+  cmap,
   makeAluminium,
   makeBackgroundTexture,
   makeBlendMaterial,
   makeBrushTexture,
+  makeFieldMaterial,
   makeFloorMaterial,
+  makePointDustMaterial,
   makePresentMaterial,
   makeShadowTexture,
+  makeXrayMaterial,
 } from "./studio/materials.ts";
+import { sampleSurfacePoints, syntheticVelocity } from "./studio/renderStyles.ts";
 
 CameraControls.install({
   THREE: { Vector2, Vector3, Vector4, Quaternion, Matrix4, Spherical, Box3, Sphere, Raycaster },
@@ -50,6 +58,14 @@ CameraControls.install({
 
 export type StudioView = "home" | "front" | "top" | "right";
 export type RenderMode = "loading" | "interactive" | "accumulating" | "converged" | "error";
+/**
+ * studio: machined aluminium (docs/10). points: loading look, x-ray + surface dust. cfd: scalar
+ * field colormap. points/cfd are MOCK-UP looks from the reference images; live mode uses studio.
+ */
+export type RenderStyle = "studio" | "points" | "cfd";
+
+/** T0 point budget on screen (docs/09 §3). */
+const DUST_POINTS = 30_000;
 
 export interface StudioMetrics {
   tier: "T0";
@@ -68,6 +84,9 @@ export interface StudioMetrics {
   frameMsP95: number | null;
   volumeCm3: number | null;
   errorCode: string | null;
+  renderStyle: RenderStyle;
+  /** Points on screen in the loading style (0 otherwise). */
+  points: number;
 }
 
 export interface StudioCallbacks {
@@ -151,7 +170,13 @@ export class StudioEngine {
     tier: "T0", mode: "loading", firstFrameMs: null, buildMs: null, bakeTimings: null,
     triangles: 0, vertices: 0, drawCalls: 0, renderScale: 1, pixelRatio: 1, accumFrames: 0,
     interactiveFrames: 0, frameMsP50: null, frameMsP95: null, volumeCm3: null, errorCode: null,
+    renderStyle: "studio", points: 0,
   };
+  private renderStyle: RenderStyle = "studio";
+  private studioMat: MeshStandardMaterial | null = null;
+  private fieldMat: MeshStandardMaterial | null = null;
+  private xray: Mesh | null = null;
+  private dust: Points | null = null;
 
   constructor(canvas: HTMLCanvasElement, cb: StudioCallbacks = {}, opts: StudioOptions = {}) {
     this.canvas = canvas;
@@ -219,6 +244,99 @@ export class StudioEngine {
     const w = new Worker(new URL("./studio/stlWorker.ts", import.meta.url), { type: "module" });
     this.attachWorker(w);
     w.postMessage({ stl }, [stl]);
+  }
+
+  /** Switch the part's look. Built lazily once per part; the studio path is untouched. */
+  setRenderStyle(style: RenderStyle): void {
+    this.renderStyle = style;
+    this.metrics.renderStyle = style;
+    this.applyStyle();
+    this.input();
+  }
+
+  /**
+   * Test hook: render one frame straight to the canvas and read the centre 30 % back in the same
+   * task (works with preserveDrawingBuffer off). Mean chroma (max−min) and luminance over the
+   * pixels brighter than the floor, i.e. the part. Then re-accumulates.
+   */
+  sampleCentre(): { chroma: number; luminance: number; pixels: number } {
+    this.renderer.setRenderTarget(null);
+    this.renderer.render(this.scene, this.camera);
+    const gl = this.renderer.getContext();
+    const w = gl.drawingBufferWidth, h = gl.drawingBufferHeight;
+    const sw = Math.max(1, Math.floor(w * 0.3)), sh = Math.max(1, Math.floor(h * 0.3));
+    const px = new Uint8Array(sw * sh * 4);
+    gl.readPixels(Math.floor((w - sw) / 2), Math.floor((h - sh) / 2), sw, sh, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    let chroma = 0, lum = 0, n = 0;
+    for (let i = 0; i < px.length; i += 4) {
+      const r = px[i], g = px[i + 1], b = px[i + 2];
+      const l = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      if (l < 48) continue; // floor and background are ~25–40
+      chroma += Math.max(r, g, b) - Math.min(r, g, b);
+      lum += l;
+      n++;
+    }
+    this.input();
+    return { chroma: n ? chroma / n : 0, luminance: n ? lum / n : 0, pixels: n };
+  }
+
+  private applyStyle(): void {
+    const part = this.part;
+    if (!part || !this.studioMat) return;
+    const s = this.renderStyle;
+    if (s === "points") {
+      this.ensureLoadingLook(part.geometry);
+    } else if (s === "cfd") {
+      this.ensureFieldLook(part.geometry);
+    }
+    part.visible = s !== "points";
+    part.material = s === "cfd" && this.fieldMat ? this.fieldMat : this.studioMat;
+    if (this.xray) this.xray.visible = s === "points";
+    if (this.dust) this.dust.visible = s === "points";
+    this.metrics.points = s === "points" && this.dust ? this.dust.geometry.getAttribute("position").count : 0;
+  }
+
+  private ensureLoadingLook(geom: BufferGeometry): void {
+    if (!this.xray) {
+      const xm = makeXrayMaterial();
+      this.xray = new Mesh(geom, xm);
+      this.xray.renderOrder = 1;
+      this.scene.add(this.xray);
+      this.partDisposables.push(xm);
+    }
+    if (!this.dust) {
+      const pos = geom.getAttribute("position");
+      const idx = geom.getIndex();
+      if (!(pos.array instanceof Float32Array) || !idx || !(idx.array instanceof Uint32Array)) return;
+      const pg = new BufferGeometry();
+      pg.setAttribute("position", new BufferAttribute(sampleSurfacePoints(pos.array, idx.array, DUST_POINTS), 3));
+      const pm = makePointDustMaterial(this.renderer.getPixelRatio());
+      this.dust = new Points(pg, pm);
+      this.dust.renderOrder = 2;
+      this.scene.add(this.dust);
+      this.partDisposables.push(pg, pm);
+    }
+  }
+
+  private ensureFieldLook(geom: BufferGeometry): void {
+    if (this.fieldMat) return;
+    const pos = geom.getAttribute("position"), nrm = geom.getAttribute("normal"), ao = geom.getAttribute("aAo");
+    if (!(pos.array instanceof Float32Array) || !(nrm.array instanceof Float32Array) || !(ao.array instanceof Float32Array)) {
+      return;
+    }
+    const v = syntheticVelocity(pos.array, nrm.array, ao.array);
+    const colors = new Float32Array(v.length * 3);
+    const c = new Color();
+    for (let i = 0; i < v.length; i++) {
+      const [r, g, b] = cmap(v[i]);
+      c.setRGB(r, g, b, SRGBColorSpace); // stored linear, as three expects for vertex colours
+      colors[3 * i] = c.r;
+      colors[3 * i + 1] = c.g;
+      colors[3 * i + 2] = c.b;
+    }
+    geom.setAttribute("color", new BufferAttribute(colors, 3));
+    this.fieldMat = makeFieldMaterial();
+    this.partDisposables.push(this.fieldMat);
   }
 
   private attachWorker(w: Worker): void {
@@ -320,6 +438,10 @@ export class StudioEngine {
     // Replace any previous part (live mode loads one mesh per validated build).
     if (this.part) { this.scene.remove(this.part); this.part.geometry.dispose(); this.part = null; }
     if (this.floor) { this.scene.remove(this.floor); this.floor = null; }
+    if (this.xray) { this.scene.remove(this.xray); this.xray = null; }
+    if (this.dust) { this.scene.remove(this.dust); this.dust = null; }
+    this.fieldMat = null;
+    this.studioMat = null;
     for (const d of this.partDisposables) d.dispose();
     this.partDisposables = [];
     if (this.mode === "error") { this.metrics.errorCode = null; this.setMode("loading"); }
@@ -335,6 +457,7 @@ export class StudioEngine {
     const brush = makeBrushTexture();
     const { material } = makeAluminium(brush);
     this.partDisposables.push(brush, material);
+    this.studioMat = material;
     this.part = new Mesh(geom, material);
     this.scene.add(this.part);
 
@@ -366,6 +489,7 @@ export class StudioEngine {
     this.metrics.triangles = data.indices.length / 3;
     this.metrics.vertices = data.positions.length / 3;
     this.metrics.volumeCm3 = data.volumeCm3;
+    this.applyStyle(); // a style chosen before the part arrived applies now
     this.setView("home", false);
     this.cb.onPart?.({ volumeCm3: data.volumeCm3, triangles: this.metrics.triangles, bakeMs: data.totalMs });
   }
