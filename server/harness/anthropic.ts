@@ -1,27 +1,38 @@
-// server/harness/anthropic.ts — Anthropic streaming client
-// LLM_HARNESS §2: "createMessageStream with retry/backoff"
-// AGENTS.md §3.11: verify shapes against https://docs.claude.com/en/api/overview
-// OpenCode subscription key: stored in ~/PicoForge/secret.env, hot-reloaded per call.
+// server/harness/anthropic.ts — the only file that imports the Anthropic SDK (CLAUDE.md #5).
+// Implements docs/13 §2–§6 on @anthropic-ai/sdk 1.x:
+//   model claude-opus-5-5 by default, adaptive thinking (omitted: always on), effort set explicitly per
+//   mode, streaming with max_tokens 64k, eager_input_streaming on every tool (inputs zod-validated by the
+//   tools before anything runs), server-side refusal fallback ("default"), prompt caching on the frozen
+//   system prompt plus top-level auto-caching, and assistant turns passed back UNCHANGED (thinking
+//   blocks included, docs/13 §6). Retries: the SDK's own (429/5xx/connection) before failure row F6.
+// The API key lives in ~/PicoForge/secret.env (or ANTHROPIC_API_KEY), hot-reloaded per call; it is
+// never logged. With a custom base URL (a proxy) the beta-only fields are left off.
 
-import Anthropic from "npm:@anthropic-ai/sdk@^0.54.0";
+import Anthropic from "@anthropic-ai/sdk";
 import { makeLogger } from "../log.ts";
-import { err, ok, Result } from "../domain/result.ts";
+import { err, ok, type Result } from "../domain/result.ts";
 import { getConfig } from "../config.ts";
 import { isMockModel, mockFanStream } from "./mock/fanModel.ts";
 
 const log = makeLogger("harness.anthropic");
 
-// ─── Types (mirrors Anthropic SDK, pinned here so we can change SDK without ripple) ──────────
+// ─── Harness-side message shapes (the orchestrator never touches SDK types) ─────────────────────
+
+/** An assistant turn exactly as the API returned it; sent back unchanged (docs/13 §6). */
+export type AssistantContent = Anthropic.Beta.BetaContentBlockParam[];
 
 export interface AnthropicMessage {
   role: "user" | "assistant";
+  /** Readable form (text, tool calls, tool results) used by the harness, tests and the mock model. */
   content: MessageContent[];
+  /** Assistant turns from the real API: the exact blocks to send back (thinking included). */
+  raw?: AssistantContent;
 }
 
 export type MessageContent =
   | { type: "text"; text: string }
   | { type: "tool_use"; id: string; name: string; input: unknown }
-  | { type: "tool_result"; tool_use_id: string; content: ToolResultContent[] }
+  | { type: "tool_result"; tool_use_id: string; content: ToolResultContent[]; is_error?: boolean }
   | { type: "image"; source: { type: "base64"; media_type: string; data: string } };
 
 export type ToolResultContent =
@@ -36,252 +47,139 @@ export interface ToolDefinition {
 
 export interface StreamCallbacks {
   onTextDelta?: (delta: string) => void;
+  /** Partial tool input as it streams (preview only; nothing runs from a partial input). */
   onInputJsonDelta?: (toolUseId: string, delta: string) => void;
 }
 
+export type StopReason = "end_turn" | "tool_use" | "max_tokens" | "refusal" | "pause_turn";
+
 export interface TurnResult {
-  stopReason: "end_turn" | "tool_use" | "max_tokens";
+  stopReason: StopReason;
   textBlocks: string[];
   toolCalls: Array<{ id: string; name: string; input: unknown }>;
   inputTokens: number;
   outputTokens: number;
+  cacheReadTokens?: number;
+  /** Real API only: the assistant content blocks to append unchanged. */
+  raw?: AssistantContent;
+  /** Present when stopReason is "refusal" (the whole fallback chain declined). */
+  refusal?: { category: string | null; explanation: string | null };
 }
 
-// ─── Retry config ─────────────────────────────────────────────────────────────
+/** A typed model failure; `code` maps to a failure-table row (server/domain/failures.ts). */
+export class ModelError extends Error {
+  constructor(
+    readonly code:
+      | "API_KEY_MISSING"
+      | "API_KEY_INVALID"
+      | "ANTHROPIC_RATE_LIMIT"
+      | "ANTHROPIC_ERROR"
+      | "CANCELLED",
+    message: string,
+  ) {
+    super(message);
+    this.name = "ModelError";
+  }
+}
 
-const RETRYABLE = new Set([429, 529, 500, 503]);
-const BACKOFF_MS = [1000, 2000, 4000, 8000, 16000] as const;
-const MAX_ATTEMPTS = 6; // F6 per LLM_HARNESS §2
+// ─── Models and effort (docs/13 §2) ──────────────────────────────────────────
 
-// ─── Token budget guard (subscription-safe) ──────────────────────────────────
-// Hard cap on output tokens per call. The subscription plan has limits;
-// we never blow past this regardless of settings.
-export const TOKEN_BUDGET_CAP = 8192;
+export const DEFAULT_MODEL = "claude-opus-5-5";
+/** Streaming requests: never low-balled; truncation costs a repair turn (docs/13 §2). */
+export const MAX_OUTPUT_TOKENS = 64_000;
 
-// ─── Available models (user-selectable in Settings) ──────────────────────────
-export const AVAILABLE_MODELS: Array<{ id: string; label: string; maxTokens: number }> = [
-  { id: "claude-sonnet-4-5", label: "Claude Sonnet 4.5", maxTokens: 8192 },
-  { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6", maxTokens: 8192 },
-  { id: "claude-haiku-4-5", label: "Claude Haiku 4.5 (fast)", maxTokens: 4096 },
-  { id: "claude-opus-4-5", label: "Claude Opus 4.5 (slow)", maxTokens: 8192 },
+export const AVAILABLE_MODELS: ReadonlyArray<{ id: string; label: string }> = [
+  { id: "claude-opus-5-5", label: "Claude Opus 5.5 (default)" },
+  { id: "claude-sonnet-5-5", label: "Claude Sonnet 5.5" },
+  { id: "claude-haiku-5-5", label: "Claude Haiku 5.5 (fast, cheapest)" },
+  { id: "claude-fable-5-2", label: "Claude Fable 5.2 (most capable, premium)" },
 ];
 
-export function modelMaxTokens(modelId: string): number {
-  return AVAILABLE_MODELS.find((m) => m.id === modelId)?.maxTokens ?? TOKEN_BUDGET_CAP;
-}
+export type Effort = "low" | "medium" | "high" | "xhigh" | "max";
+export type Mode = "low" | "std" | "deep" | "raman";
+/** LOW low · STD medium · DEEP high · RAMAN high. Opus 5.5 defaults to medium, so always set it. */
+export const EFFORT_BY_MODE: Readonly<Record<Mode, Effort>> = {
+  low: "low",
+  std: "medium",
+  deep: "high",
+  raman: "high",
+};
 
-// ─── Client (hot-reload key + base URL per call) ────────────────────────────
+// ─── Client (hot-reload key + base URL per call) ─────────────────────────────
 
-// Track last key + base URL so we only recreate when either changes
 let _client: Anthropic | null = null;
 let _clientKey = "";
 let _clientBaseUrl = "";
 
-function getClient(): Anthropic {
-  // Read key + base URL from config each time — hot-reloaded by write* helpers
-  let apiKey: string | undefined;
-  let baseURL: string | undefined;
+function credentials(): { apiKey?: string; baseURL?: string } {
   try {
     const cfg = getConfig();
-    apiKey = cfg.ANTHROPIC_API_KEY;
-    baseURL = cfg.ANTHROPIC_BASE_URL;
+    return { apiKey: cfg.ANTHROPIC_API_KEY, baseURL: cfg.ANTHROPIC_BASE_URL };
   } catch {
-    // Config not yet loaded — fall back to env (test context)
-    apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-    baseURL = Deno.env.get("ANTHROPIC_BASE_URL");
+    // config not loaded (tests, CLI): environment
+    return {
+      apiKey: Deno.env.get("ANTHROPIC_API_KEY"),
+      baseURL: Deno.env.get("ANTHROPIC_BASE_URL"),
+    };
   }
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY not set — configure it in Settings");
-  const resolvedBase = baseURL ?? "";
-  // Recreate client only if key or base URL changed
-  if (!_client || _clientKey !== apiKey || _clientBaseUrl !== resolvedBase) {
-    _client = new Anthropic({
-      apiKey,
-      ...(baseURL ? { baseURL } : {}),
-    });
+}
+
+function getClient(): Result<{ client: Anthropic; viaProxy: boolean }, ModelError> {
+  const { apiKey, baseURL } = credentials();
+  if (!apiKey) {
+    return err(
+      new ModelError("API_KEY_MISSING", "No API key. Add one in Settings → Models and keys."),
+    );
+  }
+  const base = baseURL ?? "";
+  if (!_client || _clientKey !== apiKey || _clientBaseUrl !== base) {
+    _client = new Anthropic({ apiKey, maxRetries: 4, ...(baseURL ? { baseURL } : {}) });
     _clientKey = apiKey;
-    _clientBaseUrl = resolvedBase;
+    _clientBaseUrl = base;
     log.info("Anthropic client created", { hasBaseUrl: !!baseURL });
   }
-  return _client;
+  return ok({ client: _client, viaProxy: !!baseURL });
 }
 
-/**
- * Stream one assistant turn with F6 retry/backoff on transient errors.
- * maxTokens is clamped to TOKEN_BUDGET_CAP (subscription-safe).
- * Returns a Result; never throws.
- */
-export async function createMessageStream(
-  {
-    model,
-    maxTokens,
-    temperature,
-    system,
-    messages,
-    tools,
-    signal,
-  }: {
-    model: string;
-    maxTokens: number;
-    temperature: number;
-    system: string;
-    messages: AnthropicMessage[];
-    tools: ToolDefinition[];
-    signal?: AbortSignal;
-  },
-  callbacks?: StreamCallbacks,
-): Promise<Result<TurnResult, Error>> {
-  // docs/11 §5: PICOFORGE_MODEL=mock replays a scripted fan run with token timing (no network, no key).
-  if (isMockModel()) {
-    try {
-      return ok(await mockFanStream({ messages, signal }, callbacks));
-    } catch (e) {
-      return err(e instanceof Error ? e : new Error(String(e)));
-    }
+/** SDK errors → typed ModelError, most specific first (docs/13 §2). */
+function classify(e: unknown): ModelError {
+  if (e instanceof Anthropic.APIUserAbortError) return new ModelError("CANCELLED", "cancelled");
+  if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) {
+    return new ModelError(
+      "API_KEY_INVALID",
+      "The API key was rejected. Check it in Settings → Models and keys.",
+    );
   }
-  // Enforce budget cap — never exceed this regardless of caller setting
-  const cappedMaxTokens = Math.min(maxTokens, TOKEN_BUDGET_CAP, modelMaxTokens(model));
-  const client = getClient();
-
-  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    if (signal?.aborted) return err(new Error("CANCELLED"));
-
-    try {
-      const result = await runStream(
-        client,
-        { model, maxTokens: cappedMaxTokens, temperature, system, messages, tools, signal },
-        callbacks,
-      );
-
-      return ok(result);
-    } catch (e) {
-      const status = (e as { status?: number }).status;
-      const isRetryable = status !== undefined && RETRYABLE.has(status);
-      const isLast = attempt === MAX_ATTEMPTS - 1;
-
-      if (!isRetryable || isLast) {
-        log.error("Anthropic API error", { attempt, status, error: String(e) });
-        return err(e instanceof Error ? e : new Error(String(e)));
-      }
-
-      const delay = BACKOFF_MS[Math.min(attempt, BACKOFF_MS.length - 1)];
-      log.warn("Anthropic transient error, retrying", { attempt, status, delayMs: delay });
-      await sleep(delay, signal);
-    }
+  if (e instanceof Anthropic.RateLimitError) {
+    return new ModelError(
+      "ANTHROPIC_RATE_LIMIT",
+      "Model rate limit reached after retries. Try again shortly.",
+    );
   }
-
-  return err(new Error("ANTHROPIC_RETRY_EXHAUSTED"));
+  if (e instanceof Anthropic.APIError) {
+    return new ModelError(
+      "ANTHROPIC_ERROR",
+      `Model API error ${e.status ?? ""}: ${e.message}`.trim(),
+    );
+  }
+  return new ModelError("ANTHROPIC_ERROR", e instanceof Error ? e.message : String(e));
 }
 
-async function runStream(
-  client: Anthropic,
-  {
-    model,
-    maxTokens,
-    temperature,
-    system,
-    messages,
-    tools,
-    signal,
-  }: {
-    model: string;
-    maxTokens: number;
-    temperature: number;
-    system: string;
-    messages: AnthropicMessage[];
-    tools: ToolDefinition[];
-    signal?: AbortSignal;
-  },
-  callbacks?: StreamCallbacks,
-): Promise<TurnResult> {
-  const textBlocks: string[] = [];
-  const toolCalls: TurnResult["toolCalls"] = [];
-  let currentText = "";
-  let currentToolId = "";
-  let currentToolName = "";
-  let currentToolJson = "";
-  let stopReason: TurnResult["stopReason"] = "end_turn";
-  let inputTokens = 0;
-  let outputTokens = 0;
-
-  const sdkMessages = messages.map(toSdkMessage);
-
-  const stream = await client.messages.stream({
-    model,
-    max_tokens: maxTokens,
-    temperature,
-    system,
-    messages: sdkMessages,
-    tools: tools.map(toSdkTool),
-  });
-
-  for await (const event of stream) {
-    if (signal?.aborted) {
-      stream.controller.abort();
-      throw new Error("CANCELLED");
-    }
-
-    switch (event.type) {
-      case "message_start":
-        inputTokens = event.message.usage.input_tokens;
-        break;
-
-      case "content_block_start":
-        if (event.content_block.type === "text") {
-          currentText = "";
-        } else if (event.content_block.type === "tool_use") {
-          currentToolId = event.content_block.id;
-          currentToolName = event.content_block.name;
-          currentToolJson = "";
-        }
-        break;
-
-      case "content_block_delta":
-        if (event.delta.type === "text_delta") {
-          currentText += event.delta.text;
-          callbacks?.onTextDelta?.(event.delta.text);
-        } else if (event.delta.type === "input_json_delta") {
-          currentToolJson += event.delta.partial_json;
-          callbacks?.onInputJsonDelta?.(currentToolId, event.delta.partial_json);
-        }
-        break;
-
-      case "content_block_stop":
-        if (currentText) {
-          textBlocks.push(currentText);
-          currentText = "";
-        }
-        if (currentToolId) {
-          let toolInput: unknown = {};
-          try {
-            toolInput = JSON.parse(currentToolJson);
-          } catch { /* malformed → empty */ }
-          toolCalls.push({ id: currentToolId, name: currentToolName, input: toolInput });
-          currentToolId = "";
-          currentToolName = "";
-          currentToolJson = "";
-        }
-        break;
-
-      case "message_delta":
-        stopReason = event.delta.stop_reason === "tool_use" ||
-            event.delta.stop_reason === "max_tokens"
-          ? event.delta.stop_reason
-          : "end_turn";
-        outputTokens = event.usage.output_tokens;
-        break;
-    }
+/** Free key check (no tokens): retrieve the default model with the given key. */
+export async function testApiKey(
+  apiKey: string,
+  baseURL?: string,
+): Promise<Result<true, ModelError>> {
+  try {
+    const client = new Anthropic({ apiKey, maxRetries: 1, ...(baseURL ? { baseURL } : {}) });
+    await client.models.retrieve(DEFAULT_MODEL);
+    return ok(true);
+  } catch (e) {
+    return err(classify(e));
   }
-
-  log.debug("Anthropic turn complete", {
-    stopReason,
-    inputTokens,
-    outputTokens,
-    toolCalls: toolCalls.length,
-  });
-  return { stopReason, textBlocks, toolCalls, inputTokens, outputTokens };
 }
 
-// ─── Our message shapes → SDK params (explicit, so a shape drift fails typecheck) ───────────
+// ─── Request mapping ─────────────────────────────────────────────────────────
 
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"] as const;
 type ImageMediaType = (typeof IMAGE_TYPES)[number];
@@ -291,13 +189,13 @@ function isImageMediaType(t: string): t is ImageMediaType {
 
 function toSdkImage(
   source: { type: "base64"; media_type: string; data: string },
-): Anthropic.ImageBlockParam {
+): Anthropic.Beta.BetaImageBlockParam {
   // Captures are PNG; anything unexpected is sent as PNG rather than rejected mid-run.
   const media_type = isImageMediaType(source.media_type) ? source.media_type : "image/png";
   return { type: "image", source: { type: "base64", media_type, data: source.data } };
 }
 
-function toSdkBlock(c: MessageContent): Anthropic.ContentBlockParam {
+function toSdkBlock(c: MessageContent): Anthropic.Beta.BetaContentBlockParam {
   switch (c.type) {
     case "text":
       return { type: "text", text: c.text };
@@ -309,6 +207,7 @@ function toSdkBlock(c: MessageContent): Anthropic.ContentBlockParam {
       return {
         type: "tool_result",
         tool_use_id: c.tool_use_id,
+        ...(c.is_error ? { is_error: true } : {}),
         content: c.content.map((r) =>
           r.type === "text" ? { type: "text", text: r.text } : toSdkImage(r.source)
         ),
@@ -316,24 +215,135 @@ function toSdkBlock(c: MessageContent): Anthropic.ContentBlockParam {
   }
 }
 
-function toSdkMessage(m: AnthropicMessage): Anthropic.MessageParam {
+function toSdkMessage(m: AnthropicMessage): Anthropic.Beta.BetaMessageParam {
+  if (m.role === "assistant" && m.raw) return { role: "assistant", content: m.raw };
   return { role: m.role, content: m.content.map(toSdkBlock) };
 }
 
-function toSdkTool(t: ToolDefinition): Anthropic.Tool {
+function toSdkTool(t: ToolDefinition, viaProxy: boolean): Anthropic.Beta.BetaTool {
   return {
     name: t.name,
     description: t.description,
     input_schema: { ...t.input_schema, type: "object" },
+    // Large inputs (briefs, C# files) stream as generated; the tools zod-validate before running.
+    ...(viaProxy ? {} : { eager_input_streaming: true }),
   };
 }
 
-function sleep(ms: number, signal?: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const t = setTimeout(resolve, ms);
-    signal?.addEventListener("abort", () => {
-      clearTimeout(t);
-      reject(new Error("CANCELLED"));
-    });
-  });
+function mapStop(s: Anthropic.Beta.BetaStopReason | null): StopReason {
+  switch (s) {
+    case "tool_use":
+    case "max_tokens":
+    case "refusal":
+    case "pause_turn":
+      return s;
+    case "model_context_window_exceeded":
+      return "max_tokens";
+    default:
+      return "end_turn"; // end_turn, stop_sequence, compaction
+  }
+}
+
+// ─── Streaming one assistant turn ────────────────────────────────────────────
+
+export interface StreamArgs {
+  model: string;
+  maxTokens: number;
+  effort: Effort;
+  system: string;
+  messages: AnthropicMessage[];
+  tools: ToolDefinition[];
+  signal?: AbortSignal;
+}
+
+/** Stream one assistant turn. Returns a Result; never throws. */
+export async function createMessageStream(
+  args: StreamArgs,
+  callbacks?: StreamCallbacks,
+): Promise<Result<TurnResult, Error>> {
+  // docs/11 §5: PICOFORGE_MODEL=mock replays a scripted fan run with token timing (no network, no key).
+  if (isMockModel()) {
+    try {
+      return ok(await mockFanStream({ messages: args.messages, signal: args.signal }, callbacks));
+    } catch (e) {
+      return err(e instanceof Error ? e : new Error(String(e)));
+    }
+  }
+  const c = getClient();
+  if (!c.ok) return c;
+  const { client, viaProxy } = c.value;
+  if (args.signal?.aborted) return err(new ModelError("CANCELLED", "cancelled"));
+
+  // A tool input that cannot be parsed at all (eager streaming) or a dropped connection re-issues the
+  // turn, at most twice; API errors are not retried here (the SDK already did).
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const stream = client.beta.messages.stream(
+        {
+          model: args.model,
+          max_tokens: Math.min(args.maxTokens, MAX_OUTPUT_TOKENS),
+          system: [{ type: "text", text: args.system, cache_control: { type: "ephemeral" } }],
+          messages: args.messages.map(toSdkMessage),
+          tools: args.tools.map((t) => toSdkTool(t, viaProxy)),
+          output_config: { effort: args.effort },
+          cache_control: { type: "ephemeral" }, // auto-cache the growing conversation each turn
+          ...(viaProxy ? {} : { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" }),
+        },
+        { signal: args.signal },
+      );
+      const toolIds = new Map<number, string>();
+      for await (const ev of stream) {
+        if (ev.type === "content_block_start" && ev.content_block.type === "tool_use") {
+          toolIds.set(ev.index, ev.content_block.id);
+        } else if (ev.type === "content_block_delta") {
+          if (ev.delta.type === "text_delta") callbacks?.onTextDelta?.(ev.delta.text);
+          else if (ev.delta.type === "input_json_delta") {
+            callbacks?.onInputJsonDelta?.(toolIds.get(ev.index) ?? "", ev.delta.partial_json);
+          }
+        }
+      }
+      const message = await stream.finalMessage();
+      const textBlocks: string[] = [];
+      const toolCalls: TurnResult["toolCalls"] = [];
+      for (const b of message.content) {
+        if (b.type === "text") textBlocks.push(b.text);
+        else if (b.type === "tool_use") toolCalls.push({ id: b.id, name: b.name, input: b.input });
+      }
+      const stopReason = mapStop(message.stop_reason);
+      const turn: TurnResult = {
+        stopReason,
+        textBlocks,
+        toolCalls,
+        inputTokens: message.usage.input_tokens,
+        outputTokens: message.usage.output_tokens,
+        cacheReadTokens: message.usage.cache_read_input_tokens ?? 0,
+        raw: message.content,
+        ...(stopReason === "refusal"
+          ? {
+            refusal: {
+              category: message.stop_details?.category ?? null,
+              explanation: message.stop_details?.explanation ?? null,
+            },
+          }
+          : {}),
+      };
+      log.info("model turn", {
+        model: message.model,
+        stopReason,
+        inputTokens: turn.inputTokens,
+        outputTokens: turn.outputTokens,
+        cacheReadTokens: turn.cacheReadTokens,
+        toolCalls: toolCalls.length,
+      });
+      return ok(turn);
+    } catch (e) {
+      if (args.signal?.aborted) return err(new ModelError("CANCELLED", "cancelled"));
+      if (e instanceof Anthropic.APIError || attempt === 2) return err(classify(e));
+      log.warn("turn re-issued: unparseable tool input or dropped connection", {
+        attempt,
+        error: String(e),
+      });
+    }
+  }
+  return err(new ModelError("ANTHROPIC_ERROR", "turn failed"));
 }

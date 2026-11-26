@@ -3,6 +3,7 @@
 // Tests assert rendered output < 9 k tokens
 
 import { makeLogger } from "../../log.ts";
+import { type ApiManifest, loadApiManifest, renderApiCard } from "./apiCard.ts";
 
 const log = makeLogger("harness.prompts.system");
 
@@ -58,8 +59,10 @@ material limits, real physics, stated assumptions, safety factors.
   reflection, unsafe, DllImport, Environment, DateTime.Now, new Random().
   Use ctx.Rng for randomness. Use ctx.Log("...") to narrate build stages and
   ctx.Progress(0..1) in long loops.
-- Read every governing dimension from ctx.Params (populated from your own
-  design brief) — do not hardcode numbers that the brief parameterizes.
+- Read every governing dimension with ctx.P("name") (float) or ctx.Pi("name")
+  (int); the names are the parameters of your accepted design brief. Do not
+  hardcode numbers that the brief parameterizes. A missing name fails the build
+  with the list of known names.
 - Units: millimeters. Z is up. The part rests on the build plate at Z = 0,
   centered on the origin in X/Y.
 - Return a single non-empty Voxels. Boolean-union multiple bodies before
@@ -92,35 +95,6 @@ then with a plain-language explanation and a concrete next step.
 Current project defaults: material {{PROJECT_MATERIAL}}, envelope
 {{ENVELOPE_MM}} mm, voxel budget {{CELL_CAP}} cells, time limit {{TIMEOUT_S}} s.`;
 
-// ─── API card compression ─────────────────────────────────────────────────────
-
-interface ApiEntry {
-  name: string;
-  sig: string;
-  doc?: string;
-}
-interface ApiType {
-  name: string;
-  namespace: string;
-  members: ApiEntry[];
-}
-interface ApiManifest {
-  types: ApiType[];
-  picogkVersion?: string;
-}
-
-function buildApiCard(manifest: ApiManifest, namespace: string): string {
-  const lines: string[] = [];
-  for (const t of manifest.types) {
-    if (t.namespace !== namespace) continue;
-    lines.push(`### ${t.name}`);
-    for (const m of t.members) {
-      lines.push(`  ${m.sig}`);
-    }
-  }
-  return lines.join("\n");
-}
-
 // ─── Public builder ──────────────────────────────────────────────────────────
 
 export interface SystemPromptParams {
@@ -141,11 +115,11 @@ export function buildSystemPrompt(params: SystemPromptParams = {}): string {
   } = params;
 
   const picogkCard = picogkApiManifest
-    ? buildApiCard(picogkApiManifest, "PicoGK")
+    ? renderApiCard(picogkApiManifest, "PicoGK")
     : "(picogk_api.json not loaded — run DumpApi)";
 
   const kitCard = picogkApiManifest
-    ? buildApiCard(picogkApiManifest, "PicoForge.Kit")
+    ? renderApiCard(picogkApiManifest, "PicoForge.Kit")
     : "(Kit API not loaded)";
 
   const envStr = `${envelopeMm.x} × ${envelopeMm.y} × ${envelopeMm.z}`;
@@ -167,6 +141,17 @@ export function buildSystemPrompt(params: SystemPromptParams = {}): string {
   }
 
   return prompt;
+}
+
+/**
+ * The system prompt a run sends (B-012): template + curated API card from engine/picogk_api.json.
+ * Stable across turns and runs (no ids or timestamps), so it stays a cache prefix (docs/13 §5).
+ */
+export async function systemPromptForRun(
+  params: Omit<SystemPromptParams, "picogkApiManifest"> = {},
+): Promise<string> {
+  const manifest = await loadApiManifest();
+  return buildSystemPrompt({ ...params, ...(manifest ? { picogkApiManifest: manifest } : {}) });
 }
 
 /** Estimate token count (rough: 4 chars per token) */

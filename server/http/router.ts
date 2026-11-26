@@ -20,7 +20,7 @@ import { messageCreate, messageList } from "../db/repo/messages.ts";
 import { artifactGet, runCreate, runUpdateState } from "../db/repo/runs.ts";
 import { settingsGet, SettingsPatchSchema, settingsSet } from "../db/repo/settings.ts";
 import { clearBaseUrl, getConfig, writeApiKey, writeBaseUrl } from "../config.ts";
-import { AVAILABLE_MODELS } from "../harness/anthropic.ts";
+import { AVAILABLE_MODELS, testApiKey } from "../harness/anthropic.ts";
 import { runChat } from "./chatRun.ts";
 import type { EngineSupervisor } from "../engine/supervisor.ts";
 import { getBootToken } from "../config.ts";
@@ -257,26 +257,15 @@ export function buildRouter(supervisor?: EngineSupervisor): Hono {
       }),
     );
     if (!parsed.ok) return c.json(errRes("INVALID_INPUT", "key required"), 422);
-    try {
-      // 1-token ping to verify key works — cheapest possible call
-      const { default: Anthropic } = await import("npm:@anthropic-ai/sdk@^0.54.0");
-      const client = new Anthropic({
-        apiKey: parsed.data.key,
-        ...(parsed.data.baseUrl ? { baseURL: parsed.data.baseUrl } : {}),
-      });
-      await client.messages.create({
-        model: "claude-haiku-4-5",
-        max_tokens: 1,
-        messages: [{ role: "user", content: "hi" }],
-      });
-      return c.json({ ok: true });
-    } catch (e) {
-      const status = (e as { status?: number }).status;
-      // 401 = bad key; 4xx = key ok but other issue; log errId only
-      const errId = crypto.randomUUID();
-      log.warn("API key test failed", { errId, status });
-      return c.json({ ok: false, errId }, status === 401 ? 401 : 400);
-    }
+    // Free check (models.retrieve, no tokens) through the only SDK module (CLAUDE.md #5).
+    const r = await testApiKey(parsed.data.key, parsed.data.baseUrl);
+    if (r.ok) return c.json({ ok: true });
+    const errId = crypto.randomUUID();
+    log.warn("API key test failed", { errId, code: r.error.code }); // never the key
+    return c.json(
+      { ok: false, errId, code: r.error.code, message: r.error.message },
+      r.error.code === "API_KEY_INVALID" ? 401 : 400,
+    );
   });
 
   // ── Self-test ──────────────────────────────────────────────────────────────

@@ -33,7 +33,7 @@ function withMockEnv<T>(tps: string, fn: () => Promise<T>): Promise<T> {
 const baseArgs = (messages: AnthropicMessage[]) => ({
   model: "mock",
   maxTokens: 4096,
-  temperature: 0,
+  effort: "medium" as const,
   system: "",
   messages,
   tools: [],

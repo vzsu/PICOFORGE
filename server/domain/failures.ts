@@ -17,7 +17,8 @@ export type FailureRow =
   | "F13"
   | "F14"
   | "F15"
-  | "F16";
+  | "F16"
+  | "F17";
 
 export const FAILURE_ROW: Readonly<Record<string, FailureRow>> = {
   // F1 generated code fails lint/compile (L0, L1)
@@ -44,8 +45,14 @@ export const FAILURE_ROW: Readonly<Record<string, FailureRow>> = {
   ENGINE_NOT_READY: "F5",
   ENGINE_LOST: "F5",
   SANDBOX_UNAVAILABLE: "F5",
-  // F6 model API error
+  // F6 model API error (after the SDK's own retries)
   ANTHROPIC_ERROR: "F6",
+  ANTHROPIC_RATE_LIMIT: "F6",
+  // F12 bad, missing or expired API key
+  API_KEY_MISSING: "F12",
+  API_KEY_INVALID: "F12",
+  // F17 the model declined (refusal after server-side fallback)
+  MODEL_REFUSED: "F17",
   // F15 engine reply malformed or inconsistent; engine op outside a build fails
   ENGINE_PROTOCOL: "F15",
   INSPECT_FAILED: "F15",
@@ -54,6 +61,8 @@ export const FAILURE_ROW: Readonly<Record<string, FailureRow>> = {
   // F16 agent tool misuse (out of order, over budget)
   NO_GEOMETRY: "F16",
   TOOL_BUDGET: "F16",
+  INVALID_INPUT: "F16",
+  INPUT_TRUNCATED: "F16",
 };
 
 export function failureRow(code: string): FailureRow | undefined {

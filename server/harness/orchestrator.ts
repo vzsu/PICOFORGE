@@ -7,6 +7,11 @@ import { engineErrorSchema } from "../engine/client.ts";
 import {
   type AnthropicMessage,
   createMessageStream,
+  DEFAULT_MODEL,
+  type Effort,
+  MAX_OUTPUT_TOKENS,
+  ModelError,
+  type StreamArgs,
   type StreamCallbacks,
   type ToolDefinition,
   type TurnResult,
@@ -20,7 +25,7 @@ import {
   isBudgetExhausted,
 } from "./prompts/repair.ts";
 import { buildContextMessages, type HistoryEntry } from "./prompts/context.ts";
-import { buildSystemPrompt } from "./prompts/system.ts";
+import { systemPromptForRun } from "./prompts/system.ts";
 
 const log = makeLogger("harness.orchestrator");
 
@@ -40,10 +45,12 @@ const buildResultSchema = z.discriminatedUnion("ok", [
 
 // ─── Settings (overridden by DB settings in M3) ──────────────────────────────
 
-const DEFAULT_SETTINGS = {
-  model: "claude-sonnet-4-6",
-  maxTokens: 8096,
-  temperature: 0.7,
+// docs/13 §2: claude-opus-5-5, streaming with 64k max_tokens, effort explicit (STD = medium).
+// No temperature: sampling parameters return a 400 on current models.
+const DEFAULT_SETTINGS: { model: string; maxTokens: number; effort: Effort } = {
+  model: DEFAULT_MODEL,
+  maxTokens: MAX_OUTPUT_TOKENS,
+  effort: "medium",
 };
 
 // ─── Tool budget ─────────────────────────────────────────────────────────────
@@ -84,15 +91,7 @@ export interface OrchestratorCallbacks {
 
 /** Injectable stream function — defaults to real Anthropic client; tests inject mock */
 export type StreamFn = (
-  args: {
-    model: string;
-    maxTokens: number;
-    temperature: number;
-    system: string;
-    messages: AnthropicMessage[];
-    tools: ToolDefinition[];
-    signal?: AbortSignal;
-  },
+  args: StreamArgs,
   callbacks?: StreamCallbacks,
 ) => Promise<Result<TurnResult, Error>>;
 
@@ -152,7 +151,7 @@ export async function driveRun(
     { role: "user", content: [{ type: "text", text: userMessage }] },
   ];
 
-  const system = buildSystemPrompt();
+  const system = await systemPromptForRun(); // + the real PicoGK/Kit API card (B-012)
   emit("understanding");
 
   // ─── Main loop ─────────────────────────────────────────────────────────────
@@ -167,7 +166,7 @@ export async function driveRun(
       {
         model: s.model,
         maxTokens: s.maxTokens,
-        temperature: s.temperature,
+        effort: s.effort,
         system,
         messages,
         tools: toolDefs,
@@ -179,19 +178,21 @@ export async function driveRun(
     );
 
     if (!turnResult.ok) {
-      const errMsg = turnResult.error.message;
-      if (errMsg === "CANCELLED") {
+      const e = turnResult.error;
+      if (e.message === "CANCELLED" || (e instanceof ModelError && e.code === "CANCELLED")) {
         emit("cancelled");
         return { state: "cancelled" };
       }
-      emit("failed", { code: "ANTHROPIC_ERROR", detail: errMsg });
-      callbacks?.onError?.(runId, "ANTHROPIC_ERROR", errMsg);
+      const code = e instanceof ModelError ? e.code : "ANTHROPIC_ERROR";
+      emit("failed", { code, detail: e.message });
+      callbacks?.onError?.(runId, code, e.message);
       return { state: "failed" };
     }
 
     const turn = turnResult.value;
 
-    // Append assistant message to history
+    // Append the assistant turn: readable form for the harness, raw blocks (thinking included) to
+    // send back unchanged (docs/13 §6).
     const assistantContent: AnthropicMessage["content"] = [];
     for (const text of turn.textBlocks) {
       assistantContent.push({ type: "text", text });
@@ -199,11 +200,59 @@ export async function driveRun(
     for (const tc of turn.toolCalls) {
       assistantContent.push({ type: "tool_use", id: tc.id, name: tc.name, input: tc.input });
     }
-    messages.push({ role: "assistant", content: assistantContent });
+    messages.push({
+      role: "assistant",
+      content: assistantContent,
+      ...(turn.raw ? { raw: turn.raw } : {}),
+    });
+
+    // A refusal can cut a tool input off mid-way: never run that turn's tools (docs/13 §4).
+    if (turn.stopReason === "refusal") {
+      const why = turn.refusal?.explanation ?? "The model declined this request.";
+      emit("failed", { code: "MODEL_REFUSED", detail: why });
+      callbacks?.onError?.(runId, "MODEL_REFUSED", why);
+      return { state: "failed" };
+    }
+    // Server-side tool iteration limit: the assistant turn is appended, re-send to continue.
+    if (turn.stopReason === "pause_turn") continue;
 
     if (turn.stopReason === "end_turn" || turn.toolCalls.length === 0) {
       emit("done");
       return { state: "done" };
+    }
+
+    // max_tokens with tool calls: the last input may be truncated yet still parse, so nothing runs.
+    // Every call still needs a tool_result (the API requires one per tool_use).
+    if (turn.stopReason === "max_tokens") {
+      toolCallsLeft--;
+      messages.push({
+        role: "user",
+        content: turn.toolCalls.map((call) => ({
+          type: "tool_result" as const,
+          tool_use_id: call.id,
+          is_error: true,
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              error: {
+                code: "INPUT_TRUNCATED",
+                detail:
+                  "Output hit max_tokens before this tool input was complete. Re-send it more compactly.",
+              },
+            }),
+          }],
+        })),
+      });
+      if (toolCallsLeft <= 0) {
+        emit("failed", { code: "TOOL_BUDGET" });
+        callbacks?.onError?.(
+          runId,
+          "TOOL_BUDGET",
+          "Tool budget exhausted after truncated outputs.",
+        );
+        return { state: "failed" };
+      }
+      continue;
     }
 
     // ─── Tool dispatch ───────────────────────────────────────────────────────
@@ -216,16 +265,16 @@ export async function driveRun(
         return { state: "cancelled" };
       }
 
-      // Budget check
+      // Budget check: this call and any after it get the budget notice (one tool_result per tool_use).
       if (toolCallsLeft <= 0) {
-        // Inject budget exhausted instruction
         const budgetMsg = buildBudgetExhaustedInstruction("TOOL_BUDGET");
         toolResultContent.push({
           type: "tool_result",
           tool_use_id: call.id,
+          is_error: true,
           content: [{ type: "text", text: budgetMsg }],
         });
-        break;
+        continue;
       }
       toolCallsLeft--;
 
@@ -262,8 +311,13 @@ export async function driveRun(
         callbacks?.onBrief?.(runId, call.input);
       }
 
+      let isError = false;
       if (!result.ok) {
-        resultText = JSON.stringify({ error: result.error.message });
+        // Invalid (or eagerly-streamed, unvalidated) input: returned to the model, never executed.
+        isError = true;
+        resultText = JSON.stringify({
+          error: { code: "INVALID_INPUT", detail: result.error.message },
+        });
       } else {
         const value = result.value;
         const askUser = askUserResultSchema.safeParse(value);
@@ -316,6 +370,7 @@ export async function driveRun(
       toolResultContent.push({
         type: "tool_result",
         tool_use_id: call.id,
+        ...(isError ? { is_error: true } : {}),
         content: [{ type: "text", text: resultText }],
       });
     }
