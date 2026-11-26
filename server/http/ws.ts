@@ -4,6 +4,7 @@
 
 import { makeLogger } from "../log.ts";
 import {
+  type ClientEvent,
   ClientEventSchema,
   type ServerEvent,
   ServerEventSchema,
@@ -139,7 +140,8 @@ export const wsHub: WsHub = {
 export function handleWsUpgrade(
   req: Request,
   conversationId: string,
-  onClientEvent: (conversationId: string, sessionId: string, event: unknown) => void,
+  /** Called with frames that passed ClientEventSchema (ping is answered here). */
+  onClientEvent: (conversationId: string, sessionId: string, event: ClientEvent) => void,
 ): Response {
   // Verify boot token (SYS_DESIGN §10)
   const url = new URL(req.url);

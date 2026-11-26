@@ -43,11 +43,19 @@ const buildResultSchema = z.discriminatedUnion("ok", [
   z.object({ ok: z.literal(false), error: engineErrorSchema }).passthrough(),
 ]);
 
-// ─── Settings (overridden by DB settings in M3) ──────────────────────────────
+// ─── Settings (the server resolves them from the DB per run: server/http/runSettings.ts) ──────
+
+/** What one run sends to the model. */
+export interface RunSettings {
+  model: string;
+  maxTokens: number;
+  effort: Effort;
+  speed?: "fast";
+}
 
 // docs/13 §2: claude-opus-5-5, streaming with 64k max_tokens, effort explicit (STD = medium).
 // No temperature: sampling parameters return a 400 on current models.
-const DEFAULT_SETTINGS: { model: string; maxTokens: number; effort: Effort } = {
+const DEFAULT_SETTINGS: RunSettings = {
   model: DEFAULT_MODEL,
   maxTokens: MAX_OUTPUT_TOKENS,
   effort: "medium",
@@ -116,7 +124,7 @@ export async function driveRun(
     signal: AbortSignal;
     ctx?: Partial<RunCtx>;
     callbacks?: OrchestratorCallbacks;
-    settings?: Partial<typeof DEFAULT_SETTINGS>;
+    settings?: Partial<RunSettings>;
     /** Inject a mock stream function in tests; omit in production */
     streamFn?: StreamFn;
   },
@@ -167,6 +175,7 @@ export async function driveRun(
         model: s.model,
         maxTokens: s.maxTokens,
         effort: s.effort,
+        ...(s.speed ? { speed: s.speed } : {}),
         system,
         messages,
         tools: toolDefs,

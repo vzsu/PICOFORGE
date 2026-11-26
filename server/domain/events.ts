@@ -2,12 +2,15 @@
 // All WS frames validated here on BOTH sides (SYS_DESIGN §3.3)
 
 import { z } from "zod";
+import { ModeSchema } from "./modes.ts";
 
 // ─── Client → Server ──────────────────────────────────────────────────────────
 
 export const UserMessageEvent = z.object({
   type: z.literal("user.message"),
   text: z.string().min(1).max(32_000),
+  /** Composer mode (docs/02 §4); absent → STD. Picks the effort from Settings (docs/13 §2). */
+  mode: ModeSchema.optional(),
   attachments: z.array(z.object({ artifactId: z.string() })).optional(),
 });
 

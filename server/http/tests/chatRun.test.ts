@@ -4,8 +4,9 @@
 
 import { assert, assertEquals } from "jsr:@std/assert@^1.0.0";
 import { join } from "jsr:@std/path@^1.0.0";
-import { type ChatFrame, runChat } from "../chatRun.ts";
+import { type ChatFrame, historyFromMessages, runChat } from "../chatRun.ts";
 import { ServerEventSchema } from "../../domain/events.ts";
+import type { ContentBlock, Message } from "../../db/repo/messages.ts";
 import type { EngineApi, EngineRunParams } from "../../engine/client.ts";
 
 const FAN_PROMPT = "Design a 120 mm fan impeller with 7 backward-curved blades, 25 mm hub, PLA.";
@@ -99,4 +100,60 @@ Deno.test("CHAT-RUN-02 no engine → run fails with a typed error frame, never t
     assert(!frames.some((f) => f.type === "geometry.ready"));
     frames.forEach((f, i) => assert(ServerEventSchema.safeParse({ ...f, seq: i }).success, f.type));
   });
+});
+
+Deno.test("CHAT-RUN-03 the reply is saved once (text + brief + geometry) so the next turn has context", async () => {
+  await withMock(async () => {
+    const dataDir = await Deno.makeTempDir({ prefix: "pf-chat-" });
+    const saved: ContentBlock[][] = [];
+    await runChat(
+      {
+        emit: () => {},
+        engine: fakeEngine(),
+        dataDir,
+        signal: new AbortController().signal,
+        onAssistant: (blocks) => saved.push(blocks),
+      },
+      { runId: "run-3", projectId: "p", conversationId: "c", text: FAN_PROMPT, history: [] },
+    );
+    assertEquals(saved.length, 1);
+    const kinds = saved[0].map((b) => b.t);
+    assertEquals(kinds, ["text", "brief", "geometry"]);
+    const text = saved[0][0];
+    assert(text.t === "text" && text.text.length > 0);
+    const geo = saved[0][2];
+    assert(geo.t === "geometry" && geo.artifactId.length > 0);
+    await Deno.remove(dataDir, { recursive: true });
+  });
+});
+
+Deno.test("CHAT-HIST-01 history: the message being answered is left out; brief and errors keep their content", () => {
+  const at = 1;
+  const msg = (id: string, role: Message["role"], content: ContentBlock[]): Message => ({
+    id,
+    conversationId: "c",
+    role,
+    content,
+    createdAt: at,
+    tokensIn: null,
+    tokensOut: null,
+    pinned: false,
+  });
+  const h = historyFromMessages([
+    msg("m1", "user", [{ t: "text", text: "fan 120 mm" }]),
+    msg("m2", "assistant", [
+      { t: "text", text: "Built it." },
+      { t: "brief", brief: { title: "fan", parameters: [{ name: "blade_count", value: 7 }] } },
+      { t: "geometry", artifactId: "a1" },
+    ]),
+    msg("m3", "system", [{ t: "text", text: "internal" }]),
+    msg("m4", "assistant", [{ t: "error", code: "ENGINE_DOWN", msg: "engine not running" }]),
+    msg("m5", "user", [{ t: "text", text: "make it 140 mm" }]),
+  ], "m5");
+  assertEquals(h.map((e) => e.role), ["user", "assistant", "assistant"]);
+  const reply = h[1].blocks.map((b) => (b.type === "text" ? b.text : "")).join("\n");
+  assert(reply.includes("blade_count"), "brief content lost from history");
+  assert(reply.includes("a1"));
+  const err = h[2].blocks[0];
+  assert(err.type === "text" && err.text.includes("ENGINE_DOWN"));
 });

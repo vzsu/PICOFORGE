@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import * as mock from "../../mock/mainScreen.ts";
 import { isLiveMode, liveSession, type LiveState, useLive } from "../../live/session.ts";
+import type { Mode } from "../../protocol/modes.ts";
 
 export interface ChatMsgView {
   id: string;
@@ -62,7 +63,7 @@ export interface MainView {
   stlUrl: string | null;
   engineOk: boolean;
   connection: LiveState["connection"] | "mock";
-  send: (text: string) => void;
+  send: (text: string, mode?: Mode) => void;
   stop: () => void;
 }
 
@@ -164,7 +165,7 @@ export function liveView(s: LiveState, now: number): MainView {
     stlUrl: g?.url ?? null,
     engineOk: s.engine === "ok",
     connection: s.connection,
-    send: (t) => liveSession.send(t),
+    send: (t, m) => liveSession.send(t, m),
     stop: () => liveSession.cancel(),
   };
 }

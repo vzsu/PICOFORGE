@@ -4,13 +4,28 @@
 import { z } from "zod";
 import { getDb, withTx } from "../db.ts";
 import { jsonCol } from "../rows.ts";
+import { EFFORT_BY_MODE, EffortSchema } from "../../domain/modes.ts";
 
 // ─── Default settings ─────────────────────────────────────────────────────────
 
+/** docs/13 §2: 64k output tokens per streamed turn (truncation costs a repair turn). */
+const MAX_OUTPUT_TOKENS = 64_000;
+
+/** Settings → Models and keys: one effort per composer mode (docs/02 §6, docs/13 §2). */
+const EffortByModeSchema = z.object({
+  low: EffortSchema.default(EFFORT_BY_MODE.low),
+  std: EffortSchema.default(EFFORT_BY_MODE.std),
+  deep: EffortSchema.default(EFFORT_BY_MODE.deep),
+  raman: EffortSchema.default(EFFORT_BY_MODE.raman),
+});
+
+// No temperature: sampling parameters return a 400 on current models (migration 0003 drops it).
 export const SettingsSchema = z.object({
-  model: z.string().default("claude-sonnet-4-6"),
-  temperature: z.number().min(0).max(1).default(1.0),
-  maxOutputTokens: z.number().int().min(512).max(8192).default(4096),
+  model: z.string().default("claude-opus-5-5"),
+  maxOutputTokens: z.number().int().min(1024).max(MAX_OUTPUT_TOKENS).default(MAX_OUTPUT_TOKENS),
+  effortByMode: EffortByModeSchema.default({}),
+  /** Fast mode (`speed: "fast"`, premium price) on models that support it. */
+  fastResponses: z.boolean().default(false),
   maxRepairAttempts: z.number().int().min(1).max(10).default(3),
   voxelCellCapHard: z.number().default(1_500_000_000),
   voxelCellCapWarn: z.number().default(250_000_000),
@@ -42,8 +57,14 @@ const DEFAULT_SETTINGS: Settings = SettingsSchema.parse({});
  */
 export const SettingsPatchSchema = z.object({
   model: z.string().optional(),
-  temperature: z.number().min(0).max(1).optional(),
-  maxOutputTokens: z.number().int().min(512).max(8192).optional(),
+  maxOutputTokens: z.number().int().min(1024).max(MAX_OUTPUT_TOKENS).optional(),
+  effortByMode: z.object({
+    low: EffortSchema.optional(),
+    std: EffortSchema.optional(),
+    deep: EffortSchema.optional(),
+    raman: EffortSchema.optional(),
+  }).optional(),
+  fastResponses: z.boolean().optional(),
   maxRepairAttempts: z.number().int().min(1).max(10).optional(),
   voxelCellCapHard: z.number().optional(),
   voxelCellCapWarn: z.number().optional(),
@@ -82,6 +103,7 @@ export function settingsSet(patch: SettingsPatch): Settings {
   const merged = SettingsSchema.parse({
     ...current,
     ...patch,
+    effortByMode: { ...current.effortByMode, ...patch.effortByMode },
     retention: { ...current.retention, ...patch.retention },
     renderer: { ...current.renderer, ...patch.renderer },
   });

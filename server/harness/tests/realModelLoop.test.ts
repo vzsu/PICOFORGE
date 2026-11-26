@@ -137,5 +137,23 @@ Deno.test("HARNESS-GOLD-settings model and effort reach the request; no sampling
   assertEquals(calls[0].effort, "high");
   assertEquals(calls[0].maxTokens, 64_000);
   assert(!("temperature" in calls[0]));
+  assert(!("speed" in calls[0]), "standard speed unless Settings turns fast mode on");
   assert(calls[0].system.includes("### Voxels"), "the run prompt carries the API card");
+});
+
+Deno.test("HARNESS-GOLD-speed fast mode from Settings reaches every turn of the run", async () => {
+  const { fn, calls } = scripted([base({ stopReason: "end_turn" })]);
+  await driveRun({
+    runId: "r",
+    projectId: "p",
+    conversationId: "c",
+    userMessage: "make a bracket",
+    history: [],
+    signal: new AbortController().signal,
+    ctx: { engineClient: engineSpy(), dataDir: "." },
+    streamFn: fn,
+    settings: { model: "claude-opus-5-5", effort: "low", speed: "fast" },
+  });
+  assertEquals(calls[0].speed, "fast");
+  assertEquals(calls[0].effort, "low");
 });

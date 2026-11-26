@@ -6,6 +6,7 @@
 import { useSyncExternalStore } from "react";
 import { apiFetch, isRecord, pageToken, readJson } from "../api.ts";
 import { WsClient, type WsEvent } from "../ws/client.ts";
+import type { Mode } from "../protocol/modes.ts";
 
 export type LiveRunState =
   | "queued"
@@ -293,7 +294,8 @@ class LiveSession {
     return convId;
   }
 
-  send(text: string): void {
+  /** `mode` picks the effort for this run from Settings (docs/13 §2); absent → STD. */
+  send(text: string, mode?: Mode): void {
     const t = text.trim();
     if (!t || !this.ws) return;
     this.set({
@@ -303,7 +305,7 @@ class LiveSession {
       geometry: null,
       error: null,
     });
-    this.ws.send({ type: "user.message", text: t });
+    this.ws.send({ type: "user.message", text: t, ...(mode ? { mode } : {}) });
   }
 
   cancel(): void {

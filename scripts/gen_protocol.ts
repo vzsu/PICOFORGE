@@ -4,7 +4,7 @@
 // (imports only "zod" and each other), which domain/ already guarantees (docs/05 §1).
 
 /** Wire contracts shared with the app. */
-export const PROTOCOL_FILES = ["events.ts", "pts1.ts"] as const;
+export const PROTOCOL_FILES = ["events.ts", "modes.ts", "pts1.ts"] as const;
 
 export function generated(name: string, source: string): string {
   return `// GENERATED from server/domain/${name} by \`deno task gen:protocol\`. Do not edit here.\n` +

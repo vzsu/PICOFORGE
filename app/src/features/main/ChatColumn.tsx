@@ -92,7 +92,7 @@ export function ChatColumn({ view }: { view: MainView }) {
 
   const submit = () => {
     if (!draft.trim()) return;
-    view.send(draft);
+    view.send(draft, mode);
     setDraft("");
   };
 

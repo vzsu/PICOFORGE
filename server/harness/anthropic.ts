@@ -12,6 +12,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { makeLogger } from "../log.ts";
 import { err, ok, type Result } from "../domain/result.ts";
 import { getConfig } from "../config.ts";
+import type { Effort } from "../domain/modes.ts";
 import { isMockModel, mockFanStream } from "./mock/fanModel.ts";
 
 const log = makeLogger("harness.anthropic");
@@ -88,22 +89,25 @@ export const DEFAULT_MODEL = "claude-opus-5-5";
 /** Streaming requests: never low-balled; truncation costs a repair turn (docs/13 §2). */
 export const MAX_OUTPUT_TOKENS = 64_000;
 
-export const AVAILABLE_MODELS: ReadonlyArray<{ id: string; label: string }> = [
-  { id: "claude-opus-5-5", label: "Claude Opus 5.5 (default)" },
-  { id: "claude-sonnet-5-5", label: "Claude Sonnet 5.5" },
-  { id: "claude-haiku-5-5", label: "Claude Haiku 5.5 (fast, cheapest)" },
-  { id: "claude-fable-5-2", label: "Claude Fable 5.2 (most capable, premium)" },
+/** `fast`: accepts `speed: "fast"` (fast mode, premium price, no beta header on these models). */
+export const AVAILABLE_MODELS: ReadonlyArray<{ id: string; label: string; fast: boolean }> = [
+  { id: "claude-opus-5-5", label: "Claude Opus 5.5 (default)", fast: true },
+  { id: "claude-sonnet-5-5", label: "Claude Sonnet 5.5", fast: false },
+  { id: "claude-haiku-5-5", label: "Claude Haiku 5.5 (fast, cheapest)", fast: false },
+  { id: "claude-fable-5-2", label: "Claude Fable 5.2 (most capable, premium)", fast: true },
 ];
 
-export type Effort = "low" | "medium" | "high" | "xhigh" | "max";
-export type Mode = "low" | "std" | "deep" | "raman";
-/** LOW low · STD medium · DEEP high · RAMAN high. Opus 5.5 defaults to medium, so always set it. */
-export const EFFORT_BY_MODE: Readonly<Record<Mode, Effort>> = {
-  low: "low",
-  std: "medium",
-  deep: "high",
-  raman: "high",
-};
+export function isKnownModel(id: string): boolean {
+  return AVAILABLE_MODELS.some((m) => m.id === id);
+}
+
+/** Fast mode is an error on models without it, so the flag is dropped for them. */
+export function supportsFast(id: string): boolean {
+  return AVAILABLE_MODELS.some((m) => m.id === id && m.fast);
+}
+
+export type { Effort, Mode } from "../domain/modes.ts";
+export { EFFORT_BY_MODE } from "../domain/modes.ts";
 
 // ─── Client (hot-reload key + base URL per call) ─────────────────────────────
 
@@ -250,10 +254,34 @@ export interface StreamArgs {
   model: string;
   maxTokens: number;
   effort: Effort;
+  /** Fast mode (Settings → Models and keys); only ever set for a model that supports it. */
+  speed?: "fast";
   system: string;
   messages: AnthropicMessage[];
   tools: ToolDefinition[];
   signal?: AbortSignal;
+}
+
+/** The body `client.beta.messages.stream` takes (the SDK does not export a name for it). */
+type StreamRequest = Parameters<Anthropic["beta"]["messages"]["stream"]>[0];
+
+/**
+ * The request body for one streamed turn (docs/13 §2). Pure, so HARNESS-REQ-* can check it without
+ * a network. Through a proxy base URL the beta-only fields (fallbacks, eager input streaming) are
+ * left out, since proxies commonly reject unknown fields.
+ */
+export function buildRequest(args: StreamArgs, viaProxy: boolean): StreamRequest {
+  return {
+    model: args.model,
+    max_tokens: Math.min(args.maxTokens, MAX_OUTPUT_TOKENS),
+    system: [{ type: "text", text: args.system, cache_control: { type: "ephemeral" } }],
+    messages: args.messages.map(toSdkMessage),
+    tools: args.tools.map((t) => toSdkTool(t, viaProxy)),
+    output_config: { effort: args.effort },
+    cache_control: { type: "ephemeral" }, // auto-cache the growing conversation each turn
+    ...(args.speed === "fast" && supportsFast(args.model) ? { speed: "fast" as const } : {}),
+    ...(viaProxy ? {} : { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" }),
+  };
 }
 
 /** Stream one assistant turn. Returns a Result; never throws. */
@@ -278,19 +306,9 @@ export async function createMessageStream(
   // turn, at most twice; API errors are not retried here (the SDK already did).
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const stream = client.beta.messages.stream(
-        {
-          model: args.model,
-          max_tokens: Math.min(args.maxTokens, MAX_OUTPUT_TOKENS),
-          system: [{ type: "text", text: args.system, cache_control: { type: "ephemeral" } }],
-          messages: args.messages.map(toSdkMessage),
-          tools: args.tools.map((t) => toSdkTool(t, viaProxy)),
-          output_config: { effort: args.effort },
-          cache_control: { type: "ephemeral" }, // auto-cache the growing conversation each turn
-          ...(viaProxy ? {} : { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" }),
-        },
-        { signal: args.signal },
-      );
+      const stream = client.beta.messages.stream(buildRequest(args, viaProxy), {
+        signal: args.signal,
+      });
       const toolIds = new Map<number, string>();
       for await (const ev of stream) {
         if (ev.type === "content_block_start" && ev.content_block.type === "tool_use") {

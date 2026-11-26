@@ -21,7 +21,8 @@ import { artifactGet, runCreate, runUpdateState } from "../db/repo/runs.ts";
 import { settingsGet, SettingsPatchSchema, settingsSet } from "../db/repo/settings.ts";
 import { clearBaseUrl, getConfig, writeApiKey, writeBaseUrl } from "../config.ts";
 import { AVAILABLE_MODELS, testApiKey } from "../harness/anthropic.ts";
-import { runChat } from "./chatRun.ts";
+import { historyFromMessages, runChat } from "./chatRun.ts";
+import { resolveRunSettings } from "./runSettings.ts";
 import type { EngineSupervisor } from "../engine/supervisor.ts";
 import { getBootToken } from "../config.ts";
 
@@ -305,18 +306,10 @@ public class Design {
     const conv = conversationGet(convId);
     if (!conv) return c.json(errRes("NOT_FOUND", "Conversation not found"), 404);
 
-    return handleWsUpgrade(c.req.raw, convId, (conversationId, _sessionId, event) => {
-      const ev = event as {
-        type: string;
-        runId?: string;
-        text?: string;
-        requestId?: string;
-        pngBase64?: string;
-        error?: string;
-      };
+    return handleWsUpgrade(c.req.raw, convId, (conversationId, _sessionId, ev) => {
       log.debug("WS client event", { conversationId, type: ev.type });
 
-      if (ev.type === "run.cancel" && ev.runId) {
+      if (ev.type === "run.cancel") {
         supervisor?.client?.cancel(ev.runId);
         runUpdateState(ev.runId, "cancelled");
         broadcast(
@@ -325,11 +318,11 @@ public class Design {
         );
       }
 
-      if (ev.type === "viewport.capture.result" && ev.requestId) {
+      if (ev.type === "viewport.capture.result") {
         resolveCapture(ev.requestId, ev.pngBase64);
       }
 
-      if (ev.type === "user.message" && ev.text) {
+      if (ev.type === "user.message") {
         // 1. Create DB message
         const msg = messageCreate(conversationId, "user", [{ t: "text", text: ev.text }]);
         broadcast(
@@ -350,25 +343,19 @@ public class Design {
         const projectId = conversationGet(conversationId)?.projectId;
         if (!projectId) return;
 
-        // Use default model or settings model
-        const model = settingsGet().model || "claude-3-5-sonnet-latest";
-        const run = runCreate(conversationId, model, { messageId: msg.id });
+        // Model, effort (from the composer's mode) and speed come from Settings (docs/13 §2)
+        const settings = resolveRunSettings(settingsGet(), ev.mode);
+        const run = runCreate(conversationId, settings.model, { messageId: msg.id });
         broadcast(
           conversationId,
           { type: "run.status", runId: run.id, state: "queued", attempt: 1 },
         );
 
         // 3. Launch headless orchestrator in background
+        const text = ev.text;
         setTimeout(async () => {
           const controller = new AbortController();
-          const history = messageList(conversationId).map((m) => ({
-            role: m.role as "user" | "assistant",
-            blocks: m.content.map((b) => {
-              if (b.t === "text") return { type: "text" as const, text: b.text };
-              if (b.t === "error") return { type: "text" as const, text: `Error: ${b.msg}` };
-              return { type: "text" as const, text: `[${b.t}]` };
-            }),
-          }));
+          const history = historyFromMessages(messageList(conversationId), msg.id);
 
           // B-003: the run gets the engine and data dir; frames are schema-typed (chatRun.ts)
           await runChat(
@@ -384,8 +371,9 @@ public class Design {
                   state,
                   failure ? { errorCode: failure.code, errorDetail: failure.detail } : undefined,
                 ),
+              onAssistant: (blocks) => messageCreate(conversationId, "assistant", blocks),
             },
-            { runId: run.id, projectId, conversationId, text: ev.text!, history },
+            { runId: run.id, projectId, conversationId, text, history, settings },
           );
         }, 0);
       }
