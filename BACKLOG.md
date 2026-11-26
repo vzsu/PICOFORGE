@@ -36,9 +36,11 @@ Format: `- [ ] P<phase> · <item> · tests: <IDs> · spec: docs/NN §x`. Top unb
 - [ ] P5 · UI perf benches (PERF-T0-*, PERF-TTFP-*) into `deno task bench` · spec: docs/11 §3
 
 ## P1 · Contracts
-- [ ] P1 · Command and event schemas in `server/domain/`; generated client types · tests: protocol round-trips
-- [ ] P1 · `PTS1` codec (server + client) · tests: PREVIEW-CODEC-01, -02
+- [ ] P1 · [in progress: lead 2026-11-26] Command and event schemas in `server/domain/`; generated client types (✓ PROTO-GEN-01, events validated client-side; commands pending SPEC-GAP pins + scene.patch ops) · tests: protocol round-trips
+- [x] P1 · (✓ 2026-11-26) `PTS1` codec (server + client via gen:protocol) · tests: PREVIEW-CODEC-01, -02
 - [ ] P1 · Command bus with permissions and `STALE_REV` · tests: DATA-REV-01
+
+- [x] P0+ · (✓ 2026-11-26) Mock-up viewport looks from reference images: Loading (x-ray + point dust), CFD (colormap + legend) · tests: UI-VIS-mock-points, UI-VIS-mock-cfd
 
 ## P2 · Parts and autosave
 - [ ] P2 · Migration 0002 · tests: DATA-PLAN-*

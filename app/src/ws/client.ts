@@ -2,43 +2,14 @@
 // SYS_DESIGN §3.3: reconnect with ?resume=<seq>, typed events
 // Ponytail: AbortController for teardown, Map for pending, no framework
 
-export type ServerEventType =
-  | "hello"
-  | "chat.delta"
-  | "chat.block"
-  | "chat.done"
-  | "run.status"
-  | "step.start"
-  | "step.log"
-  | "step.done"
-  | "geometry.ready"
-  | "viewport.capture.request"
-  | "ask_user"
-  | "message.created"
-  | "error"
-  | "pong";
+// Frames are validated with the generated server schema (app/src/protocol, PROTO-GEN-01):
+// the client trusts exactly what the server is allowed to send (CLAUDE.md #2, both directions).
+import { type ServerEvent, ServerEventSchema } from "../protocol/events.ts";
 
-// Raw server event (discriminated by type)
-export interface WsEvent {
-  type: ServerEventType;
-  seq: number;
-  [key: string]: unknown;
-}
+export type WsEvent = ServerEvent;
+export type ServerEventType = ServerEvent["type"];
 
 export type WsEventHandler = (event: WsEvent) => void;
-
-const EVENT_TYPES: readonly ServerEventType[] = [
-  "hello", "chat.delta", "chat.block", "chat.done", "run.status", "step.start", "step.log",
-  "step.done", "geometry.ready", "viewport.capture.request", "ask_user", "message.created",
-  "error", "pong",
-];
-
-/** A server frame: an object with a known `type` and a numeric `seq` (fields narrowed by readers). */
-export function isWsEvent(v: unknown): v is WsEvent {
-  return typeof v === "object" && v !== null && !Array.isArray(v) &&
-    "type" in v && typeof v.type === "string" && (EVENT_TYPES as readonly string[]).includes(v.type) &&
-    "seq" in v && typeof v.seq === "number";
-}
 export type WsStatusHandler = (connected: boolean) => void;
 
 const RECONNECT_DELAYS_MS = [500, 1000, 2000, 4000, 8000];
@@ -112,10 +83,13 @@ export class WsClient {
 
     ws.onmessage = (ev: MessageEvent) => {
       try {
-        if (typeof ev.data !== "string") return;
-        const raw: unknown = JSON.parse(ev.data);
-        if (!isWsEvent(raw)) return; // unknown frame types are ignored, never trusted
-        const event = raw;
+        if (typeof ev.data !== "string") return; // PTS1 binary frames get their own decoder (P3)
+        const parsed = ServerEventSchema.safeParse(JSON.parse(ev.data));
+        if (!parsed.success) {
+          console.warn("[ws] dropped a frame that fails ServerEventSchema", parsed.error.issues[0]);
+          return;
+        }
+        const event = parsed.data;
         this._lastSeq = event.seq;
         for (const h of this._handlers) h(event);
       } catch {

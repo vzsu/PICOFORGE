@@ -353,8 +353,8 @@ export function useChatStore(conversationId: string) {
         case "geometry.ready":
           dispatch({
             type: "GEOMETRY_READY",
-            runId: event.runId as string,
-            info: event.info as GeometryInfo,
+            runId: event.runId,
+            info: { artifactId: event.artifactId, url: event.url, format: event.format, stats: event.stats },
           });
           break;
         case "message.created":
