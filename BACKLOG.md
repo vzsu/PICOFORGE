@@ -66,8 +66,18 @@ Format: `- [ ] P<phase> · <item> · tests: <IDs> · spec: docs/NN §x`. Top unb
 - [ ] P6 · MCP Apps inline viewport (`ui://picoforge/viewport`) · spec: docs/14 §7
 - [ ] P6 · Acceptance with a second client (Codex or Cursor) · spec: docs/14 §12
 
-## Settings UI
-- [ ] P4 · Settings overlay "Models and keys" in the new main screen (write-only key + Test, model, effort per mode, fast toggle); server side done (RUN-SETTINGS-*) · spec: docs/02 §6
+## Settings UI and studio controls
+- [x] P4 · (✓ 2026-11-28) Settings overlay: Models and keys, Appearance (selection colour), MCP connections, About; autosave · tests: SETTINGS-UI-01, UI-FLOW-studio-controls
+- [x] P4 · (✓ 2026-11-28) Sidebar Projects / Runs / Agents panels; project switching · tests: UI-FLOW-studio-controls
+- [x] P2 · (✓ 2026-11-28) Saved design files per build + restore on open · tests: SAVE-RUN-01, SAVE-OPEN-01
+- [x] P4 · (✓ 2026-11-28) Part hover/selection in `--select` colour, explorer ↔ viewport sync · tests: UI-FLOW-studio-controls
+- [ ] P4 · Settings sections still missing: General, Hardware, Rendering, Capture, Modes and budgets, Storage, Shortcuts · spec: docs/02 §6
+- [ ] P4 · Inspector sheet for the selected part (parameters, material, code) · spec: docs/02 §1
+- [ ] P2 · Per-part selection (needs ctx.Part registration; P0 builds one mesh) · spec: docs/08
+- [ ] P5 · Big meshes: BVH for hover raycast; AO budget/decimation for > 1 M triangles (V8: 24 s bake, AO 18 s) · spec: docs/10
+- [ ] P5 · Min-wall probe insensitive on large parts (reported 36 mm on 1–2.6 mm skins) · spec: docs/13 §7
+- [ ] P6 · Kit 2D/sheet helpers (polygon union, slots, `voxPlate`) and a `plate` brief category (SPEC-GAP) · from Claude Code feedback
+- [ ] P6 · Section inspect returns an image; `Kit.voxOrientedBox` · from Claude Code feedback
 
 ## Later phases
 P4 UI shell · P5 low-end rendering · P7 modes and analysis · P8 capture · P9 packaging — expand when P3 is green.

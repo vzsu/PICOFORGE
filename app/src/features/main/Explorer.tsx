@@ -5,9 +5,25 @@ import { Icon } from "./Icons.tsx";
 import { parts as initialParts, projects, type PartRow } from "../../mock/mainScreen.ts";
 import type { ExplorerView } from "./view.ts";
 
-/** Live explorer: the server's project, this session's run and the parts it built. */
-function LiveExplorer({ view, overlay }: { view: ExplorerView; overlay: boolean }) {
+/** Hover / selection of parts, shared with the viewport (docs/02 §1 "Clicking selects the part"). */
+export interface PartSelection {
+  hover: string | null;
+  selected: string | null;
+  onHover: (id: string | null) => void;
+  onSelect: (id: string | null) => void;
+}
+
+const fmtBytes = (n: number) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
+
+/** Live explorer: every project (click to switch), this project's design and the parts it built. */
+function LiveExplorer({ view, overlay, sel, files }: {
+  view: ExplorerView;
+  overlay: boolean;
+  sel?: PartSelection;
+  files: Array<{ name: string; url: string; bytes: number }>;
+}) {
   const [hidden, setHidden] = useState<Record<string, boolean>>({});
+  const others = view.projects.filter((p) => p.id !== view.projectId);
   return (
     <aside className={`pf-explorer${overlay ? " is-overlay" : ""}`} data-testid="explorer" data-mode="live" aria-label="Explorer">
       <div className="pf-wordmark" aria-label="PicoForge">PICOFORGE</div>
@@ -38,17 +54,36 @@ function LiveExplorer({ view, overlay }: { view: ExplorerView; overlay: boolean 
             </li>
           </ul>
         </li>
+        {others.map((p) => (
+          <li key={p.id} role="treeitem" aria-expanded={false}>
+            <button className="pf-row" data-testid={`tree-project-${p.id}`} onClick={() => view.openProject(p.id)}>
+              <span className="pf-chev"><Icon name="chevronRight" size={12} /></span>
+              <span className="pf-row-text">{p.name}</span>
+            </button>
+          </li>
+        ))}
       </ul>
       <div className="micro-label pf-group-label">Parts</div>
       <ul className="pf-group">
         {view.parts.length === 0 && <li className="pf-empty" data-testid="parts-empty">No parts yet</li>}
         {view.parts.map((p) => {
           const visible = !hidden[p.id];
+          const state = sel?.selected === p.id ? " is-picked" : sel?.hover === p.id ? " is-hovered" : "";
           return (
-            <li key={p.id} className="pf-part is-selected">
-              <div className="pf-row pf-part-name" data-testid={`part-row-${p.id}`}>
+            <li
+              key={p.id}
+              className={`pf-part${state}`}
+              onMouseEnter={() => sel?.onHover(p.id)}
+              onMouseLeave={() => sel?.onHover(null)}
+            >
+              <button
+                className="pf-row pf-part-name"
+                data-testid={`part-row-${p.id}`}
+                aria-pressed={sel?.selected === p.id}
+                onClick={() => sel?.onSelect(sel.selected === p.id ? null : p.id)}
+              >
                 <span className={`pf-row-text${visible ? "" : " pf-muted"}`}>{p.name}</span>
-              </div>
+              </button>
               <button
                 className="pf-eye"
                 data-testid={`part-eye-${p.id}`}
@@ -62,12 +97,38 @@ function LiveExplorer({ view, overlay }: { view: ExplorerView; overlay: boolean 
           );
         })}
       </ul>
+      {files.length > 0 && (
+        <>
+          <div className="micro-label pf-group-label">Design files · saved</div>
+          <ul className="pf-group" data-testid="design-files">
+            {files.map((f) => (
+              <li key={f.name}>
+                <a
+                  className="pf-row pf-file"
+                  href={f.url}
+                  download={f.name.split("/").pop()}
+                  data-testid={`file-${f.name.replace(/[^a-z0-9]/gi, "-")}`}
+                >
+                  <Icon name="save" size={14} />
+                  <span className="pf-row-text readout">{f.name}</span>
+                  <span className="readout pf-muted">{fmtBytes(f.bytes)}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </aside>
   );
 }
 
-export function Explorer({ overlay = false, live = null }: { overlay?: boolean; live?: ExplorerView | null }) {
-  if (live) return <LiveExplorer view={live} overlay={overlay} />;
+export function Explorer({ overlay = false, live = null, sel, files = [] }: {
+  overlay?: boolean;
+  live?: ExplorerView | null;
+  sel?: PartSelection;
+  files?: Array<{ name: string; url: string; bytes: number }>;
+}) {
+  if (live) return <LiveExplorer view={live} overlay={overlay} sel={sel} files={files} />;
   return <MockExplorer overlay={overlay} />;
 }
 

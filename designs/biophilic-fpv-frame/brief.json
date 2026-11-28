@@ -1,0 +1,209 @@
+{
+  "title": "Biophilic 3-inch FPV unibody frame, 3 mm CF_3K plate, 125 mm true-X",
+  "category": "bracket",
+  "requirements": [
+    "3 inch (76.2 mm) props with real tip-to-tip clearance",
+    "1404/1505-class motors, 12x12 mm M2 bolt pattern",
+    "20x20 mm M2 flight-controller stack",
+    "survive crash loads on the arms",
+    "biophilic look: branching, tapering, leaf/vein cut-outs",
+    "manufacturable as a CNC-cut flat CF plate of one thickness (all cut-outs through, Z-prismatic)"
+  ],
+  "parameters": [
+    {
+      "name": "plate_thickness",
+      "value": 3,
+      "unit": "mm",
+      "rationale": "standard 3 mm unibody CF for 3-inch arms; bending check"
+    },
+    {
+      "name": "motor_radius",
+      "value": 62.5,
+      "unit": "mm",
+      "rationale": "centre-to-motor = 125 mm diagonal wheelbase / 2; adjacent motors 88.4 mm apart"
+    },
+    {
+      "name": "prop_diameter",
+      "value": 76.2,
+      "unit": "mm",
+      "rationale": "3 inch prop, used for clearance checks"
+    },
+    {
+      "name": "motor_hole_spacing",
+      "value": 12,
+      "unit": "mm",
+      "rationale": "12x12 mm square pattern, 1404/1505 class"
+    },
+    {
+      "name": "motor_hole_d",
+      "value": 2.2,
+      "unit": "mm",
+      "rationale": "M2 clearance"
+    },
+    {
+      "name": "motor_center_hole_d",
+      "value": 6,
+      "unit": "mm",
+      "rationale": "shaft/circlip relief under the bell"
+    },
+    {
+      "name": "pad_r",
+      "value": 8.5,
+      "unit": "mm",
+      "rationale": "17 mm pad core, about the 18 mm motor base"
+    },
+    {
+      "name": "pad_lobe_r",
+      "value": 3,
+      "unit": "mm",
+      "rationale": "petal around each M2 hole: 1.9 mm edge wall"
+    },
+    {
+      "name": "stack_spacing",
+      "value": 20,
+      "unit": "mm",
+      "rationale": "20x20 FC/ESC stack"
+    },
+    {
+      "name": "stack_hole_d",
+      "value": 2.2,
+      "unit": "mm",
+      "rationale": "M2 clearance"
+    },
+    {
+      "name": "body_lobe_x",
+      "value": 0,
+      "unit": "mm",
+      "rationale": "seed body: single capsule on the Y axis"
+    },
+    {
+      "name": "body_lobe_y",
+      "value": 14,
+      "unit": "mm",
+      "rationale": "body length 56 mm front to back"
+    },
+    {
+      "name": "body_lobe_r",
+      "value": 14,
+      "unit": "mm",
+      "rationale": "body half-width 14 mm, waist between arms; 2.9 mm rim outside stack holes"
+    },
+    {
+      "name": "midrib_root_w",
+      "value": 9,
+      "unit": "mm",
+      "rationale": "arm midrib root width, crash bending check"
+    },
+    {
+      "name": "midrib_tip_w",
+      "value": 6,
+      "unit": "mm",
+      "rationale": "tapered toward the motor (less mass where moment is low)"
+    },
+    {
+      "name": "margin_root_w",
+      "value": 4.4,
+      "unit": "mm",
+      "rationale": "leaf margin vein, root"
+    },
+    {
+      "name": "margin_tip_w",
+      "value": 3.2,
+      "unit": "mm",
+      "rationale": "leaf margin vein at the pad, at least 2x CF min wall"
+    },
+    {
+      "name": "leaf_half_width",
+      "value": 12,
+      "unit": "mm",
+      "rationale": "max half-width of the arm leaf outline; keeps outer vein slots open after filleting"
+    },
+    {
+      "name": "vein_w",
+      "value": 2.4,
+      "unit": "mm",
+      "rationale": "lateral veins, at least 1.5 mm CF min feature"
+    },
+    {
+      "name": "fillet_r",
+      "value": 1.6,
+      "unit": "mm",
+      "rationale": "grown-looking 2D concave fillets; 3.2 mm cutter-friendly"
+    },
+    {
+      "name": "min_wall",
+      "value": 1.5,
+      "unit": "mm",
+      "rationale": "CF_3K plate minimum feature"
+    }
+  ],
+  "physics_checks": [
+    {
+      "name": "prop_tip_clearance",
+      "formula": "2·R·sin(45°) − D_prop = 88.39 − 76.2, mm",
+      "computed": 12.2,
+      "limit": 6,
+      "pass": true
+    },
+    {
+      "name": "prop_to_stack_clearance",
+      "formula": "√2·(R/√2 − 12.75) − D/2 for a 25.5 mm square stack board, mm",
+      "computed": 6.4,
+      "limit": 3,
+      "pass": true
+    },
+    {
+      "name": "prop_to_body_plan_clearance",
+      "formula": "|motor − (0,14)| − 14 − D/2 = 53.5 − 14 − 38.1, mm",
+      "computed": 1.4,
+      "limit": 0,
+      "pass": true
+    },
+    {
+      "name": "bending_stress_sf",
+      "formula": "SF = σ / (F·L / (b·t²/6)); F = 40 N crash at motor, L = 42.5 mm, b = 8.4 mm midrib only, t = 3 mm → σ = 135 MPa vs 570 MPa",
+      "computed": 4.2,
+      "limit": 2,
+      "pass": true
+    },
+    {
+      "name": "deflection",
+      "formula": "δ = F·L³/(3·E·I), F = 3.4 N max thrust, L = 42.5 mm, E = 55 GPa, I = 7.5·3³/12 (midrib only), mm",
+      "computed": 0.09,
+      "limit": 0.5,
+      "pass": true
+    },
+    {
+      "name": "wall_thickness_min",
+      "formula": "min(vein_w, hole edge wall 3 − 1.1) ≥ CF min 1.5 mm",
+      "computed": 1.9,
+      "limit": 1.5,
+      "pass": true
+    },
+    {
+      "name": "motor_hole_edge_distance",
+      "formula": "pad_lobe_r − hole_d/2, mm",
+      "computed": 1.9,
+      "limit": 1.5,
+      "pass": true
+    }
+  ],
+  "envelope_mm": {
+    "x": 114,
+    "y": 114,
+    "z": 3
+  },
+  "voxel_size_mm": 0.2,
+  "material": "CF_3K_PLATE",
+  "assumptions": [
+    "AUW about 150 g; a 40 N one-arm crash load is about 27 g, first-order",
+    "conservative: only the midrib is counted for bending/deflection; margin veins add stiffness",
+    "quasi-isotropic 3K plate, E = 55 GPa, 570 MPa tensile (flexural strength is lower; SF covers it)",
+    "top plate, standoffs, camera mount and battery strap are not part of this plate"
+  ],
+  "risks": [
+    "first-order beam theory, not FEA; delamination at the cut edges is not modelled",
+    "sharp-impact crash loads can exceed 40 N",
+    "check the M2 hole edge wall (1.9 mm) against your CNC shop's minimum"
+  ]
+}

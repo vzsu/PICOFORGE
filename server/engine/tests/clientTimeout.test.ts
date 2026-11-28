@@ -28,3 +28,25 @@ Deno.test({
     }
   },
 });
+
+// ENG-CLIENT-TIMEOUT-02 (found by a Claude Code run on a 4 M-triangle V8): engine.inspect re-voxelises
+// the saved mesh and took over 30 s, so it failed with "Engine RPC timeout" while still working.
+// Mesh calls (inspect, convert) get their own budget.
+Deno.test({
+  name: "ENG-CLIENT-TIMEOUT-02 engine.inspect outlives the quick-call timeout",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  fn: async () => {
+    const client = new EngineClient(Deno.execPath(), {
+      args: ["run", "--quiet", fake, "1500"],
+      timeoutsMs: { quick: 1000, run: 10_000, mesh: 10_000 },
+    });
+    try {
+      assert((await client.start()).ok, "fake engine did not start");
+      const r = await client.inspect({ target: "t", ops: [{ type: "volume" }] });
+      assert(r.ok, `engine.inspect failed: ${!r.ok ? r.error.message : ""}`);
+    } finally {
+      client.stop();
+    }
+  },
+});

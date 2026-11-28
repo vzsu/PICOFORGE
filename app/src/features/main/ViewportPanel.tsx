@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { Icon, type IconName } from "./Icons.tsx";
 import { type RenderMode, type RenderStyle, StudioEngine, type StudioMetrics, type StudioView } from "../../viewport/StudioEngine.ts";
 import type { ReadoutView } from "./view.ts";
+import type { PartSelection } from "./Explorer.tsx";
 import { type CaptureView, liveSession } from "../../live/session.ts";
 
 const TOOLS: ReadonlyArray<{ id: string; icon: IconName; label: string }> = [
@@ -50,15 +51,26 @@ interface ViewportProps {
   stlUrl?: string | null;
   readout: ReadoutView | null;
   live?: boolean;
+  /** Hover / selection shared with the explorer; the shown part is "result" (one part per build in P0). */
+  sel?: PartSelection;
+  /** Settings → Appearance selection colour. */
+  selectColor?: string;
 }
 
-export function ViewportPanel({ stlUrl = null, readout, live = false }: ViewportProps) {
+/** Hover hit tests at most this often: a raycast over a multi-million-triangle part costs milliseconds. */
+const HOVER_EVERY_MS = 60;
+const PART_ID = "result";
+
+export function ViewportPanel({ stlUrl = null, readout, live = false, sel, selectColor }: ViewportProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cubeRef = useRef<HTMLDivElement>(null);
   const triadRef = useRef<SVGSVGElement>(null);
   const engineRef = useRef<StudioEngine | null>(null);
   /** True while a new STL is being fetched (before the engine starts baking it). */
   const fetchingRef = useRef(false);
+  const lastHitAt = useRef(0);
+  const downAt = useRef<{ x: number; y: number } | null>(null);
+  const hasPart = live && !!stlUrl && !!readout;
   const [mode, setMode] = useState<RenderMode>("loading");
   const [ready, setReady] = useState(false);
   const [tool, setTool] = useState("select");
@@ -165,6 +177,41 @@ export function ViewportPanel({ stlUrl = null, readout, live = false }: Viewport
     };
   }, [live, stlUrl]);
 
+  // Selection colour and tint follow the shared selection state (explorer row or viewport).
+  useEffect(() => {
+    if (selectColor) engineRef.current?.setSelectColor(selectColor);
+  }, [selectColor]);
+  const hovered = sel?.hover === PART_ID, selected = sel?.selected === PART_ID;
+  useEffect(() => {
+    engineRef.current?.setHighlight(selected ? "selected" : hovered ? "hover" : "none");
+  }, [hovered, selected]);
+
+  const pointerPos = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  };
+  const onCanvasMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!sel || !hasPart || e.buttons !== 0) return; // no hover while orbiting
+    const now = performance.now();
+    if (now - lastHitAt.current < HOVER_EVERY_MS) return;
+    lastHitAt.current = now;
+    const { x, y } = pointerPos(e);
+    const hit = engineRef.current?.hitTest(x, y) ?? false;
+    if (hit !== hovered) sel.onHover(hit ? PART_ID : null);
+  };
+  const onCanvasDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    downAt.current = pointerPos(e);
+  };
+  const onCanvasUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const d = downAt.current;
+    downAt.current = null;
+    if (!sel || !hasPart || !d) return;
+    const p = pointerPos(e);
+    if (Math.hypot(p.x - d.x, p.y - d.y) > 4) return; // a drag orbits; only a click selects
+    const hit = engineRef.current?.hitTest(p.x, p.y) ?? false;
+    sel.onSelect(hit ? PART_ID : null);
+  };
+
   const view = (v: StudioView) => engineRef.current?.setView(v);
   const stage = style === "points" ? "VALIDATING" : style === "cfd" ? "SIMULATION COMPLETE" : readout?.stage;
   const stageLine = mode === "error"
@@ -180,9 +227,24 @@ export function ViewportPanel({ stlUrl = null, readout, live = false }: Viewport
       data-viewport-ready={ready ? "true" : "false"}
       data-viewport-mode={mode}
       data-render-style={style}
+      data-hover={hovered ? "true" : "false"}
+      data-selected={selected ? "true" : "false"}
       aria-label="3D viewport"
     >
-      <canvas ref={canvasRef} className="pf-canvas" data-testid="viewport-canvas" />
+      <canvas
+        ref={canvasRef}
+        className={`pf-canvas${hovered ? " is-hover" : ""}`}
+        data-testid="viewport-canvas"
+        onPointerMove={onCanvasMove}
+        onPointerDown={onCanvasDown}
+        onPointerUp={onCanvasUp}
+        onPointerLeave={() => hovered && sel?.onHover(null)}
+      />
+      {selected && (
+        <div className="pf-selchip readout" data-testid="selected-chip">
+          SELECTED · {readout ? `${readout.volumeCm3.toFixed(1)} cm³` : "part"} · Esc to clear
+        </div>
+      )}
 
       <div className="pf-toolbar" role="toolbar" aria-label="Viewport tools">
         {TOOLS.map((t) => (

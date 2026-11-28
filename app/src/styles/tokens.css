@@ -65,6 +65,7 @@
   --ink-3:     #8E8E93;   /* micro-labels, timestamps */
   /* accent and status */
   --accent:    #D71921;   /* live state, stop, active dot. Nothing else. */
+  --select:    #0A84FF;   /* hover + selection of parts; user-set in Settings → Appearance */
   --ok:        #30D158;
   --warn:      #FFD60A;
   /* axes (gizmo, triad) */

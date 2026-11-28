@@ -17,6 +17,9 @@ import {
   unwrapEngineReply,
 } from "../../engine/client.ts";
 import { validateGeometry } from "../validate.ts";
+import { makeLogger } from "../../log.ts";
+
+const log = makeLogger("harness.tools.run_picogk");
 
 /**
  * Evaluated brief parameters as `{name: number}` for `engine.run` (08 §3: C# reads `ctx.P(name)`;
@@ -198,12 +201,28 @@ export const runPicoGKTool: ToolModule<Input> = {
       // Only geometry that clears L0–L3 becomes the artifact later tools work on
       ctx.lastArtifactId = ctx.runId;
 
+      // Save the design next to its mesh (SAVE-RUN-01): the code and the brief that made it, so the
+      // part can be reopened, downloaded and rebuilt. A save failure never fails a good build.
+      const saved: Record<string, string> = {};
+      try {
+        const dir = runFolder(ctx);
+        await Deno.mkdir(dir, { recursive: true });
+        await Deno.writeTextFile(`${dir}/design.cs`, code);
+        saved.cs = `${dir}/design.cs`;
+        if (ctx.brief) {
+          await Deno.writeTextFile(`${dir}/brief.json`, JSON.stringify(ctx.brief, null, 2));
+          saved.brief = `${dir}/brief.json`;
+        }
+      } catch (e) {
+        log.warn("design files not saved", { runId: ctx.runId, error: String(e) });
+      }
+
       return ok({
         ok: true,
         artifactId: ctx.runId,
         notes,
         stats,
-        files: built.data.files ?? {},
+        files: { ...(built.data.files ?? {}), ...saved },
         logTail: built.data.log ?? [],
         warnings: geometry.value.warnings,
       });

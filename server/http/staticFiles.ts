@@ -2,7 +2,7 @@
 // SYS_DESIGN §3.2: /files/* → artifact dir, with ETag + Range support
 
 import { makeLogger } from "../log.ts";
-import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
+import { isAbsolute, relative, resolve } from "jsr:@std/path@^1.0.0";
 import { getConfig } from "../config.ts";
 import type { Context } from "hono";
 
@@ -19,18 +19,46 @@ const MIME: Record<string, string> = {
 
 function mimeFor(path: string): string {
   const ext = path.split(".").pop()?.toLowerCase() ?? "";
+  if (ext === "cs") return "text/plain; charset=utf-8";
   return MIME[ext] ?? "application/octet-stream";
 }
 
-/** GET /files/:path* — serve artifact files from DATA_DIR */
+/** Build outputs only (design code, brief, report, meshes, captures). */
+const SERVABLE_EXT = new Set(["stl", "glb", "3mf", "vdb", "png", "json", "cs"]);
+
+/**
+ * B-014 (SEC-FILES-01): /files/* has no token (the viewport fetches meshes by URL), so it may serve
+ * only build outputs: a resolved path inside <dataDir>/runs/, no dot-files, allowed extensions.
+ * Returns the absolute path, or null. Before this, secret.env and the DB were served.
+ */
+export function resolveServable(dataDir: string, relPath: string): string | null {
+  let rel: string;
+  try {
+    rel = decodeURIComponent(relPath).replaceAll("\\", "/");
+  } catch {
+    return null;
+  }
+  const root = resolve(dataDir, "runs");
+  const abs = resolve(dataDir, rel);
+  const inside = relative(root, abs);
+  if (!inside || inside.startsWith("..") || isAbsolute(inside)) return null;
+  const parts = inside.replaceAll("\\", "/").split("/");
+  if (parts.some((p) => p.startsWith("."))) return null;
+  const ext = parts.at(-1)?.split(".").pop()?.toLowerCase() ?? "";
+  return SERVABLE_EXT.has(ext) ? abs : null;
+}
+
+/** GET /files/:path* — serve build outputs from DATA_DIR/runs */
 export async function serveFile(c: Context): Promise<Response> {
   const config = getConfig();
   const relPath = c.req.param("path");
   if (!relPath) return c.json({ error: { code: "NOT_FOUND", message: "No path" } }, 404);
 
-  // Security: no path traversal
-  const cleaned = relPath.replace(/\.\.\//g, "").replace(/\\/g, "/");
-  const absPath = join(config.DATA_DIR, cleaned);
+  const absPath = resolveServable(config.DATA_DIR, relPath);
+  if (!absPath) {
+    log.warn("refused /files request outside run outputs");
+    return c.json({ error: { code: "NOT_FOUND", message: "Not found" } }, 404);
+  }
 
   try {
     const stat = await Deno.stat(absPath);

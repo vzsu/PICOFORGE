@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { Icon, type IconName } from "./Icons.tsx";
-import { Explorer } from "./Explorer.tsx";
+import { Explorer, type PartSelection } from "./Explorer.tsx";
+import { AgentsPanel, RunsPanel } from "./Panels.tsx";
+import { SettingsOverlay } from "./SettingsOverlay.tsx";
+import { settingsStore, useSettings } from "../../live/settings.ts";
 import { ChatColumn } from "./ChatColumn.tsx";
 import { ViewportPanel } from "./ViewportPanel.tsx";
 import { statusBar } from "../../mock/mainScreen.ts";
@@ -30,6 +33,10 @@ export function MainScreen() {
   const [pane, setPane] = useState<"chat" | "viewport">("chat");
   const [rail, setRail] = useState("projects");
   const [chatFrac, setChatFrac] = useState(CHAT_DEFAULT);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [hoverPart, setHoverPart] = useState<string | null>(null);
+  const [selectedPart, setSelectedPart] = useState<string | null>(null);
+  const settings = useSettings();
   const rootRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; frac: number } | null>(null);
 
@@ -41,7 +48,14 @@ export function MainScreen() {
         if (layoutFor(window.innerWidth) === "wide") setExplorerOpen((o) => !o);
         else setOverlayOpen((o) => !o);
       }
-      if (e.key === "Escape") setOverlayOpen(false);
+      if ((e.ctrlKey || e.metaKey) && e.key === ",") {
+        e.preventDefault();
+        setSettingsOpen(true);
+      }
+      if (e.key === "Escape") {
+        setOverlayOpen(false);
+        setSelectedPart(null); // docs/02 §5: Esc deselects
+      }
     };
     window.addEventListener("resize", onResize);
     window.addEventListener("keydown", onKey);
@@ -50,6 +64,28 @@ export function MainScreen() {
       window.removeEventListener("keydown", onKey);
     };
   }, []);
+
+  // Settings apply in live mode from the start (selection colour, model); a new part clears selection.
+  useEffect(() => {
+    if (view.live) void settingsStore.load();
+  }, [view.live]);
+  useEffect(() => {
+    setSelectedPart(null);
+    setHoverPart(null);
+  }, [view.stlUrl]);
+
+  const sel: PartSelection = {
+    hover: hoverPart,
+    selected: selectedPart,
+    onHover: setHoverPart,
+    onSelect: setSelectedPart,
+  };
+  const panel = (overlay: boolean) =>
+    rail === "runs"
+      ? <RunsPanel runs={view.runs} overlay={overlay} />
+      : rail === "agents"
+      ? <AgentsPanel agents={view.agentNames} overlay={overlay} />
+      : <Explorer overlay={overlay} live={view.explorer} sel={sel} files={view.files} />;
 
   const onHandleDown = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -88,8 +124,17 @@ export function MainScreen() {
               aria-current={rail === r.id ? "page" : undefined}
               title={r.label}
               onClick={() => {
+                if (r.id === "settings") {
+                  setSettingsOpen(true);
+                  return;
+                }
+                if (layout === "wide") {
+                  if (rail === r.id) setExplorerOpen((o) => !o);
+                  else setExplorerOpen(true);
+                } else {
+                  setOverlayOpen((o) => (rail === r.id ? !o : true));
+                }
                 setRail(r.id);
-                if (r.id === "projects" && layout !== "wide") setOverlayOpen((o) => !o);
               }}
             >
               <Icon name={r.icon} size={20} />
@@ -107,7 +152,7 @@ export function MainScreen() {
           </button>
         </nav>
 
-        {layout !== "tabs" && <div className="pf-explorer-slot">{showExplorerColumn && <Explorer live={view.explorer} />}</div>}
+        {layout !== "tabs" && <div className="pf-explorer-slot">{showExplorerColumn && panel(false)}</div>}
 
         {layout === "tabs"
           ? (
@@ -128,7 +173,7 @@ export function MainScreen() {
               </div>
               <div className="pf-tabbed-body">
                 <div className="pf-tabbed-pane" hidden={pane !== "chat"}><ChatColumn view={view} /></div>
-                <div className="pf-tabbed-pane" hidden={pane !== "viewport"}><ViewportPanel live={view.live} stlUrl={view.stlUrl} readout={view.readout} /></div>
+                <div className="pf-tabbed-pane" hidden={pane !== "viewport"}><ViewportPanel live={view.live} stlUrl={view.stlUrl} readout={view.readout} sel={sel} selectColor={settings.selectColor} /></div>
               </div>
             </div>
           )
@@ -151,7 +196,7 @@ export function MainScreen() {
                   onDoubleClick={() => setChatFrac(CHAT_DEFAULT)}
                   onKeyDown={onHandleKey}
                 />
-                <ViewportPanel live={view.live} stlUrl={view.stlUrl} readout={view.readout} />
+                <ViewportPanel live={view.live} stlUrl={view.stlUrl} readout={view.readout} sel={sel} selectColor={settings.selectColor} />
               </div>
             </>
           )}
@@ -159,12 +204,16 @@ export function MainScreen() {
 
       {layout !== "wide" && overlayOpen && (
         <div className="pf-overlay" data-testid="explorer-overlay" onClick={() => setOverlayOpen(false)}>
-          <div onClick={(e) => e.stopPropagation()}><Explorer overlay live={view.explorer} /></div>
+          <div onClick={(e) => e.stopPropagation()}>{panel(true)}</div>
         </div>
       )}
 
+      {settingsOpen && <SettingsOverlay live={view.live} onClose={() => setSettingsOpen(false)} />}
+
       <footer className="pf-statusbar" data-testid="statusbar">
-        <span className="readout pf-sb-text" data-testid="save-indicator">{view.live ? (view.connection === "ready" ? "Connected" : view.connection === "connecting" ? "Connecting…" : "Offline · retrying") : statusBar.saved}</span>
+        <span className="readout pf-sb-text" data-testid="save-indicator">{view.live
+            ? `${view.connection === "ready" ? "Connected" : view.connection === "connecting" ? "Connecting…" : "Offline · retrying"}${view.saved ? ` · ${view.saved}` : ""}`
+            : statusBar.saved}</span>
         <span className="readout pf-sb-text">
           <span data-testid="tier-chip">{statusBar.tier}</span>
           {" · "}

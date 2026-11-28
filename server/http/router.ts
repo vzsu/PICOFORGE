@@ -18,7 +18,8 @@ import {
 } from "../db/repo/projects.ts";
 import { conversationCreate, conversationGet, conversationList } from "../db/repo/conversations.ts";
 import { messageCreate, messageList } from "../db/repo/messages.ts";
-import { artifactGet, runCreate, runUpdateState } from "../db/repo/runs.ts";
+import { artifactGet, runCreate, runListForConversation, runUpdateState } from "../db/repo/runs.ts";
+import { latestPart, listRunFiles } from "./designFiles.ts";
 import { settingsGet, SettingsPatchSchema, settingsSet } from "../db/repo/settings.ts";
 import { clearBaseUrl, ensureMcpToken, getConfig, writeApiKey, writeBaseUrl } from "../config.ts";
 import { AVAILABLE_MODELS, testApiKey } from "../harness/anthropic.ts";
@@ -198,6 +199,47 @@ export function buildRouter(supervisor?: EngineSupervisor): Hono {
     const artifact = artifactGet(c.req.param("id"));
     if (!artifact) return c.json(errRes("NOT_FOUND", "Artifact not found"), 404);
     return c.json({ artifact });
+  });
+
+  // ── Runs and saved design files (SAVE-RUN-01, SAVE-OPEN-01) ──────────────────
+
+  app.get("/api/conversations/:id/runs", (c) => {
+    const conv = conversationGet(c.req.param("id"));
+    if (!conv) return c.json(errRes("NOT_FOUND", "Conversation not found"), 404);
+    const runs = runListForConversation(conv.id).slice(0, 100).map((r) => ({
+      id: r.id,
+      state: r.state,
+      model: r.model,
+      startedAt: r.startedAt,
+      totalMs: r.totalMs,
+      errorCode: r.errorCode,
+    }));
+    return c.json({ runs });
+  });
+
+  app.get("/api/conversations/:id/latest-part", async (c) => {
+    const conv = conversationGet(c.req.param("id"));
+    if (!conv) return c.json(errRes("NOT_FOUND", "Conversation not found"), 404);
+    const ids = runListForConversation(conv.id).filter((r) => r.state === "done").map((r) => r.id);
+    return c.json({ part: await latestPart(getConfig().DATA_DIR, ids) });
+  });
+
+  app.get("/api/runs/:id/files", async (c) => {
+    return c.json({ files: await listRunFiles(getConfig().DATA_DIR, c.req.param("id")) });
+  });
+
+  // ── MCP connection info for Settings (boot-token protected; agents never see it) ──
+
+  app.get("/api/mcp/connect", async (c) => {
+    const cfg = getConfig();
+    const url = `http://127.0.0.1:${cfg.PORT}/mcp`;
+    const token = await ensureMcpToken(cfg.DATA_DIR);
+    return c.json({
+      url,
+      token,
+      claudeCode:
+        `claude mcp add --transport http picoforge ${url} --header "X-PicoForge-Token: ${token}"`,
+    });
   });
 
   // ── Models (available models list for UI) ──────────────────────────────────

@@ -83,6 +83,16 @@ Deno.test("CHAT-RUN-01 mock fan prompt → brief block, text, states, geometry.r
     assertEquals(geo.url, "/files/runs/run-1/part.stl");
     assertEquals(geo.stats.volumeCm3, 31.2);
     await Deno.stat(join(dataDir, "runs", "run-1", "part.stl")); // URL maps to a real file
+    // SAVE-RUN-01: the design is saved next to its mesh
+    const cs = await Deno.readTextFile(join(dataDir, "runs", "run-1", "design.cs"));
+    assert(cs.includes("public static class Design"));
+    const savedBrief = JSON.parse(
+      await Deno.readTextFile(join(dataDir, "runs", "run-1", "brief.json")),
+    );
+    assertEquals(
+      savedBrief.parameters.find((p: { name: string }) => p.name === "blade_count").value,
+      7,
+    );
     assertEquals(engine.runs[0].params?.blade_count, 7);
     assertEquals(frames.at(-1)?.type, "chat.done");
     await Deno.remove(dataDir, { recursive: true });

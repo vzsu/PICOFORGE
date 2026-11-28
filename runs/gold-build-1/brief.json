@@ -1,0 +1,66 @@
+{
+  "title": "Test Fan",
+  "category": "rotor_fan",
+  "requirements": [
+    "5 blades"
+  ],
+  "parameters": [
+    {
+      "name": "diameter",
+      "value": 80,
+      "unit": "mm",
+      "rationale": "fits"
+    },
+    {
+      "name": "blade_count",
+      "value": 5,
+      "unit": "count",
+      "rationale": "design"
+    },
+    {
+      "name": "hub_d",
+      "value": 22.5,
+      "unit": "mm",
+      "rationale": "motor shaft"
+    }
+  ],
+  "physics_checks": [
+    {
+      "name": "tip_speed",
+      "formula": "v=ωr",
+      "computed": 50,
+      "limit": 200,
+      "pass": true
+    },
+    {
+      "name": "centrifugal_stress_sf",
+      "formula": "σ",
+      "computed": 2,
+      "limit": 10,
+      "pass": true
+    },
+    {
+      "name": "solidity",
+      "formula": "σ=Bc/πD",
+      "computed": 0.3,
+      "limit": 0.7,
+      "pass": true
+    },
+    {
+      "name": "min_blade_thickness",
+      "formula": "t=3×vox",
+      "computed": 1.5,
+      "limit": 0.8,
+      "pass": true
+    }
+  ],
+  "envelope_mm": {
+    "x": 100,
+    "y": 100,
+    "z": 50
+  },
+  "voxel_size_mm": 0.5,
+  "material": "PETG",
+  "assumptions": [],
+  "risks": []
+}

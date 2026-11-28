@@ -5,9 +5,22 @@ import type { ReactElement } from "react";
 export type IconName =
   | "home" | "cube" | "runs" | "agent" | "gear"
   | "select" | "move" | "rotate" | "section" | "measure" | "capture"
-  | "eye" | "eyeOff" | "chevronDown" | "chevronRight" | "sidebar";
+  | "eye" | "eyeOff" | "chevronDown" | "chevronRight" | "sidebar" | "save" | "close";
 
 const PATHS: Record<IconName, ReactElement> = {
+  save: (
+    <>
+      <path d="M12 4v11" />
+      <path d="m7.5 10.5 4.5 4.5 4.5-4.5" />
+      <path d="M5 19h14" />
+    </>
+  ),
+  close: (
+    <>
+      <path d="m6 6 12 12" />
+      <path d="M18 6 6 18" />
+    </>
+  ),
   home: <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z" />,
   cube: (
     <>

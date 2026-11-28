@@ -8,6 +8,8 @@ import { EFFORT_BY_MODE, EffortSchema } from "../../domain/modes.ts";
 
 // ─── Default settings ─────────────────────────────────────────────────────────
 
+const HEX = z.string().regex(/^#[0-9a-fA-F]{6}$/);
+
 /** docs/13 §2: 64k output tokens per streamed turn (truncation costs a repair turn). */
 const MAX_OUTPUT_TOKENS = 64_000;
 
@@ -45,6 +47,8 @@ export const SettingsSchema = z.object({
     })
     .default({}),
   telemetry: z.boolean().default(false),
+  /** Appearance: hover/selection colour (docs/02: the red accent stays reserved for live state). */
+  ui: z.object({ selectColor: HEX.default("#0A84FF") }).default({}),
 });
 export type Settings = z.infer<typeof SettingsSchema>;
 
@@ -80,6 +84,7 @@ export const SettingsPatchSchema = z.object({
     ptEnabled: z.boolean().optional(),
   }).optional(),
   telemetry: z.boolean().optional(),
+  ui: z.object({ selectColor: HEX.optional() }).optional(),
 });
 export type SettingsPatch = z.infer<typeof SettingsPatchSchema>;
 
@@ -106,6 +111,7 @@ export function settingsSet(patch: SettingsPatch): Settings {
     effortByMode: { ...current.effortByMode, ...patch.effortByMode },
     retention: { ...current.retention, ...patch.retention },
     renderer: { ...current.renderer, ...patch.renderer },
+    ui: { ...current.ui, ...patch.ui },
   });
   withTx((db) => {
     for (const [key, value] of Object.entries(merged)) {

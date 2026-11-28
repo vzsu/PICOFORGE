@@ -52,6 +52,8 @@ export interface LiveRun {
 }
 
 export interface LiveGeometry {
+  /** The run that built it (its folder holds design.cs, brief.json, part.stl). */
+  runId: string | null;
   url: string;
   volumeCm3: number;
   massKg: number | null;
@@ -70,6 +72,24 @@ export interface LiveState {
   /** Agents seen in this session (origins of MCP messages and focus events). */
   agents: string[];
   projectName: string | null;
+  projectId: string | null;
+  /** All projects, newest first (sidebar Projects). */
+  projects: Array<{ id: string; name: string }>;
+  /** This conversation's runs, newest first (sidebar Runs). */
+  runs: LiveRunRow[];
+  /** When the shown part's design files were saved (every validated build saves them). */
+  savedAt: number | null;
+  /** Downloadable design files of the shown part. */
+  files: Array<{ name: string; url: string; bytes: number }>;
+}
+
+export interface LiveRunRow {
+  id: string;
+  state: string;
+  model: string;
+  startedAt: number;
+  totalMs: number | null;
+  errorCode: string | null;
 }
 
 const INITIAL: LiveState = {
@@ -82,6 +102,11 @@ const INITIAL: LiveState = {
   error: null,
   agents: [],
   projectName: null,
+  projectId: null,
+  projects: [],
+  runs: [],
+  savedAt: null,
+  files: [],
 };
 
 /** g/cm³; mass shown only for known materials (an estimate never poses as a measurement). */
@@ -209,7 +234,7 @@ export function reduce(s: LiveState, ev: WsEvent, now = Date.now()): LiveState {
     }
     case "session.focus": {
       const agents = s.agents.includes(ev.origin) ? s.agents : [...s.agents, ev.origin];
-      return { ...s, agents, projectName: ev.projectName };
+      return { ...s, agents, projectName: ev.projectName, projectId: ev.projectId };
     }
     case "chat.delta": {
       const id = str(ev.messageId), d = str(ev.textDelta);
@@ -232,7 +257,9 @@ export function reduce(s: LiveState, ev: WsEvent, now = Date.now()): LiveState {
       const rho = s.brief ? DENSITY[s.brief.material] : undefined;
       return {
         ...s,
+        savedAt: now,
         geometry: {
+          runId: str(ev.runId),
           url,
           volumeCm3: vol,
           massKg: rho ? (vol * rho) / 1000 : null,
@@ -285,6 +312,16 @@ export function fromHistory(body: unknown): { messages: LiveMessage[]; brief: Li
 /** Views an agent may ask for (ViewportCaptureRequestEvent.view). */
 export type CaptureView = "iso" | "front" | "top" | "right" | "current";
 type CaptureFn = (view: CaptureView) => Promise<string | null>;
+
+function parseFiles(v: unknown): LiveState["files"] {
+  return Array.isArray(v)
+    ? v.flatMap((f) => {
+      if (!isRecord(f)) return [];
+      const name = str(f.name), url = str(f.url), bytes = num(f.bytes);
+      return name && url && bytes !== null ? [{ name, url, bytes }] : [];
+    })
+    : [];
+}
 
 // ─── Store ──────────────────────────────────────────────────────────────────
 
@@ -340,9 +377,90 @@ class LiveSession {
       const health = await readJson(await apiFetch("/api/health"));
       const eng = isRecord(health) && isRecord(health.engine) ? str(health.engine.status) : null;
       this.set({ ...this.state, engine: eng === "ok" ? "ok" : eng ? "down" : "unknown" });
-      await this.attach(await this.conversation());
+      await this.loadProjects();
+      await this.openProject(this.state.projects[0]?.id ?? null);
     } catch (e) {
       this.set({ ...this.state, connection: "error", error: { code: "BOOT", message: String(e) } });
+    }
+  }
+
+  /** Projects for the sidebar, newest first. */
+  async loadProjects(): Promise<void> {
+    const list = await readJson(await apiFetch("/api/projects"));
+    const projects = isRecord(list) && Array.isArray(list.projects)
+      ? list.projects.flatMap((p) => {
+        const id = isRecord(p) ? str(p.id) : null, name = isRecord(p) ? str(p.name) : null;
+        return id && name ? [{ id, name }] : [];
+      })
+      : [];
+    this.set({ ...this.state, projects });
+  }
+
+  /** Switch the window to a project (null: the first one, created on first launch). */
+  async openProject(projectId: string | null): Promise<void> {
+    const convId = await this.conversation(projectId);
+    const pid = this.projectOf ?? projectId;
+    const name = this.state.projects.find((p) => p.id === pid)?.name ?? "Studio";
+    this.set({
+      ...this.state,
+      projectId: pid,
+      projectName: name,
+      messages: [],
+      brief: null,
+      geometry: null,
+      run: null,
+      error: null,
+      savedAt: null,
+      files: [],
+      runs: [],
+    });
+    await this.attach(convId);
+  }
+
+  /** The last saved part of this conversation back in the viewport (SAVE-OPEN-01). */
+  private async restorePart(convId: string): Promise<void> {
+    const j = await readJson(await apiFetch(`/api/conversations/${convId}/latest-part`));
+    const p = isRecord(j) && isRecord(j.part) ? j.part : null;
+    const st = p && isRecord(p.stats) ? p.stats : null;
+    const url = p ? str(p.url) : null, vol = st ? num(st.volumeCm3) : null;
+    if (!p || !st || !url || vol === null || this.convId !== convId || this.state.geometry) return;
+    const material = str(st.material);
+    const rho = material ? DENSITY[material] : undefined;
+    this.set({
+      ...this.state,
+      savedAt: num(p.savedAt),
+      files: parseFiles(p.files),
+      geometry: {
+        runId: str(p.runId),
+        url,
+        volumeCm3: vol,
+        massKg: rho ? (vol * rho) / 1000 : null,
+        triangles: num(st.triangles) ?? 0,
+        watertight: st.watertight === true,
+      },
+    });
+  }
+
+  async refreshRuns(): Promise<void> {
+    const convId = this.convId;
+    if (!convId) return;
+    const j = await readJson(await apiFetch(`/api/conversations/${convId}/runs`)).catch(() => null);
+    const runs = isRecord(j) && Array.isArray(j.runs)
+      ? j.runs.flatMap((r) => {
+        if (!isRecord(r)) return [];
+        const id = str(r.id), state = str(r.state), startedAt = num(r.startedAt);
+        return id && state && startedAt !== null
+          ? [{ id, state, model: str(r.model) ?? "", startedAt, totalMs: num(r.totalMs), errorCode: str(r.errorCode) }]
+          : [];
+      })
+      : [];
+    if (this.convId === convId) this.set({ ...this.state, runs });
+  }
+
+  private async refreshFiles(runId: string): Promise<void> {
+    const j = await readJson(await apiFetch(`/api/runs/${runId}/files`)).catch(() => null);
+    if (this.state.geometry?.runId === runId) {
+      this.set({ ...this.state, files: parseFiles(isRecord(j) ? j.files : null) });
     }
   }
 
@@ -353,6 +471,8 @@ class LiveSession {
     try {
       const h = fromHistory(await readJson(await apiFetch(`/api/conversations/${convId}/messages`)));
       this.set({ ...this.state, messages: h.messages, brief: h.brief });
+      await this.restorePart(convId);
+      await this.refreshRuns();
     } catch {
       // history is a convenience; the live stream still works
     }
@@ -364,21 +484,35 @@ class LiveSession {
         return;
       }
       this.set(reduce(this.state, ev));
+      if (ev.type === "geometry.ready") void this.refreshFiles(ev.runId);
+      if (ev.type === "run.status" && ["done", "failed", "cancelled"].includes(ev.state)) {
+        void this.refreshRuns();
+      }
       // An MCP agent opened another project: follow it (docs/14 §10)
       if (ev.type === "session.focus" && ev.conversationId !== this.convId) {
-        this.set({ ...this.state, messages: [], brief: null, geometry: null, run: null, error: null, connection: "connecting" });
-        void this.attach(ev.conversationId);
+        this.set({
+          ...this.state,
+          messages: [],
+          brief: null,
+          geometry: null,
+          run: null,
+          error: null,
+          savedAt: null,
+          files: [],
+          runs: [],
+          connection: "connecting",
+        });
+        void this.loadProjects().then(() => this.attach(ev.conversationId));
       }
     });
     this.ws.connect();
   }
 
-  /** First project + conversation, created on first launch. */
-  private async conversation(): Promise<string> {
-    const list = await readJson(await apiFetch("/api/projects"));
-    let projectId = isRecord(list) && Array.isArray(list.projects) && isRecord(list.projects[0])
-      ? str(list.projects[0].id)
-      : null;
+  private projectOf: string | null = null;
+
+  /** A project's first conversation; with no project, the first project (created on first launch). */
+  private async conversation(wanted: string | null): Promise<string> {
+    let projectId = wanted;
     if (!projectId) {
       const created = await readJson(
         await apiFetch("/api/projects", {
@@ -390,6 +524,8 @@ class LiveSession {
       projectId = isRecord(created) && isRecord(created.project) ? str(created.project.id) : null;
     }
     if (!projectId) throw new Error("no project");
+    this.projectOf = projectId;
+    if (!this.state.projects.some((p) => p.id === projectId)) await this.loadProjects();
     const convs = await readJson(await apiFetch(`/api/projects/${projectId}/conversations`));
     let convId = isRecord(convs) && Array.isArray(convs.conversations) && isRecord(convs.conversations[0])
       ? str(convs.conversations[0].id)

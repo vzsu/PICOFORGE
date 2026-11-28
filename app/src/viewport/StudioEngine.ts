@@ -87,6 +87,8 @@ export interface StudioMetrics {
   renderStyle: RenderStyle;
   /** Points on screen in the loading style (0 otherwise). */
   points: number;
+  /** Part highlight in the selection colour. */
+  highlight: "none" | "hover" | "selected";
 }
 
 export interface StudioCallbacks {
@@ -170,7 +172,7 @@ export class StudioEngine {
     tier: "T0", mode: "loading", firstFrameMs: null, buildMs: null, bakeTimings: null,
     triangles: 0, vertices: 0, drawCalls: 0, renderScale: 1, pixelRatio: 1, accumFrames: 0,
     interactiveFrames: 0, frameMsP50: null, frameMsP95: null, volumeCm3: null, errorCode: null,
-    renderStyle: "studio", points: 0,
+    renderStyle: "studio", points: 0, highlight: "none",
   };
   private renderStyle: RenderStyle = "studio";
   private studioMat: MeshStandardMaterial | null = null;
@@ -382,26 +384,95 @@ export class StudioEngine {
    * (docs/14 §3). The user's camera is restored before returning: agents never move it (docs/14 §1).
    * Null when no part is loaded.
    */
-  capture(view: "iso" | "front" | "top" | "right" | "current", maxPx = 768): string | null {
+  capture(view: "iso" | "front" | "top" | "right" | "current", w = 1024, h = 768): string | null {
     if (this.disposed || !this.part) return null;
+    // Offscreen at a fixed size: a hidden or tiny window canvas gave 1–2 px blank captures.
     const pos = this.controls.getPosition(new Vector3());
     const target = this.controls.getTarget(new Vector3());
+    const aspect = this.camera.aspect;
+    this.camera.aspect = w / h;
+    this.camera.clearViewOffset();
+    this.camera.updateProjectionMatrix();
     if (view !== "current") this.setView(view === "iso" ? "home" : view, false);
     this.controls.update(0);
-    this.camera.clearViewOffset();
-    this.renderer.setRenderTarget(null);
-    this.renderer.render(this.scene, this.camera);
-    // read back in the same task, before the browser composites and clears the drawing buffer
-    const src = this.renderer.domElement;
-    const k = Math.min(1, maxPx / Math.max(src.width, src.height));
+    const rt = new WebGLRenderTarget(w, h, { samples: 4 });
+    const px = new Uint8Array(w * h * 4);
+    try {
+      this.renderer.setRenderTarget(rt);
+      this.renderer.clear();
+      this.renderer.render(this.scene, this.camera);
+      this.renderer.readRenderTargetPixels(rt, 0, 0, w, h, px);
+    } finally {
+      this.renderer.setRenderTarget(null);
+      rt.dispose();
+      this.camera.aspect = aspect;
+      this.camera.updateProjectionMatrix();
+      void this.controls.setLookAt(pos.x, pos.y, pos.z, target.x, target.y, target.z, false);
+      this.controls.update(0);
+      this.input(); // redraw the user's own view
+    }
+    // render targets are linear: encode sRGB like the screen path, and flip rows (GL is bottom-up)
+    const lut = new Uint8ClampedArray(256);
+    for (let i = 0; i < 256; i++) {
+      const c = i / 255;
+      lut[i] = Math.round(255 * (c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055));
+    }
+    const img = new ImageData(w, h);
+    for (let y = 0; y < h; y++) {
+      const src = (h - 1 - y) * w * 4, dst = y * w * 4;
+      for (let x = 0; x < w * 4; x += 4) {
+        img.data[dst + x] = lut[px[src + x]];
+        img.data[dst + x + 1] = lut[px[src + x + 1]];
+        img.data[dst + x + 2] = lut[px[src + x + 2]];
+        img.data[dst + x + 3] = 255;
+      }
+    }
     const out = document.createElement("canvas");
-    out.width = Math.max(1, Math.round(src.width * k));
-    out.height = Math.max(1, Math.round(src.height * k));
-    out.getContext("2d")?.drawImage(src, 0, 0, out.width, out.height);
-    void this.controls.setLookAt(pos.x, pos.y, pos.z, target.x, target.y, target.z, false);
-    this.controls.update(0);
-    this.input(); // redraw the user's own view
+    out.width = w;
+    out.height = h;
+    out.getContext("2d")?.putImageData(img, 0, 0);
     return out.toDataURL("image/png").replace(/^data:image\/png;base64,/, "");
+  }
+
+  // ─── Hover and selection (docs/02 §5, Settings → Appearance "selection colour") ─────────────────
+
+  private highlight: "none" | "hover" | "selected" = "none";
+  private readonly selectColor = new Color("#0A84FF");
+  private readonly raycaster = new Raycaster();
+
+  /** The selection colour (hex). Not the red live accent: that stays reserved for live state. */
+  setSelectColor(hex: string): void {
+    if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return;
+    this.selectColor.set(hex);
+    this.applyHighlight();
+  }
+
+  /** Tint the part: a slight wash on hover, stronger when selected. */
+  setHighlight(h: "none" | "hover" | "selected"): void {
+    if (h === this.highlight) return;
+    this.highlight = h;
+    this.metrics.highlight = h;
+    this.applyHighlight();
+  }
+
+  private applyHighlight(): void {
+    const k = this.highlight === "selected" ? 0.32 : this.highlight === "hover" ? 0.16 : 0;
+    for (const m of [this.studioMat, this.fieldMat]) {
+      if (!m) continue;
+      m.emissive.copy(this.selectColor);
+      m.emissiveIntensity = k;
+    }
+    this.input();
+  }
+
+  /** Is the part under this point (CSS px relative to the canvas)? Bounding-sphere reject first. */
+  hitTest(x: number, y: number): boolean {
+    if (!this.part || this.disposed) return false;
+    const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
+    if (w < 2 || h < 2) return false;
+    this.raycaster.setFromCamera(new Vector2((x / w) * 2 - 1, -(y / h) * 2 + 1), this.camera);
+    if (!this.raycaster.ray.intersectsSphere(this.partSphere)) return false;
+    return this.raycaster.intersectObject(this.part, false).length > 0;
   }
 
   resize(): void {
@@ -522,6 +593,7 @@ export class StudioEngine {
     this.metrics.vertices = data.positions.length / 3;
     this.metrics.volumeCm3 = data.volumeCm3;
     this.applyStyle(); // a style chosen before the part arrived applies now
+    this.applyHighlight(); // keep hover/selection tint across rebuilds
     this.setView("home", false);
     this.cb.onPart?.({ volumeCm3: data.volumeCm3, triangles: this.metrics.triangles, bakeMs: data.totalMs });
   }

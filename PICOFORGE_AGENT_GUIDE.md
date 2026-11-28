@@ -526,8 +526,11 @@ last 10 % of span; ducted (add a `Kit.voxTube` ring with tip clearance ≥ 0.5 m
 - **Build in sub-assemblies:** write one `private static Voxels voxBlock(Ctx ctx)`,
   `voxHeads(...)`, `voxIntake(...)` and so on, then union them in `voxBuild`. Collect bodies in a
   `List<Voxels>` and call `BoolAddAll` once. That is far faster than many single `BoolAdd` calls.
-- **Pipes, runners, manifolds:** `Kit.voxSweepCircle(ctx, path, r)` along a list of points. For a
-  hollow pipe, sweep the outer radius, then `BoolSubtract` the inner sweep, extended 1 mm past both ends.
+- **Pipes, runners, manifolds:** `Kit.voxSweepCircle(ctx, path, r)` along a list of points. Its ends
+  are **rounded caps**. For a hollow pipe, sweep the outer radius, then `BoolSubtract` an inner sweep
+  whose path is extended past each open end by **more than the outer radius** (along the end
+  tangent). If you extend it only 1 mm, the outer cap leaves a skin and the pipe is sealed. Check open
+  ends with an `inspect_geometry` `ray` op along the pipe axis.
 - **Internal cooling channels:** subtract swept circles or `Kit.voxCylinder` bores from the solid
   (water jackets, oil galleries). Keep at least 3 voxels of wall between a channel and the outside.
   Fins: thin `Kit.voxBox` plates in a loop, unioned with `BoolAddAll`.
@@ -541,6 +544,14 @@ last 10 % of span; ducted (add a `Kit.voxTube` ring with tip clearance ≥ 0.5 m
 - **Organic / biophilic forms:** branching `Lattice` beams with tapering radii (thick at the root,
   thin at the tip) followed by `vox.Smoothen(mm)` read as grown structures. Use `Kit.impGyroid` for
   bone-like infill.
+- **Your own shapes:** a nested `private class` inside `Design` may implement `PicoGK.IImplicit`
+  (`float fSignedDistance(in Vector3 vec)`) for shapes Kit lacks, such as a tilted box or a twisted
+  section. Build it with `Kit.voxFromImplicit(ctx, shape, bounds)`.
+- **Measuring big parts:** `inspect_geometry` re-voxelises the saved STL. Sealed internal voids come
+  back filled, so its volume can exceed the build volume. That difference is a clue that a channel is
+  closed. On multi-million-triangle parts inspect can take a minute or two.
+- **Views:** `capture_viewport` front looks from −Y toward +Y, right from +X, top from +Z down, iso
+  from the front-right-top. Put the part's "front" toward −Y so the views read naturally.
 - **Time limit:** a build is killed after the run timeout. If you get `TIMEOUT`, coarsen the voxel
   size first, then cut feature counts.
 

@@ -163,8 +163,10 @@ const enginePingSchema = z.object({}).passthrough();
 export interface EngineTimeouts {
   quick: number;
   run: number;
+  /** inspect / convert re-voxelise a saved mesh: minutes on a multi-million-triangle part. */
+  mesh: number;
 }
-const DEFAULT_TIMEOUTS: EngineTimeouts = { quick: 30_000, run: 330_000 };
+const DEFAULT_TIMEOUTS: EngineTimeouts = { quick: 30_000, run: 330_000, mesh: 180_000 };
 
 export interface EngineRunParams {
   code?: string;
@@ -241,12 +243,22 @@ export class EngineClient implements EngineApi {
 
   /** `engine.inspect {target, ops}` → measurements (04 §5). */
   async inspect(req: EngineInspectRequest): Promise<Result<EngineInspectResult, Error>> {
-    return await this.callParsed("engine.inspect", req, engineInspectResultSchema);
+    return await this.callParsed(
+      "engine.inspect",
+      req,
+      engineInspectResultSchema,
+      this.timeouts.mesh,
+    );
   }
 
   /** Mesh export of a built target into `outPath` (host method `engine.convert`). */
   async export(req: EngineExportRequest): Promise<Result<EngineExportResult, Error>> {
-    return await this.callParsed("engine.convert", req, engineExportResultSchema);
+    return await this.callParsed(
+      "engine.convert",
+      req,
+      engineExportResultSchema,
+      this.timeouts.mesh,
+    );
   }
 
   private async callParsed<S extends z.ZodTypeAny>(

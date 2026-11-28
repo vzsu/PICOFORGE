@@ -358,3 +358,13 @@ Deno.test("SETTINGS-PATCH-01 nested settings patch keeps sibling values", async 
   assertEquals(s.retention, { runsPerProject: 7, maxBytes: 5_000_000 });
   assertEquals(settingsGet().retention.runsPerProject, 7);
 });
+
+// SETTINGS-UI-01: the selection colour defaults to blue, persists, and rejects non-hex values.
+Deno.test("SETTINGS-UI-01 selection colour: default, patch, validation", async () => {
+  await setupDb();
+  assertEquals(settingsGet().ui.selectColor, "#0A84FF");
+  settingsSet(SettingsPatchSchema.parse({ ui: { selectColor: "#30D158" } }));
+  assertEquals(settingsGet().ui.selectColor, "#30D158");
+  assertEquals(SettingsPatchSchema.safeParse({ ui: { selectColor: "red; x" } }).success, false);
+  settingsSet({ ui: { selectColor: "#0A84FF" } });
+});

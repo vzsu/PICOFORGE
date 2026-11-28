@@ -1,0 +1,334 @@
+{
+  "title": "Tuned twin-blower 6.25 L 90-degree V8, 1:2.5 scale model (scale 0.4), air + coolant cooled",
+  "category": "generic",
+  "requirements": [
+    "custom tuned V8, overclocked (high boost)",
+    "tubes: tubular exhaust headers and intake runners",
+    "superchargers on top",
+    "cooling channels for air (fins) and coolant (water jackets, head galleries, ports)",
+    "cooling sized to the heat load",
+    "scale model inside the 400 mm envelope"
+  ],
+  "parameters": [
+    {
+      "name": "scale",
+      "value": 0.4,
+      "unit": "ratio",
+      "rationale": "1:2.5 model; all other mm values are full size and multiplied in code"
+    },
+    {
+      "name": "bore",
+      "value": 104,
+      "unit": "mm",
+      "rationale": "big-bore V8, 6.25 L with 92 stroke"
+    },
+    {
+      "name": "stroke",
+      "value": 92,
+      "unit": "mm",
+      "rationale": "short stroke for 6500 rpm, piston speed 19.9 m/s"
+    },
+    {
+      "name": "bore_spacing",
+      "value": 112,
+      "unit": "mm",
+      "rationale": "siamesed bores, 8 mm bridge"
+    },
+    {
+      "name": "bank_stagger",
+      "value": 22,
+      "unit": "mm",
+      "rationale": "rod side-by-side offset between banks"
+    },
+    {
+      "name": "bank_angle",
+      "value": 90,
+      "unit": "deg",
+      "rationale": "90-degree V8"
+    },
+    {
+      "name": "crank_height",
+      "value": 220,
+      "unit": "mm",
+      "rationale": "crank axis above the sump floor"
+    },
+    {
+      "name": "deck_height",
+      "value": 235,
+      "unit": "mm",
+      "rationale": "crank axis to deck"
+    },
+    {
+      "name": "head_height",
+      "value": 130,
+      "unit": "mm",
+      "rationale": "head deck to cam cover face"
+    },
+    {
+      "name": "head_half_width",
+      "value": 95,
+      "unit": "mm",
+      "rationale": "head half width across the bank"
+    },
+    {
+      "name": "block_half_width",
+      "value": 77,
+      "unit": "mm",
+      "rationale": "liner 57 + jacket 12 + outer wall 8"
+    },
+    {
+      "name": "block_half_length",
+      "value": 290,
+      "unit": "mm",
+      "rationale": "4 x 112 bore pitch plus end walls"
+    },
+    {
+      "name": "liner_wall",
+      "value": 5,
+      "unit": "mm",
+      "rationale": "wet-liner wall"
+    },
+    {
+      "name": "jacket_gap",
+      "value": 12,
+      "unit": "mm",
+      "rationale": "water-jacket gap; D_h = 24 mm, 2.0 m/s at the design flow"
+    },
+    {
+      "name": "coolant_port_d",
+      "value": 52,
+      "unit": "mm",
+      "rationale": "bank inlet port, 2.65 m/s at 5.6 L/s"
+    },
+    {
+      "name": "head_channel_d",
+      "value": 28,
+      "unit": "mm",
+      "rationale": "longitudinal head coolant gallery (2 per head)"
+    },
+    {
+      "name": "transfer_d",
+      "value": 12,
+      "unit": "mm",
+      "rationale": "block-to-head transfer holes, 2 per cylinder"
+    },
+    {
+      "name": "header_od",
+      "value": 48,
+      "unit": "mm",
+      "rationale": "1.9 in primaries for ~700 kW"
+    },
+    {
+      "name": "collector_od",
+      "value": 80,
+      "unit": "mm",
+      "rationale": "3.15 in 4-into-1 collector"
+    },
+    {
+      "name": "pipe_wall",
+      "value": 6.5,
+      "unit": "mm",
+      "rationale": "gives 2.6 mm model wall, above the 2.4 mm voxel minimum"
+    },
+    {
+      "name": "runner_od",
+      "value": 52,
+      "unit": "mm",
+      "rationale": "intake runner"
+    },
+    {
+      "name": "hose_od",
+      "value": 66,
+      "unit": "mm",
+      "rationale": "coolant hose to each bank"
+    },
+    {
+      "name": "fin_thickness",
+      "value": 7.5,
+      "unit": "mm",
+      "rationale": "3.0 mm in the model"
+    },
+    {
+      "name": "fin_pitch",
+      "value": 30,
+      "unit": "mm",
+      "rationale": "forced-air fin spacing"
+    },
+    {
+      "name": "fin_height",
+      "value": 30,
+      "unit": "mm",
+      "rationale": "fin projection"
+    },
+    {
+      "name": "blower_lobe_r",
+      "value": 62,
+      "unit": "mm",
+      "rationale": "roots housing bore radius (rotor 116 mm)"
+    },
+    {
+      "name": "blower_length",
+      "value": 250,
+      "unit": "mm",
+      "rationale": "rotor length; 2.64 L/rev per blower"
+    },
+    {
+      "name": "ic_height",
+      "value": 60,
+      "unit": "mm",
+      "rationale": "air-to-water intercooler core height"
+    },
+    {
+      "name": "rpm",
+      "value": 6500,
+      "unit": "rpm",
+      "rationale": "peak power speed"
+    },
+    {
+      "name": "pressure_ratio",
+      "value": 2,
+      "unit": "ratio",
+      "rationale": "1.0 bar gauge boost"
+    },
+    {
+      "name": "heat_rejection",
+      "value": 645000,
+      "unit": "w",
+      "rationale": "0.28 x fuel power to coolant"
+    },
+    {
+      "name": "brake_power",
+      "value": 691000,
+      "unit": "w",
+      "rationale": "first-order from the air flow"
+    }
+  ],
+  "physics_checks": [
+    {
+      "name": "wall_thickness_min",
+      "formula": "model wall = pipe_wall x scale = 6.5 x 0.4 (block outer wall 8 x 0.4 = 3.2, fins 3.0) >= 3 x voxel",
+      "computed": 2.6,
+      "limit": 2.4,
+      "pass": true
+    },
+    {
+      "name": "channel_hydraulic_diameter",
+      "formula": "jacket D_h = 4A/P = 2 x gap = 24 mm full, 9.6 mm in the model, must be >= 3 voxels",
+      "computed": 9.6,
+      "limit": 2.4,
+      "pass": true
+    },
+    {
+      "name": "displacement_L",
+      "formula": "V = 8 x pi/4 x b^2 x s = 8 x pi/4 x 10.4^2 x 9.2 cm3",
+      "computed": 6.25,
+      "limit": 6.5,
+      "pass": true
+    },
+    {
+      "name": "mean_piston_speed",
+      "formula": "v = 2 x s x n / 60, m/s",
+      "computed": 19.9,
+      "limit": 25,
+      "pass": true
+    },
+    {
+      "name": "blower_outlet_temp_K",
+      "formula": "T2 = T1 (1 + (PR^0.2857 - 1)/eta), T1 300 K, PR 2, eta 0.55 (roots)",
+      "computed": 419.5,
+      "limit": 430,
+      "pass": true
+    },
+    {
+      "name": "charge_air_flow_kg_s",
+      "formula": "m = rho2 x VE x V x n/2 = 2.14 x 0.85 x 6.25e-3 x 54.17 (330 K after the intercooler)",
+      "computed": 0.616,
+      "limit": 0.7,
+      "pass": true
+    },
+    {
+      "name": "brake_power_kW",
+      "formula": "P = m_air/AFR x LHV x eta = 0.616/11.5 x 43 MJ/kg x 0.30",
+      "computed": 691,
+      "limit": 750,
+      "pass": true
+    },
+    {
+      "name": "coolant_heat_rejection_kW",
+      "formula": "Q = 0.28 x fuel power = 0.28 x 2303 kW (about the brake power, as for high-boost engines)",
+      "computed": 645,
+      "limit": 700,
+      "pass": true
+    },
+    {
+      "name": "coolant_mass_flow_kg_s",
+      "formula": "m = Q/(cp x dT) = 645/(3.6 x 15), 50/50 glycol; 11.3 L/s = 677 L/min",
+      "computed": 11.9,
+      "limit": 12.5,
+      "pass": true
+    },
+    {
+      "name": "jacket_velocity_mps",
+      "formula": "v = (Vdot/2)/(2 x gap x 115 mm) = 5.63e-3/2.76e-3 per bank",
+      "computed": 2.04,
+      "limit": 3,
+      "pass": true
+    },
+    {
+      "name": "coolant_port_velocity_mps",
+      "formula": "v = 5.63e-3 / (pi/4 x 0.052^2)",
+      "computed": 2.65,
+      "limit": 3,
+      "pass": true
+    },
+    {
+      "name": "intercooler_heat_kW",
+      "formula": "Q = m x cp x (T2 - Tout) = 0.616 x 1.005 x (419.5 - 330)",
+      "computed": 55.4,
+      "limit": 60,
+      "pass": true
+    },
+    {
+      "name": "ic_water_flow_kg_s",
+      "formula": "m = Q/(cp x dT) = 55.4/(4.0 x 8), separate low-temperature loop",
+      "computed": 1.73,
+      "limit": 2.5,
+      "pass": true
+    },
+    {
+      "name": "blower_displacement_L_rev",
+      "formula": "needed = (m/rho1/2)/(VE_b x n_b) = 0.261/(0.8 x 130); available = 2 x 0.5 x pi/4 x 0.116^2 x 0.25 = 2.64",
+      "computed": 2.51,
+      "limit": 2.64,
+      "pass": true
+    },
+    {
+      "name": "air_fin_heat_kW",
+      "formula": "Q = h x A x dT = 60 x 0.9 m2 x 60 K (secondary path; coolant carries the load)",
+      "computed": 3.2,
+      "limit": 645,
+      "pass": true
+    }
+  ],
+  "envelope_mm": {
+    "x": 300,
+    "y": 300,
+    "z": 345
+  },
+  "voxel_size_mm": 0.8,
+  "material": "PA12",
+  "assumptions": [
+    "Scale model 1:2.5: geometry is full-size times 0.4; the cooling numbers apply to the full-size engine",
+    "Brake efficiency 0.30, AFR 11.5, VE 0.85, intercooler outlet 330 K",
+    "Coolant gets 28 % of the fuel energy at full load; 50/50 glycol, cp 3.6 kJ/kgK, dT 15 K",
+    "The cylinder bores are left solid in the model; the jackets, galleries, ports and pipe bores are real voids",
+    "Roots blower adiabatic efficiency 0.55, driven at 1.2 x crank speed"
+  ],
+  "risks": [
+    "Full-power heat rejection of 645 kW needs about 21 kg/s of radiator air at dT 30 K: this is a drag/track duty cycle, not continuous duty",
+    "Blower drive absorbs about 74 kW (first order)",
+    "The air fins reject only about 0.5 % of the heat; they are a secondary path",
+    "First-order estimates, no CFD or FEA",
+    "The model is SLS PA12: blow out the powder through the coolant ports"
+  ]
+}

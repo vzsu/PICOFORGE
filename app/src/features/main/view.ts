@@ -48,9 +48,24 @@ export interface ReadoutView {
 
 export interface ExplorerView {
   project: string;
+  projectId: string | null;
+  /** Every project (newest first); click to switch the window to it. */
+  projects: Array<{ id: string; name: string }>;
+  openProject: (id: string) => void;
   design: { label: string; run: string | null; running: boolean } | null;
   runsCount: number;
   parts: Array<{ id: string; name: string; visible: boolean }>;
+}
+
+/** Sidebar Runs panel rows. */
+export interface RunRowView {
+  id: string;
+  short: string;
+  state: string;
+  origin: string;
+  when: string;
+  took: string;
+  error: string | null;
 }
 
 export interface MainView {
@@ -66,6 +81,13 @@ export interface MainView {
   engineOk: boolean;
   /** Connected agents: the status-bar chip. */
   agents: string;
+  /** Names of agents seen this session (sidebar Agents). */
+  agentNames: string[];
+  runs: RunRowView[];
+  /** Saved design files of the shown part (code, brief, mesh, exports). */
+  files: Array<{ name: string; url: string; bytes: number }>;
+  /** Status-bar save text, e.g. "Saved 14:02". */
+  saved: string | null;
   connection: LiveState["connection"] | "mock";
   send: (text: string, mode?: Mode) => void;
   stop: () => void;
@@ -101,6 +123,10 @@ const MOCK_VIEW: MainView = {
   stlUrl: null,
   engineOk: true,
   agents: String(mock.statusBar.agents),
+  agentNames: ["mcp:claude-code"],
+  runs: [],
+  files: [],
+  saved: null,
   connection: "mock",
   send: () => {},
   stop: () => {},
@@ -154,10 +180,13 @@ export function liveView(s: LiveState, now: number): MainView {
   const g = s.geometry;
   // P0 builds one part per run (ctx.Part registration is P2): it is named by the brief title.
   const explorer: ExplorerView = {
-    project: "Studio",
+    project: s.projectName ?? "Studio",
+    projectId: s.projectId,
+    projects: s.projects,
+    openProject: (id) => void liveSession.openProject(id),
     design: run ? { label: "v1", run: `#${run.id.slice(-4).toLowerCase()}`, running } : null,
-    runsCount: run ? 1 : 0,
-    parts: g && s.brief ? [{ id: "result", name: s.brief.title, visible: true }] : [],
+    runsCount: s.runs.length,
+    parts: g ? [{ id: "result", name: s.brief?.title ?? "Part", visible: true }] : [],
   };
   return {
     live: true,
@@ -170,6 +199,20 @@ export function liveView(s: LiveState, now: number): MainView {
     stlUrl: g?.url ?? null,
     engineOk: s.engine === "ok",
     agents: String(s.agents.length),
+    agentNames: s.agents,
+    runs: s.runs.map((r) => ({
+      id: r.id,
+      short: `#${r.id.slice(-4).toLowerCase()}`,
+      state: r.state,
+      origin: r.model.startsWith("mcp:") ? r.model : "in-app",
+      when: new Date(r.startedAt).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }),
+      took: r.totalMs !== null ? fmtElapsed(r.totalMs) : "",
+      error: r.errorCode,
+    })),
+    files: s.files,
+    saved: s.savedAt
+      ? `Saved ${new Date(s.savedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`
+      : null,
     connection: s.connection,
     send: (t, m) => liveSession.send(t, m),
     stop: () => liveSession.cancel(),
