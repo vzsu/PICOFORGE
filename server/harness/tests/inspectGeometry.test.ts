@@ -1,6 +1,7 @@
 // server/harness/tests/inspectGeometry.test.ts — TOOL-INSPECT-01..04
 // inspect_geometry calls `engine.inspect {target, ops}` through the engine port (04 §5).
 
+import { resolve } from "jsr:@std/path@^1.0.0";
 import { assertEquals, assertStringIncludes } from "jsr:@std/assert@^1.0.0";
 import { inspectGeometryTool } from "../tools/inspectGeometry.ts";
 import type { RunCtx } from "../tools/_base.ts";
@@ -50,7 +51,8 @@ Deno.test("TOOL-INSPECT-01: sends {target, ops} to engine.inspect and returns me
 
   const r = await inspectGeometryTool.execute({ ops }, ctxWith(engine, "art-1"));
 
-  assertEquals(calls, [{ target: "art-1", ops }]);
+  // B-013: the engine needs the run folder path, not the artifact id
+  assertEquals(calls, [{ target: resolve("runs", "art-1").replaceAll("\\", "/"), ops }]);
   assertEquals(r.ok, true);
   if (r.ok) assertEquals(r.value, MEASURED);
 });

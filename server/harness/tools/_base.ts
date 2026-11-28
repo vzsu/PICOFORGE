@@ -2,6 +2,7 @@
 // LLM_HARNESS §5: "one module per tool: {name, zodInput, jsonSchema, execute}"
 
 import { z } from "npm:zod@^3.23.0";
+import { resolve } from "jsr:@std/path@^1.0.0";
 import { ToolDefinition } from "../anthropic.ts";
 import { err, ok, Result } from "../../domain/result.ts";
 import type { EngineApi } from "../../engine/client.ts";
@@ -51,6 +52,16 @@ export interface RunCtx {
 /** Run folder for a run: `<dataDir>/runs/<runId>` (forward slashes; served under `/files/`). */
 export function runFolder(ctx: Pick<RunCtx, "dataDir" | "runId">): string {
   return `${ctx.dataDir ?? "."}/runs/${ctx.runId}`;
+}
+
+/**
+ * The engine `target` for the last validated part: its run folder (the engine resolves
+ * part.vdb / part.stl inside it), absolute. B-013: the tools sent the artifact id, which the engine
+ * cannot resolve ("INSPECT_TARGET: Target not found").
+ */
+export function artifactTarget(ctx: Pick<RunCtx, "dataDir" | "lastArtifactId">): string | null {
+  if (!ctx.lastArtifactId) return null;
+  return resolve(ctx.dataDir ?? ".", "runs", ctx.lastArtifactId).replaceAll("\\", "/");
 }
 
 /** Shape every tool module must export. */

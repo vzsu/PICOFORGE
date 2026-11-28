@@ -87,6 +87,15 @@ Deno.test("parameter: mm value over maxAxis×1.05 fails", () => {
   assertStringIncludes(r.violations[0], `"d"`);
 });
 
+Deno.test("parameter: a diagonal dimension longer than any axis passes (BRIEF-DIAG-01)", () => {
+  // found by a Claude Code run: a 125 mm motor-to-motor diagonal on a 111 × 111 × 3 mm frame
+  const r = validateBrief(base({
+    parameters: [{ name: "motor_diagonal", value: 125, unit: "mm", rationale: "X frame" }],
+    envelope_mm: { x: 111, y: 111, z: 3 },
+  }));
+  assertEquals(r.ok, true, r.violations.join("; "));
+});
+
 Deno.test("parameter: non-mm unit not checked against envelope", () => {
   const r = validateBrief(base({
     parameters: [{ name: "speed", value: 5000, unit: "rpm", rationale: "motor speed" }],

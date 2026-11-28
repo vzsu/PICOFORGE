@@ -96,6 +96,8 @@ public sealed record Material(
     public static readonly Material Resin = new("Resin", 1.15f, 55f, 2.6f, 0.6f, 60f);
     public static readonly Material Al6061 = new("Al6061-T6", 2.70f, 276f, 68.9f, 0.8f, 200f);
     public static readonly Material Ss316L = new("SS316L", 8.00f, 205f, 193f, 0.5f, 400f);
+    /// <summary>3K twill carbon plate, quasi-isotropic, CNC-cut (docs/15 example). Strength = tensile.</summary>
+    public static readonly Material Cf3kPlate = new("CF_3K_PLATE", 1.55f, 570f, 55f, 1.5f, 120f);
 
     public static Material FromName(string name)
     {
@@ -109,7 +111,8 @@ public sealed record Material(
             "RESIN" => Resin,
             "AL6061-T6" => Al6061,
             "SS316L" => Ss316L,
-            _ => throw new ArgumentException($"Unknown material '{name}'. Valid: PLA, PETG, ABS, PA12, Resin, Al6061-T6, SS316L", nameof(name)),
+            "CF_3K_PLATE" => Cf3kPlate,
+            _ => throw new ArgumentException($"Unknown material '{name}'. Valid: PLA, PETG, ABS, PA12, Resin, Al6061-T6, SS316L, CF_3K_PLATE", nameof(name)),
         };
     }
 }

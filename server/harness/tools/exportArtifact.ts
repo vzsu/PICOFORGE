@@ -1,7 +1,16 @@
 // server/harness/tools/exportArtifact.ts — tool 5.6
 // LLM_HARNESS §5.6: export geometry for user (STL, 3MF, GLB, VDB, CLI)
 
-import { err, makeDef, ok, type RunCtx, runFolder, type ToolModule, z } from "./_base.ts";
+import {
+  artifactTarget,
+  err,
+  makeDef,
+  ok,
+  type RunCtx,
+  runFolder,
+  type ToolModule,
+  z,
+} from "./_base.ts";
 import { engineExportResultSchema, unwrapEngineReply } from "../../engine/client.ts";
 
 /**
@@ -70,7 +79,11 @@ export const exportArtifactTool: ToolModule<Input> = {
       await Deno.mkdir(exportDir, { recursive: true });
 
       const reply = unwrapEngineReply(
-        await ctx.engineClient.export({ target: ctx.lastArtifactId, format, outPath }),
+        await ctx.engineClient.export({
+          target: artifactTarget(ctx) ?? ctx.lastArtifactId,
+          format,
+          outPath,
+        }),
         "EXPORT_FAILED",
       );
       if (!reply.ok) return ok({ error: reply.error });

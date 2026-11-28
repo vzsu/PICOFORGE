@@ -93,6 +93,7 @@ const DENSITY: Record<string, number> = {
   Resin: 1.18,
   "Al6061-T6": 2.7,
   SS316L: 8.0,
+  CF_3K_PLATE: 1.55,
 };
 
 const RUN_STATES: readonly LiveRunState[] = [

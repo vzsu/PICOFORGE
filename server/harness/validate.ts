@@ -54,6 +54,7 @@ export const MATERIAL_MIN_WALL_MM: Readonly<Record<string, number>> = {
   "Resin": 0.6,
   "Al6061-T6": 0.8,
   "SS316L": 0.5,
+  "CF_3K_PLATE": 1.5,
 };
 
 /** Brief parameter names that state a minimum wall (mm). */

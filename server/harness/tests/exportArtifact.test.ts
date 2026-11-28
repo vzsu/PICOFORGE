@@ -1,6 +1,7 @@
 // server/harness/tests/exportArtifact.test.ts — TOOL-EXPORT-01..03
 // export_artifact asks the engine to write STL/3MF into the run folder and returns its URL.
 
+import { resolve } from "jsr:@std/path@^1.0.0";
 import { assertEquals, assertStringIncludes } from "jsr:@std/assert@^1.0.0";
 import { exportArtifactTool } from "../tools/exportArtifact.ts";
 import type { RunCtx } from "../tools/_base.ts";
@@ -44,7 +45,8 @@ Deno.test("TOOL-EXPORT-01: STL lands in the run folder and the tool returns its 
   );
 
   const expectedPath = `${dataDir}/runs/run-export-01/exports/fan.stl`;
-  assertEquals(calls, [{ target: "art-9", format: "stl", outPath: expectedPath }]);
+  const target = resolve(dataDir, "runs", "art-9").replaceAll("\\", "/"); // B-013
+  assertEquals(calls, [{ target, format: "stl", outPath: expectedPath }]);
   assertEquals((await Deno.stat(expectedPath)).isFile, true);
   assertEquals(r.ok, true);
   if (r.ok) {

@@ -122,9 +122,9 @@ requirements[]    the human's requirements, one per line
 parameters[]      {name, value, unit, rationale}; name matches ^[a-zA-Z][a-zA-Z0-9_]*$
                   unit: mm | deg | rad | rpm | count | mps | mpa | w | kg | ratio
 physics_checks[]  {name, formula, computed, limit, pass}
-envelope_mm       {x, y, z}: the bounding box the part must fit (≤ 300 × 300 × 200; bbox may exceed by 10 %)
+envelope_mm       {x, y, z}: the bounding box the part must fit (≤ 400 × 400 × 400; bbox may exceed by 10 %)
 voxel_size_mm     e.g. 0.25 for small parts, 0.5 for ~100 mm parts, 1.0 for large ones
-material          PLA | PETG | ABS | PA12 | Resin | Al6061-T6 | SS316L
+material          PLA | PETG | ABS | PA12 | Resin | Al6061-T6 | SS316L | CF_3K_PLATE
 assumptions[]     what you assumed; write "waived" here to accept a check with pass:false
 risks[]           honest caveats
 ```
@@ -142,13 +142,16 @@ risks[]           honest caveats
 | `duct`, `generic` | `wall_thickness_min` |
 | `lattice_part` | `strut_diameter_min`, `relative_density` |
 
-**Validator rules:** every `mm` parameter must be ≤ 1.05 × the largest envelope axis. The voxel count
+**Validator rules:** every `mm` parameter must be ≤ 1.05 × the envelope diagonal. The voxel count
 `⌈x/v⌉·⌈y/v⌉·⌈z/v⌉` has a hard cap; the error gives the voxel size to use. Every check needs
 `pass: true` unless an assumption says it is waived.
 
 **Materials** (density g/cm³, yield MPa, E GPa, minimum wall mm, max °C):
 PLA 1.24/45/3.5/1.0/55 · PETG 1.27/50/2.1/1.0/75 · ABS 1.05/40/2.0/1.2/95 · PA12 1.01/48/1.7/0.8/120 ·
-Resin 1.15/55/2.6/0.6/60 · Al6061-T6 2.70/276/68.9/0.8/200 · SS316L 8.00/205/193/0.5/400.
+Resin 1.15/55/2.6/0.6/60 · Al6061-T6 2.70/276/68.9/0.8/200 · SS316L 8.00/205/193/0.5/400 ·
+CF_3K_PLATE 1.55/570 (tensile)/55/1.5/120. CF_3K_PLATE is CNC-cut sheet: keep CF parts as flat plates
+of one thickness (curvy outlines are fine, 3D sculpting is not), or say that the organic 3D version
+must be printed in PA12 instead.
 The minimum wall the geometry check enforces is the largest of: the material minimum, a `min_wall`
 parameter, and 3 × voxel size.
 
@@ -511,6 +514,35 @@ public static class Design
 **Variations an agent can try:** two blades and a higher pitch for efficiency; four blades and a lower
 RPM for less noise; a rounded tip, done by blending the chord to the minimum printable width over the
 last 10 % of span; ducted (add a `Kit.voxTube` ring with tip clearance ≥ 0.5 mm).
+
+## 9b. Large and complex parts (engines, car bodies, frames)
+
+- **Envelope:** at most 400 × 400 × 400 mm. A real car or engine becomes a **scale model**. Put the
+  scale in a `scale` parameter (e.g. 0.055 for 1:18) and the full-size dimensions in parameters, then
+  multiply in code. State the scale in the brief title.
+- **Voxel budget on this machine (8 GB RAM):** keep `⌈x/v⌉·⌈y/v⌉·⌈z/v⌉` under about 150 million
+  cells. A 300 × 150 × 120 mm model at 0.5 mm is 54 M cells (fine); at 0.25 mm it is 432 M (too slow).
+  Draft at 0.8–1.0 mm, then refine.
+- **Build in sub-assemblies:** write one `private static Voxels voxBlock(Ctx ctx)`,
+  `voxHeads(...)`, `voxIntake(...)` and so on, then union them in `voxBuild`. Collect bodies in a
+  `List<Voxels>` and call `BoolAddAll` once. That is far faster than many single `BoolAdd` calls.
+- **Pipes, runners, manifolds:** `Kit.voxSweepCircle(ctx, path, r)` along a list of points. For a
+  hollow pipe, sweep the outer radius, then `BoolSubtract` the inner sweep, extended 1 mm past both ends.
+- **Internal cooling channels:** subtract swept circles or `Kit.voxCylinder` bores from the solid
+  (water jackets, oil galleries). Keep at least 3 voxels of wall between a channel and the outside.
+  Fins: thin `Kit.voxBox` plates in a loop, unioned with `BoolAddAll`.
+- **Surface patterns** (grilles, ornamental seams, lattice skins): cut or emboss small primitives
+  along a curve in a loop. Keep each feature at least 3 voxels thick, or it vanishes.
+- **Flat plates (CF_3K_PLATE, sheet metal):** `Fillet` / `Kit.FilletClose` on a thin extruded plate
+  rounds in 3D and can turn narrow through-cuts into blind pockets that cannot be CNC-cut. Extrude
+  the outline taller than the plate (e.g. 3 × t), round it, then `BoolIntersect` with a box from
+  z = 0 to t. Every cut then stays straight through. Check with `inspect_geometry` sections near
+  both faces: the areas must match.
+- **Organic / biophilic forms:** branching `Lattice` beams with tapering radii (thick at the root,
+  thin at the tip) followed by `vox.Smoothen(mm)` read as grown structures. Use `Kit.impGyroid` for
+  bone-like infill.
+- **Time limit:** a build is killed after the run timeout. If you get `TIMEOUT`, coarsen the voxel
+  size first, then cut feature counts.
 
 ## 10. Repairing a failed build
 

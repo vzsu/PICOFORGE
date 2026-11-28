@@ -1,7 +1,7 @@
 // server/harness/tools/inspectGeometry.ts — tool 5.4
 // LLM_HARNESS §5.4: bbox, volume, section, wall_min, ray
 
-import { err, makeDef, ok, type RunCtx, type ToolModule, z } from "./_base.ts";
+import { artifactTarget, err, makeDef, ok, type RunCtx, type ToolModule, z } from "./_base.ts";
 import { engineInspectResultSchema, unwrapEngineReply } from "../../engine/client.ts";
 
 const opSchema = z.discriminatedUnion("type", [
@@ -74,7 +74,10 @@ export const inspectGeometryTool: ToolModule<Input> = {
       }
 
       const reply = unwrapEngineReply(
-        await ctx.engineClient.inspect({ target: ctx.lastArtifactId, ops: parsed.data.ops }),
+        await ctx.engineClient.inspect({
+          target: artifactTarget(ctx) ?? ctx.lastArtifactId,
+          ops: parsed.data.ops,
+        }),
         "INSPECT_FAILED",
       );
       if (!reply.ok) return ok({ error: reply.error });

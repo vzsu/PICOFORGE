@@ -48,6 +48,27 @@ for (const ex of parseExamples(await loadGuide())) {
     console.log(`✗ ${ex.name}: ${built.code} ${JSON.stringify(built.error).slice(0, 1500)}`);
     continue;
   }
+  // B-013: inspect and export must reach the built part on the real engine
+  const insp = body(
+    await callAgentTool(
+      "inspect_geometry",
+      { projectId, ops: [{ type: "bbox" }, { type: "section", plane: "z", offset_mm: 0.5 }] },
+      deps,
+      "guide-check",
+    ),
+  );
+  const exp = body(
+    await callAgentTool("export_artifact", { projectId, format: "stl" }, deps, "guide-check"),
+  );
+  if (insp.error || exp.error) {
+    failed++;
+    console.log(
+      `✗ ${ex.name}: inspect ${JSON.stringify(insp.error ?? "ok")} export ${
+        JSON.stringify(exp.error ?? "ok")
+      }`,
+    );
+    continue;
+  }
   const s = built.stats as Record<string, unknown>;
   console.log(
     `✓ ${ex.name}: ${s.volumeCm3} cm³, bbox ${JSON.stringify(s.bboxMin)}..${

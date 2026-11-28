@@ -47,7 +47,16 @@ const REQUIRED_CHECKS: Record<typeof CATEGORIES[number], string[]> = {
   generic: ["wall_thickness_min"],
 };
 
-const MATERIALS = new Set(["PLA", "PETG", "ABS", "PA12", "Resin", "Al6061-T6", "SS316L"]);
+const MATERIALS = new Set([
+  "PLA",
+  "PETG",
+  "ABS",
+  "PA12",
+  "Resin",
+  "Al6061-T6",
+  "SS316L",
+  "CF_3K_PLATE",
+]);
 
 const zodInput = z.object({
   title: z.string().min(1).max(120),
@@ -163,13 +172,15 @@ export function validateBrief(input: Input): BriefValidationResult {
     }
   }
 
-  // 3. Every mm parameter ≤ maxEnvelopeAxis × 1.05
+  // 3. Every mm parameter ≤ envelope diagonal × 1.05. A length can run diagonally (a motor-to-motor
+  // span on an X frame), so the largest axis was too strict (BRIEF-DIAG-01).
   const maxAxis = Math.max(env.x, env.y, env.z);
+  const diagonal = Math.round(Math.hypot(env.x, env.y, env.z) * 100) / 100;
   for (const p of input.parameters) {
-    if (p.unit === "mm" && p.value > maxAxis * 1.05) {
+    if (p.unit === "mm" && p.value > diagonal * 1.05) {
       violations.push(
-        `parameter "${p.name}" (${p.value} mm) exceeds max envelope axis ${maxAxis} mm × 1.05 = ${
-          maxAxis * 1.05
+        `parameter "${p.name}" (${p.value} mm) exceeds the envelope diagonal ${diagonal} mm × 1.05 = ${
+          Math.round(diagonal * 105) / 100
         } mm`,
       );
     }
