@@ -15,7 +15,8 @@ import type { ServerFrame } from "../domain/events.ts";
 import { projectCreate, projectGet, projectList, projectUpdate } from "../db/repo/projects.ts";
 import { conversationCreate, conversationList } from "../db/repo/conversations.ts";
 import { type ContentBlock, messageCreate } from "../db/repo/messages.ts";
-import { runCreate, runGet, runUpdateState } from "../db/repo/runs.ts";
+import { runCreate, runGet, runListForConversation, runUpdateState } from "../db/repo/runs.ts";
+import { join } from "jsr:@std/path@^1.0.0";
 import { fileUrl } from "../http/chatRun.ts";
 import { buildRepairHint, isBudgetExhausted } from "../harness/prompts/repair.ts";
 import { makeLogger } from "../log.ts";
@@ -87,7 +88,43 @@ function firstConversation(projectId: string): string {
   return (conversationList(projectId)[0] ?? conversationCreate(projectId, "Main")).id;
 }
 
-function workspaceFor(projectId: string): Workspace | null {
+/** The fields of a saved brief.json that later tools need (AcceptedBrief), validated. */
+const savedBriefSchema = z.object({
+  parameters: z.array(
+    z.object({ name: z.string(), value: z.number(), unit: z.string() }).passthrough(),
+  ),
+  envelope_mm: z.object({ x: z.number(), y: z.number(), z: z.number() }),
+  voxel_size_mm: z.number().positive(),
+  material: z.string(),
+}).passthrough();
+
+/**
+ * MCP-07: agent state survives a server restart. The newest finished run of the project whose mesh
+ * is on disk becomes the last part, and its saved brief.json the accepted brief, so the agent can
+ * inspect, capture, export and rebuild without starting over.
+ */
+function restoreFromDisk(ws: Workspace, dataDir: string): void {
+  for (const r of runListForConversation(ws.conversationId)) {
+    if (r.state !== "done") continue;
+    const dir = join(dataDir, "runs", r.id);
+    try {
+      if (!Deno.statSync(join(dir, "part.stl")).isFile) continue;
+    } catch {
+      continue;
+    }
+    ws.lastRunId = r.id;
+    ws.lastArtifactId = r.id;
+    try {
+      const b = savedBriefSchema.safeParse(
+        JSON.parse(Deno.readTextFileSync(join(dir, "brief.json"))),
+      );
+      if (b.success) ws.brief = b.data;
+    } catch { /* built before briefs were saved: the agent resubmits */ }
+    return;
+  }
+}
+
+function workspaceFor(projectId: string, dataDir: string): Workspace | null {
   const known = workspaces.get(projectId);
   if (known) return known;
   const p = projectGet(projectId);
@@ -101,6 +138,7 @@ function workspaceFor(projectId: string): Workspace | null {
     repairs: {},
     recentBuilds: [],
   };
+  restoreFromDisk(ws, dataDir);
   workspaces.set(p.id, ws);
   return ws;
 }
@@ -149,10 +187,10 @@ function withProject(schema: JsonSchema): JsonSchema {
 }
 
 /** Resolve the workspace, or the typed error to return. */
-function workspaceArg(args: Record<string, unknown>): Workspace | McpToolResult {
+function workspaceArg(args: Record<string, unknown>, dataDir: string): Workspace | McpToolResult {
   const p = projectIdSchema.safeParse(args);
   if (!p.success) return fail("INVALID_INPUT", "projectId is required; call open_project first.");
-  return workspaceFor(p.data.projectId) ??
+  return workspaceFor(p.data.projectId, dataDir) ??
     fail("NOT_FOUND", "No such project. Call open_project to get a projectId.");
 }
 
@@ -239,7 +277,7 @@ const openProject: AgentTool = {
       ? all.find((p) => p.name.toLowerCase() === name.toLowerCase()) ?? projectCreate(name)
       : all[0] ?? projectCreate("Studio");
     projectUpdate(project.id, {}); // most recent first: a reload opens this project too
-    const ws = workspaceFor(project.id);
+    const ws = workspaceFor(project.id, deps.dataDir);
     if (!ws) return Promise.resolve(fail("NOT_FOUND", "Project could not be opened."));
     deps.emitAll({
       type: "session.focus",
@@ -274,7 +312,7 @@ const postMessage: AgentTool = {
     required: ["text"],
   }),
   run(args, deps, origin) {
-    const ws = workspaceArg(args);
+    const ws = workspaceArg(args, deps.dataDir);
     if (isResult(ws)) return Promise.resolve(ws);
     const p = z.object({
       text: z.string().trim().min(1).max(4000),
@@ -310,7 +348,7 @@ const submitBrief: AgentTool = {
     "Register the design brief (required before any build). The server validates envelope, voxel budget, units, material and the physics checks the category requires; fix every violation it returns and resubmit. Every governing dimension becomes a parameter the code reads with ctx.P(name).",
   inputSchema: withProject(objectSchema(TOOL_MAP.submit_design_brief.jsonSchema)),
   async run(args, deps, origin) {
-    const ws = workspaceArg(args);
+    const ws = workspaceArg(args, deps.dataDir);
     if (isResult(ws)) return ws;
     const input = without(args, "projectId");
     const ctx = ctxFor(ws, deps, ws.lastRunId ?? "mcp-brief", new AbortController().signal);
@@ -339,7 +377,7 @@ const runPicogk: AgentTool = {
     "Compile and build one complete C# design file (the code contract in picoforge://guide). Requires an accepted brief for this project, else BRIEF_REQUIRED. On success the part appears in the user's viewport and you get volume, bbox, triangles, watertight. On failure you get a typed code and a repairHint: fix the root cause and send the FULL corrected file.",
   inputSchema: withProject(objectSchema(TOOL_MAP.run_picogk.jsonSchema)),
   async run(args, deps, origin) {
-    const ws = workspaceArg(args);
+    const ws = workspaceArg(args, deps.dataDir);
     if (isResult(ws)) return ws;
     if (!ws.brief) {
       return fail("BRIEF_REQUIRED", "No accepted brief for this project.", {
@@ -479,7 +517,7 @@ function onLastPart(name: "inspect_geometry" | "export_artifact" | "capture_view
       `${tool.description} Works on the project's last successful build (NO_PART otherwise).`,
     inputSchema: withProject(objectSchema(tool.jsonSchema)),
     async run(args, deps) {
-      const ws = workspaceArg(args);
+      const ws = workspaceArg(args, deps.dataDir);
       if (isResult(ws)) return ws;
       if (!ws.lastArtifactId || !ws.lastRunId) {
         return fail("NO_PART", "Nothing built yet in this project.", {

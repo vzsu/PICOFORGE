@@ -176,12 +176,15 @@ export function validateBrief(input: Input): BriefValidationResult {
   // span on an X frame), so the largest axis was too strict (BRIEF-DIAG-01).
   const maxAxis = Math.max(env.x, env.y, env.z);
   const diagonal = Math.round(Math.hypot(env.x, env.y, env.z) * 100) / 100;
+  // Scale models: a name ending in `_full` is a full-size reference value (the code multiplies it by a
+  // `scale` parameter), so it is not checked against the model envelope (BRIEF-FULL-01; a Claude Code
+  // run otherwise stored metres under unit "ratio" to get past this check).
   for (const p of input.parameters) {
-    if (p.unit === "mm" && p.value > diagonal * 1.05) {
+    if (p.unit === "mm" && !p.name.endsWith("_full") && p.value > diagonal * 1.05) {
       violations.push(
         `parameter "${p.name}" (${p.value} mm) exceeds the envelope diagonal ${diagonal} mm × 1.05 = ${
           Math.round(diagonal * 105) / 100
-        } mm`,
+        } mm. For a scale model, name full-size values "<name>_full" and multiply by a "scale" parameter.`,
       );
     }
   }

@@ -210,6 +210,30 @@ Deno.test("MCP-05 builds per minute are capped with NEEDS_DECISION", async () =>
   );
 });
 
+Deno.test("MCP-07 after a server restart the agent keeps its last part and accepted brief", async () => {
+  const dir = await freshDb();
+  const c = setup(dir);
+  const ex = await propExample();
+  const { projectId } = body(
+    await callAgentTool("open_project", { projectName: "restart" }, c.deps, "t"),
+  );
+  await callAgentTool("submit_design_brief", { projectId, ...ex.brief }, c.deps, "t");
+  const built = body(await callAgentTool("run_picogk", { projectId, code: ex.code }, c.deps, "t"));
+  assertEquals(built.ok, true);
+
+  resetWorkspaces(); // the server restarted: in-memory agent state is gone
+
+  // the last part is known again (not NO_PART), so inspect reaches the engine port
+  const insp = body(
+    await callAgentTool("inspect_geometry", { projectId, ops: [{ type: "volume" }] }, c.deps, "t"),
+  );
+  assert(insp.code !== "NO_PART", JSON.stringify(insp));
+  // and the saved brief is accepted again: rebuilding needs no resubmit (not BRIEF_REQUIRED)
+  const again = body(await callAgentTool("run_picogk", { projectId, code: ex.code }, c.deps, "t"));
+  assertEquals(again.ok, true, JSON.stringify(again));
+  assertEquals(c.engine.runs.at(-1)?.params?.blade_count, 3);
+});
+
 Deno.test("MCP-06 bad input is a typed error, never a throw; unknown tools are rejected", async () => {
   const dir = await freshDb();
   const c = setup(dir);

@@ -96,6 +96,23 @@ Deno.test("parameter: a diagonal dimension longer than any axis passes (BRIEF-DI
   assertEquals(r.ok, true, r.violations.join("; "));
 });
 
+Deno.test("parameter: `_full` full-size values of a scale model pass; others still fail (BRIEF-FULL-01)", () => {
+  const ok = validateBrief(base({
+    parameters: [
+      { name: "scale", value: 0.0556, unit: "ratio", rationale: "1:18" },
+      { name: "length_full", value: 4700, unit: "mm", rationale: "full-size length" },
+    ],
+    envelope_mm: { x: 120, y: 270, z: 70 },
+  }));
+  assertEquals(ok.ok, true, ok.violations.join("; "));
+  const bad = validateBrief(base({
+    parameters: [{ name: "length", value: 4700, unit: "mm", rationale: "forgot to scale" }],
+    envelope_mm: { x: 120, y: 270, z: 70 },
+  }));
+  assertEquals(bad.ok, false);
+  assertStringIncludes(bad.violations[0], "_full");
+});
+
 Deno.test("parameter: non-mm unit not checked against envelope", () => {
   const r = validateBrief(base({
     parameters: [{ name: "speed", value: 5000, unit: "rpm", rationale: "motor speed" }],

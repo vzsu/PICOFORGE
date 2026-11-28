@@ -1,0 +1,231 @@
+{
+  "title": "1:18 scale model - scorpion-inspired GT hypercar body shell with Indian temple border motifs (rev 2)",
+  "category": "generic",
+  "requirements": [
+    "Scale-model car body shell, 1:18",
+    "Scorpion-inspired: front pincer claws/splitter, tail rising to a rear wing and sting",
+    "Low ground clearance, wide stance, cab-forward teardrop canopy, sharp creases",
+    "Indian border motifs on sill, door seams, window border, splitter edge, rear deck edge; all features >= 3 voxels",
+    "Wheels with lotus-spoke pattern in arches",
+    "Original design, not a copy of any real car"
+  ],
+  "parameters": [
+    {
+      "name": "scale",
+      "value": 0.0556,
+      "unit": "ratio",
+      "rationale": "1:18 scale model"
+    },
+    {
+      "name": "length_full_m",
+      "value": 4.7,
+      "unit": "ratio",
+      "rationale": "full-size overall body length in METRES (mm unit rejected by envelope rule)"
+    },
+    {
+      "name": "width_full_m",
+      "value": 2.05,
+      "unit": "ratio",
+      "rationale": "full-size body width in metres"
+    },
+    {
+      "name": "height_full_m",
+      "value": 1.13,
+      "unit": "ratio",
+      "rationale": "full-size roof height in metres"
+    },
+    {
+      "name": "ground_clearance_full",
+      "value": 90,
+      "unit": "mm",
+      "rationale": "very low full-size ground clearance"
+    },
+    {
+      "name": "wheelbase_full_m",
+      "value": 2.75,
+      "unit": "ratio",
+      "rationale": "full-size wheelbase in metres"
+    },
+    {
+      "name": "front_overhang_full_m",
+      "value": 0.94,
+      "unit": "ratio",
+      "rationale": "nose to front axle, metres"
+    },
+    {
+      "name": "wheel_dia_front_full_m",
+      "value": 0.69,
+      "unit": "ratio",
+      "rationale": "front wheel+tyre diameter, metres"
+    },
+    {
+      "name": "wheel_dia_rear_full_m",
+      "value": 0.73,
+      "unit": "ratio",
+      "rationale": "rear wheel+tyre diameter, metres"
+    },
+    {
+      "name": "tire_width_front_full",
+      "value": 285,
+      "unit": "mm",
+      "rationale": "front tyre width"
+    },
+    {
+      "name": "tire_width_rear_full",
+      "value": 345,
+      "unit": "mm",
+      "rationale": "rear tyre width"
+    },
+    {
+      "name": "wheel_inset_full",
+      "value": 15,
+      "unit": "mm",
+      "rationale": "wheel face inset from body side"
+    },
+    {
+      "name": "arch_gap_full",
+      "value": 40,
+      "unit": "mm",
+      "rationale": "radial arch clearance around wheel"
+    },
+    {
+      "name": "wing_span_full_m",
+      "value": 1.75,
+      "unit": "ratio",
+      "rationale": "rear wing span, metres"
+    },
+    {
+      "name": "wing_chord_full_m",
+      "value": 0.4,
+      "unit": "ratio",
+      "rationale": "rear wing chord, metres"
+    },
+    {
+      "name": "wing_height_full_m",
+      "value": 1.22,
+      "unit": "ratio",
+      "rationale": "wing height, below the sting apex so the tail arches over it, metres"
+    },
+    {
+      "name": "wing_aoa",
+      "value": 10,
+      "unit": "deg",
+      "rationale": "downforce angle, trailing edge up"
+    },
+    {
+      "name": "sting_height_full_m",
+      "value": 1.42,
+      "unit": "ratio",
+      "rationale": "reference height of tail/sting curve, metres"
+    },
+    {
+      "name": "sting_radius_full",
+      "value": 75,
+      "unit": "mm",
+      "rationale": "root radius of tail segments"
+    },
+    {
+      "name": "claw_length_full",
+      "value": 300,
+      "unit": "mm",
+      "rationale": "front pincer projection ahead of nose"
+    },
+    {
+      "name": "splitter_full",
+      "value": 110,
+      "unit": "mm",
+      "rationale": "splitter projection ahead of nose"
+    },
+    {
+      "name": "wall",
+      "value": 1.6,
+      "unit": "mm",
+      "rationale": "model shell wall, 4 voxels"
+    },
+    {
+      "name": "motif_relief",
+      "value": 1.2,
+      "unit": "mm",
+      "rationale": "emboss height of temple friezes, 3 voxels"
+    },
+    {
+      "name": "bead_radius",
+      "value": 0.75,
+      "unit": "mm",
+      "rationale": "pearl/petal radius: 1.5 mm features > 3 voxels"
+    },
+    {
+      "name": "motif_pitch",
+      "value": 4.4,
+      "unit": "mm",
+      "rationale": "repeat spacing of shikhara/crenellation motifs (model)"
+    },
+    {
+      "name": "axle_radius",
+      "value": 2.4,
+      "unit": "mm",
+      "rationale": "model axle tying wheels to the shell"
+    }
+  ],
+  "physics_checks": [
+    {
+      "name": "wall_thickness_min",
+      "formula": "shell wall t >= max(Resin 0.6, 3 x voxel 0.4 = 1.2) mm",
+      "computed": 1.6,
+      "limit": 1.2,
+      "pass": true
+    },
+    {
+      "name": "motif_feature_min",
+      "formula": "smallest motif feature = 2 x 0.95 x bead_radius (mm) >= 3 x voxel",
+      "computed": 1.42,
+      "limit": 1.2,
+      "pass": true
+    },
+    {
+      "name": "model_length",
+      "formula": "L_model = length_full x scale + claw + wing overhang (mm) <= envelope y",
+      "computed": 285,
+      "limit": 295,
+      "pass": true
+    },
+    {
+      "name": "model_ground_clearance",
+      "formula": "h = 90 mm x 0.0556 (mm), >= 3 voxels",
+      "computed": 5,
+      "limit": 1.2,
+      "pass": true
+    },
+    {
+      "name": "fender_over_arch",
+      "formula": "front shoulder crease z (0.677 H) - arch top (2R + gap), model mm",
+      "computed": 1.9,
+      "limit": 1.2,
+      "pass": true
+    },
+    {
+      "name": "voxel_budget",
+      "formula": "ceil(125/0.4)*ceil(295/0.4)*ceil(85/0.4) (M cells) <= 150",
+      "computed": 49.2,
+      "limit": 150,
+      "pass": true
+    }
+  ],
+  "envelope_mm": {
+    "x": 125,
+    "y": 295,
+    "z": 85
+  },
+  "voxel_size_mm": 0.4,
+  "material": "Resin",
+  "assumptions": [
+    "Decorative scale model, not a structural or aerodynamic part",
+    "Full-size dimensions above 348 mm are given in metres (unit ratio) because the validator caps mm parameters at the envelope diagonal; code multiplies by 1000 x scale",
+    "Body styling keypoints (half-width and height fractions along the length) are normalised constants in code"
+  ],
+  "risks": [
+    "Thin tail/wing joint is fragile in resin",
+    "Open-floor shell: print upside down with supports",
+    "Motif detail is near the voxel resolution limit"
+  ]
+}

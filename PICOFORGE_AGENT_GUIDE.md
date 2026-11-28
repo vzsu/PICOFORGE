@@ -518,8 +518,10 @@ last 10 % of span; ducted (add a `Kit.voxTube` ring with tip clearance ≥ 0.5 m
 ## 9b. Large and complex parts (engines, car bodies, frames)
 
 - **Envelope:** at most 400 × 400 × 400 mm. A real car or engine becomes a **scale model**. Put the
-  scale in a `scale` parameter (e.g. 0.055 for 1:18) and the full-size dimensions in parameters, then
-  multiply in code. State the scale in the brief title.
+  scale in a `scale` parameter (unit `ratio`, e.g. 0.0556 for 1:18). Give full-size dimensions in
+  `mm`, with names ending in **`_full`** (e.g. `length_full` 4700). The validator does not check
+  `_full` values against the model envelope; every other mm parameter is a model dimension. In code
+  multiply: `ctx.P("length_full") * ctx.P("scale")`. State the scale in the brief title.
 - **Voxel budget on this machine (8 GB RAM):** keep `⌈x/v⌉·⌈y/v⌉·⌈z/v⌉` under about 150 million
   cells. A 300 × 150 × 120 mm model at 0.5 mm is 54 M cells (fine); at 0.25 mm it is 432 M (too slow).
   Draft at 0.8–1.0 mm, then refine.
